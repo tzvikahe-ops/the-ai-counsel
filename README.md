@@ -82,6 +82,40 @@ YOUR QUESTION (+ optional web search)
 | **Chat + Ranking** | Stages 1 & 2 | Peer review without synthesis |
 | **Full Deliberation** | All 3 stages | Complete council synthesis (default) |
 
+#### Multi-Round Iterative Debate (v0.7.0)
+
+Council mode also supports **multi-round iterative debate** — models refine their answers across multiple rounds based on peer critiques, with convergence detection and early stopping:
+
+```
+  ┌─────────────────────────────────┐
+  │   ROUND 1: Initial Responses    │
+  │   + Peer Critique               │
+  └──────────────┬──────────────────┘
+                 ▼
+  ┌─────────────────────────────────┐
+  │   ROUNDS 2–5: Refinement        │
+  │   Cross-pollination of top      │
+  │   claims + targeted critique    │
+  │   (auto-stops on convergence)   │
+  └──────────────┬──────────────────┘
+                 ▼
+  ┌─────────────────────────────────┐
+  │   STAGE 4: CORRECTED DRAFT      │
+  │   Chairman synthesizes final    │
+  │   draft with [REVISED]/[NEW]    │
+  └─────────────────────────────────┘
+```
+
+**Three critique modes** control how models evaluate each other:
+
+| Mode | How It Works |
+|------|-------------|
+| **Free-form** | Open-ended feedback on the full response |
+| **Paragraph-level** | Structured per-paragraph evaluation with stable `[Para N]` markers |
+| **Claim-level** | Chairman extracts falsifiable claims; peers verdict each claim (strong/weak/flawed) |
+
+Configure rounds (1–5), critique mode, and convergence threshold in **Settings > Council Debate**, or via the `run_iterative_debate` MCP tool. See [docs/COUNCIL-DEBATE-CONFIG.md](docs/COUNCIL-DEBATE-CONFIG.md) for a full walkthrough.
+
 ### 🎭 LLM Advisors — Persona-Driven Debate
 
 A fundamentally different approach: named personas with distinct thinking styles argue your question in structured rounds.
@@ -110,7 +144,7 @@ YOUR QUESTION (+ optional web search)
   └─────────────────────────────────┘
 ```
 
-**10 built-in advisor personas:**
+**12 built-in advisor personas:**
 
 | Persona | Role | Style |
 |---------|------|-------|
@@ -124,6 +158,8 @@ YOUR QUESTION (+ optional web search)
 | ♟️ **The Strategist** | Big-Picture Thinker | Thinks long-term about positioning and leverage |
 | 🤝 **The Humanist** | People-First Advocate | Centers the human experience and well-being |
 | 🛡️ **The Risk Assessor** | Risk Analyst | Identifies worst-case scenarios and mitigations |
+| 🎤 **The Comedian** | Humorist Critic | Uses wit to expose absurdity and weak framing |
+| 📈 **The Economist** | Incentives Analyst | Analyzes incentives, scarcity, and unintended consequences |
 
 All personas are **fully customizable** — edit name, role, description, system prompt, and emoji. Changes persist across sessions with per-persona reset to defaults.
 
@@ -172,9 +208,9 @@ Fine-tune creativity vs consistency per stage:
 
 ### Additional Features
 
-- **Live Progress Tracking** — See each model or advisor respond in real-time with streaming
+- **Live Progress Tracking** — See each model or advisor respond in real-time with streaming; reconnect to active runs via `GET /api/conversations/{id}/progress`
 - **Multi-turn Conversations** — Follow-up questions carry full context automatically
-- **Council Sizing** — Adjust council from 1 to 8 models; advisors from 2 to 4 personas
+- **Council Sizing** — Adjust council from 1 to 8 models; advisors from 2 to 4 personas (select from 12)
 - **Advisor Presets** — Save and load named advisor lineups (personas, model mode, optional rounds/web search) from Advisor Setup
 - **Abort Anytime** — Cancel in-progress requests
 - **Conversation History** — All conversations saved locally with search
@@ -315,12 +351,12 @@ Legacy 25-tool names were removed in v0.5.2. `run_iterative_debate` was added in
 * **Option A: Local stdio (Standard for local development)**
   ```bash
   pip install -e .
-  claude mcp add llm-council python -m the_ai_counsel_mcp
+  claude mcp add the-ai-counsel python -m the_ai_counsel_mcp
   ```
 
 * **Option B: Remote SSE (Zero-install for containers/servers)**
   ```bash
-  claude mcp add llm-council --url http://yourserver.com:8001/mcp/sse
+  claude mcp add the-ai-counsel --url http://yourserver.com:8001/mcp/sse
   ```
 
 Then ask Claude: "check the council health" to verify the connection (`providers` → action `health`; expect 10 tools in `/api/health`).
