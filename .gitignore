@@ -1,0 +1,47 @@
+# Temporary files
+/.gemini-clipboard/
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Keys and secrets
+.env
+
+# Data files
+data/
+
+# Test and debug scripts
+backend/test_*.py
+backend/debug_*.py
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+.DS_Store
+BUGS_AND_OPTIMIZATIONS.md
+DESIGN_SESSION_CONTEXT.md
+
+# Auto Claude data directory
+.auto-claude/
+
+# Auto Claude generated files
+.auto-claude-security.json
+.auto-claude-status
+.claude_settings.json
+.worktrees/
+.security-key
+logs/security/
+
+# Antigravity CLI config
+.antigravitycli/
+
