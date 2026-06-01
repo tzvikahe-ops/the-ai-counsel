@@ -183,6 +183,7 @@ def normalize_usage(raw_usage: Any, provider: str = "") -> Dict[str, Any]:
     reasoning_tokens = _first_int(
         completion_details.get("reasoning_tokens"),
         raw_usage.get("thoughtsTokenCount"),
+        raw_usage.get("reasoning_tokens"),
     )
 
     if total_tokens is None:

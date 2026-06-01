@@ -232,7 +232,11 @@ async def test_opencode_free_suffix_detection():
 
 @pytest.mark.asyncio
 async def test_opencode_reasoning_tokens_billed(monkeypatch):
-    """OpenCode call cost should include reasoning_tokens in the billable output."""
+    """OpenCode call cost should include reasoning_tokens in the billable output.
+
+    Accepts both the OpenAI-nested format (completion_tokens_details.reasoning_tokens)
+    and a flat reasoning_tokens key (used by OpenCode Go providers).
+    """
     monkeypatch.setattr(costs, "_OPENCODE_PRICING", {
         "opencode-zen": {
             "test-model": {"input": 1.00, "output": 4.00, "cached": 0.10},
@@ -255,6 +259,25 @@ async def test_opencode_reasoning_tokens_billed(monkeypatch):
     assert cost["input_cost"] == pytest.approx(0.0001, rel=1e-6)
     # total = $0.000100 + $0.001 = $0.0011
     assert cost["total_cost"] == pytest.approx(0.0011, rel=1e-6)
+
+    # Flat reasoning_tokens key (OpenCode Go style)
+    monkeypatch.setattr(costs, "_OPENCODE_PRICING", {
+        "opencode-zen": {},
+        "opencode-go": {
+            "test-model": {"input": 0.14, "output": 0.28, "cached": 0.0028},
+        },
+    })
+    cost2 = await costs.estimate_call_cost(
+        "opencode-go:test-model",
+        {
+            "prompt_tokens": 100,
+            "completion_tokens": 50,
+            "reasoning_tokens": 67,
+        },
+    )
+    assert cost2["reasoning_tokens"] == 67
+    # billable_output = 50 + 67 = 117 → 117 × $0.28/M = $0.00003276
+    assert cost2["output_cost"] == pytest.approx(0.00003276, rel=1e-6)
 
 
 @pytest.mark.asyncio
