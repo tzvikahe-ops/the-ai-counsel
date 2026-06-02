@@ -53,11 +53,17 @@ The Settings panel opens automatically on first launch.
 > **Advisors:** Once Ollama is connected in LLM API Keys, Advisor Setup lists Ollama models automatically — you do **not** need to enable the council "Local (Ollama)" toggle for advisors.
 
 ### Option C: Use Direct APIs
-1. Get API keys from your preferred providers (OpenAI, Anthropic, Google, etc.)
+1. Get API keys from your preferred providers (OpenAI, Anthropic, Google, OpenCode Zen/Go, etc.)
 2. Enter keys in **LLM API Keys** → **Direct LLM Connections**
 3. Click **Test** for each (auto-saves on success)
 4. Go to **Council Config** → Enable "Direct Connections" → Select models
 5. Click **Save Changes**
+
+### Option D: Use OpenCode Zen / Go
+- OpenCode ships both a free **Zen** tier (zero-cost `*-free` models — `minimax-m3-free`, `deepseek-v4-flash-free`, etc.) and a paid **Go** subscription tier (per-1M token pricing shown as an estimate; flagged with a subscription note in the cost report).
+- Use a single shared `opencode_api_key` (covers both Zen and Go). Add it in **LLM API Keys** → **OpenCode Zen & Go** → **Test**.
+- Model IDs in Council/Advisor pickers: `opencode-zen:<model>` and `opencode-go:<model>`.
+- Custom endpoints hosted at `https://opencode.ai/...` are also auto-detected as zero-cost.
 
 ---
 

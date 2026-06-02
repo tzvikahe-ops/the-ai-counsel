@@ -7,10 +7,11 @@ from backend.providers.opencode import OpenCodeProvider
 
 
 class _FakeResponse:
-    def __init__(self, status_code, json_body=None, text=""):
+    def __init__(self, status_code, json_body=None, text="", content_type="application/json"):
         self.status_code = status_code
         self._json = json_body or {}
         self.text = text or json.dumps(self._json)
+        self.headers = {"content-type": content_type}
 
     def json(self):
         return self._json
@@ -49,8 +50,12 @@ class _FakeAsyncClient:
     def _next(self):
         if not type(self).responses:
             raise AssertionError("No scripted response left for httpx call")
-        status, body, text = type(self).responses.pop(0)
-        return _FakeResponse(status, body, text)
+        scripted = type(self).responses.pop(0)
+        if len(scripted) == 3:
+            status, body, text = scripted
+            return _FakeResponse(status, body, text)
+        status, body, text, content_type = scripted
+        return _FakeResponse(status, body, text, content_type)
 
 
 @pytest.fixture
@@ -211,3 +216,83 @@ async def test_validate_key_reports_model_count(fake_httpx, fake_settings):
 def test_provider_init_validates_product():
     with pytest.raises(ValueError):
         OpenCodeProvider(product="bogus")
+
+
+@pytest.mark.asyncio
+async def test_query_sends_stream_false(fake_httpx, fake_settings):
+    fake_httpx.responses.append((200, {"choices": [{"message": {"content": "ok"}}]}, ""))
+
+    provider = OpenCodeProvider(product="zen")
+    await provider.query("opencode-zen:glm-5.1", [{"role": "user", "content": "hi"}])
+
+    body = fake_httpx.instances[0].kwargs["json"]
+    assert body["stream"] is False
+
+
+@pytest.mark.asyncio
+async def test_query_rejects_non_chat_completions_model(fake_httpx, fake_settings):
+    """Embed/audio/transcribe models must be rejected at query() time, not
+    surfaced as a confusing upstream 4xx."""
+    provider = OpenCodeProvider(product="zen")
+    result = await provider.query(
+        "opencode-zen:text-embedding-3-small",
+        [{"role": "user", "content": "hi"}],
+    )
+    assert result["error"] is True
+    assert "/v1/chat/completions" in result["error_message"]
+    assert fake_httpx.instances == [], "Should not have made an HTTP call"
+
+
+@pytest.mark.asyncio
+async def test_query_retries_on_rate_limit_then_succeeds(fake_httpx, fake_settings, monkeypatch):
+    """429 responses should be retried up to MAX_RETRIES with exponential backoff."""
+    sleeps: list[float] = []
+
+    async def fake_sleep(s):
+        sleeps.append(s)
+
+    monkeypatch.setattr("backend.providers.opencode.asyncio.sleep", fake_sleep)
+
+    fake_httpx.responses.append((429, {}, "rate limited"))
+    fake_httpx.responses.append((200, {"choices": [{"message": {"content": "ok"}}]}, ""))
+
+    provider = OpenCodeProvider(product="zen")
+    result = await provider.query("opencode-zen:glm-5.1", [{"role": "user", "content": "hi"}])
+
+    assert result["error"] is False
+    assert result["content"] == "ok"
+    assert len(fake_httpx.instances) == 2
+    assert sleeps == [1.0]
+
+
+@pytest.mark.asyncio
+async def test_query_gives_up_after_max_retries_on_429(fake_httpx, fake_settings, monkeypatch):
+    async def fake_sleep(s):
+        return None
+    monkeypatch.setattr("backend.providers.opencode.asyncio.sleep", fake_sleep)
+    fake_httpx.responses.append((429, {}, "rate limited"))
+    fake_httpx.responses.append((429, {}, "rate limited"))
+
+    provider = OpenCodeProvider(product="zen")
+    result = await provider.query("opencode-zen:glm-5.1", [{"role": "user", "content": "hi"}])
+
+    assert result["error"] is True
+    assert "429" in result["error_message"]
+
+
+@pytest.mark.asyncio
+async def test_query_rejects_non_json_content_type(fake_httpx, fake_settings):
+    """If the gateway defaults to streaming, we should fail fast with a clear
+    error rather than crashing on JSON parsing."""
+    fake_httpx.responses.append((
+        200,
+        {},
+        "data: {}\n\n",
+        "text/event-stream",
+    ))
+
+    provider = OpenCodeProvider(product="zen")
+    result = await provider.query("opencode-zen:glm-5.1", [{"role": "user", "content": "hi"}])
+
+    assert result["error"] is True
+    assert "content-type" in result["error_message"].lower() or "stream" in result["error_message"].lower()

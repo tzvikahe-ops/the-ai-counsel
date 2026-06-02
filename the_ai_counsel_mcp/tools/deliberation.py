@@ -9,83 +9,9 @@ from ..stream_buffer import buffer_stage1, buffer_stage2, buffer_stage3, buffer_
 
 
 def _combine_cost_report(*stage_results: dict) -> dict:
-    calls = []
-    for stage in stage_results:
-        for key in ("results", "rankings"):
-            for item in stage.get(key, []) if isinstance(stage, dict) else []:
-                if item.get("cost"):
-                    calls.append(item["cost"])
-        if isinstance(stage, dict) and stage.get("cost"):
-            calls.append(stage["cost"])
+    from backend.costs import summarize_buffered_stages
 
-    by_model = {}
-    total_cost = 0.0
-    input_tokens = 0
-    output_tokens = 0
-    total_tokens = 0
-    known = 0
-    unknown = 0
-    estimates = 0
-    free = 0
-    for call in calls:
-        model = call.get("model", "unknown")
-        row = by_model.setdefault(model, {
-            "name": model,
-            "calls": 0,
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "total_tokens": 0,
-            "total_cost": 0.0,
-            "known_cost_calls": 0,
-            "unknown_cost_calls": 0,
-            "estimated_calls": 0,
-            "free_calls": 0,
-        })
-        row["calls"] += 1
-        in_tokens = call.get("input_tokens") if isinstance(call.get("input_tokens"), int) else 0
-        out_tokens = call.get("output_tokens") if isinstance(call.get("output_tokens"), int) else 0
-        tokens = call.get("total_tokens") if isinstance(call.get("total_tokens"), int) else 0
-        row["input_tokens"] += in_tokens
-        row["output_tokens"] += out_tokens
-        row["total_tokens"] += tokens
-        input_tokens += in_tokens
-        output_tokens += out_tokens
-        total_tokens += tokens
-        if isinstance(call.get("total_cost"), (int, float)):
-            row["total_cost"] += float(call["total_cost"])
-            total_cost += float(call["total_cost"])
-            row["known_cost_calls"] += 1
-            known += 1
-        else:
-            row["unknown_cost_calls"] += 1
-            unknown += 1
-        if call.get("is_estimate"):
-            row["estimated_calls"] += 1
-            estimates += 1
-        if call.get("cost_status") == "free":
-            row["free_calls"] += 1
-            free += 1
-
-    rows = list(by_model.values())
-    for row in rows:
-        row["total_cost"] = round(row["total_cost"], 8)
-
-    return {
-        "currency": "USD",
-        "total_cost": round(total_cost, 8),
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "total_tokens": total_tokens,
-        "total_calls": len(calls),
-        "known_cost_calls": known,
-        "unknown_cost_calls": unknown,
-        "estimated_calls": estimates,
-        "free_calls": free,
-        "has_unknown_costs": unknown > 0,
-        "has_estimates": estimates > 0,
-        "by_model": sorted(rows, key=lambda r: r["total_cost"], reverse=True),
-        "calls": calls,
-    }
+    return summarize_buffered_stages(*stage_results)
 
 
 def register(server, base_url: str) -> None:

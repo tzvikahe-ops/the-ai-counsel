@@ -258,9 +258,10 @@ Every council, iterative debate, and advisor run should carry:
 
 `backend/costs.py` is the single attribution path. It normalizes token usage from OpenAI-compatible, Anthropic, Google, and Ollama response formats, then prices calls in this order:
 1. Provider-reported cost, currently OpenRouter `usage.cost` / `usage.total_cost`.
-2. Known-free rules: `ollama:*`, `nvidia:*`, unprefixed or prefixed OpenRouter models ending in `:free`, and custom endpoints whose configured name/URL/model text contains OpenCode markers.
-3. Cached pricing catalog estimate from `LLM_COUNCIL_PRICING_SOURCE_URL` (default `https://ai-model-pricing.com/api/v1/pricing.json`), falling back to `LLM_COUNCIL_LITELLM_PRICING_URL` (default LiteLLM `model_prices_and_context_window.json`).
-4. Unknown cost with token usage preserved when pricing is unavailable.
+2. Known-free rules: `ollama:*`, `nvidia:*`, unprefixed or prefixed OpenRouter models ending in `:free`, the hardcoded `opencode-zen:*` set (any model whose name ends in `-free`, plus an explicit list), and custom endpoints whose `endpoint_url` contains `opencode.ai` (the official host). Note: a custom endpoint whose *name* (but not URL) contains "opencode" is NOT auto-free — it falls through to the catalog path with a `cost_status` of `estimated`.
+3. OpenCode hardcoded pricing table (`_OPENCODE_PRICING` in `costs.py`) for paid OpenCode Go and Zen models. `pricing_source` is `table:opencode`; `cost_status` is `estimated`; Go entries are flagged with a `note` explaining the subscription model.
+4. Cached pricing catalog estimate from `LLM_COUNCIL_PRICING_SOURCE_URL` (default `https://ai-model-pricing.com/api/v1/pricing.json`), falling back to `LLM_COUNCIL_LITELLM_PRICING_URL` (default LiteLLM `model_prices_and_context_window.json`). Provider-specific `source_url` overrides in `_PROVIDER_PRICING_URLS` win over the catalog's `entry.source_url` for direct providers (openai/anthropic/google/groq/mistral/deepseek/nvidia/openrouter) so the displayed link points at the vendor's own pricing page.
+5. Unknown cost with token usage preserved when pricing is unavailable.
 
 Catalog data is cached at `data/model_pricing_cache.json`; TTL is `LLM_COUNCIL_PRICING_CACHE_TTL_SECONDS` (default `86400`). Custom endpoints are only zero-cost when known-free; otherwise they use upstream model estimates when a catalog match exists and mark the cost as estimated.
 
@@ -305,7 +306,7 @@ curl https://your-endpoint.com/v1/models -H "Authorization: Bearer $API_KEY"
 **UI Sections** (sidebar navigation):
 1. **LLM API Keys**: OpenRouter, Groq, Ollama, Direct providers, Custom endpoint
 2. **Council Config**: **Council-only** provider toggles (Remote/Local filters), member/chairman model selection, temperature controls, "I'm Feeling Lucky" randomizer. Toggles do **not** restrict Advisor model pickers.
-3. **System Prompts**: Stage 1 / Stage 2 / Stage 3 are user-editable and persisted in `settings.json` (fields `stage1_prompt` / `stage2_prompt` / `stage3_prompt`, updated via `PUT /api/settings`), each with reset-to-default. The Title and Query prompts (`TITLE_PROMPT_DEFAULT` / query-generation prompt in `backend/prompts.py`) are referenced internally by `generate_conversation_title` and `generate_search_query` and are not yet wired through `PUT /api/settings`; `frontend/src/components/Settings.jsx` has a `title_prompt` field in local state but no persistence path. Fix this end-to-end before claiming five customizable prompt slots.
+3. **System Prompts**: Stage 1 / Stage 2 / Stage 3 / Title / Search Query are user-editable and persisted in `settings.json` (fields `stage1_prompt` / `stage2_prompt` / `stage3_prompt` / `title_prompt` / `query_prompt`, all five updated via `PUT /api/settings`), each with reset-to-default. The Title and Query prompts (`TITLE_PROMPT_DEFAULT` / query-generation prompt in `backend/prompts.py`) are used internally by `generate_conversation_title` and `generate_search_query`.
 4. **Search Providers**: DuckDuckGo, Tavily, Brave, Serper, TinyFish + Jina full content settings
 5. **Backup & Reset**: Import/Export config, reset to defaults
 

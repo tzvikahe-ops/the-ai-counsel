@@ -59,7 +59,28 @@ The MCP server streams the request through all three stages against the Council 
 
 **What your AI presents to you:**
 
-The AI surfaces the `chairman_answer` as the primary response and may offer to show you individual model responses or rankings if you ask.
+The AI surfaces the `chairman_answer` as the primary response and may offer to show you individual model responses or rankings if you ask. The top-level `cost_report` object tells you the run's total cost and per-model breakdown — surface it if the user is watching spend.
+
+```json
+"cost_report": {
+  "currency": "USD",
+  "total_cost": 0.002341,
+  "input_tokens": 1842,
+  "output_tokens": 671,
+  "total_tokens": 2513,
+  "total_calls": 7,
+  "known_cost_calls": 7,
+  "unknown_cost_calls": 0,
+  "free_calls": 4,
+  "has_unknown_costs": false,
+  "has_estimates": true,
+  "by_model": [
+    {"name": "openai:gpt-4.1", "calls": 2, "total_cost": 0.0018, "estimated_calls": 0},
+    {"name": "anthropic:claude-sonnet-4-6", "calls": 2, "total_cost": 0.0005, "estimated_calls": 0},
+    {"name": "opencode-zen:deepseek-v4-flash-free", "calls": 2, "total_cost": 0.0, "free_calls": 2}
+  ]
+}
+```
 
 ---
 

@@ -29,6 +29,10 @@ The REST API skill exists as a **fallback reference**, not the default path for 
 
 Server names vary by host: `the-ai-counsel`, `ai-counsel`, `user-the-ai-counsel`.
 
+**Model ID prefixes:** `openrouter`, `ollama`, `groq`, `openai`, `anthropic`, `google`, `mistral`, `deepseek`, `nvidia`, `custom`, `opencode-zen`, `opencode-go`. `opencode-zen:*-free` is zero-cost; `opencode-go:*` is paid (subscription; the published per-1M price is shown as an estimate).
+
+**Result shape:** deliberation, debate, advisor, and `model_chat` results all include a top-level `cost_report` object (`total_cost`, `total_tokens`, `by_model`, `known_cost_calls`, `unknown_cost_calls`, `free_calls`, `has_unknown_costs`, `has_estimates`). Use it to surface spend to the user — do not re-implement bucketing.
+
 ---
 
 ## Action selection guide

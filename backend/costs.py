@@ -43,6 +43,7 @@ _SUPPORTED_PROVIDER_PREFIXES = {
     "opencode-zen",
     "opencode-go",
 }
+_OPENCODE_PROVIDERS = {"opencode-zen", "opencode-go"}
 
 # OpenCode Zen / Go published per-1M-token prices. Keys are the native model id
 # (the suffix after the provider prefix). OpenCode Go is subscription-based;
@@ -219,7 +220,7 @@ def _is_zero_cost_model(model_id: str, provider: str) -> Tuple[bool, Optional[st
     if provider == "openrouter" and native_id.endswith(":free"):
         return True, "free:openrouter"
 
-    if provider in ("opencode-zen", "opencode-go"):
+    if provider in _OPENCODE_PROVIDERS:
         if native_id in _OPENCODE_FREE_MODELS.get(provider, set()):
             return True, "free:opencode"
         if native_id.endswith("-free"):
@@ -230,13 +231,10 @@ def _is_zero_cost_model(model_id: str, provider: str) -> Tuple[bool, Optional[st
             from .settings import get_settings
 
             settings = get_settings()
-            endpoint_name = (settings.custom_endpoint_name or "").lower()
             endpoint_url = (settings.custom_endpoint_url or "").lower()
         except Exception:
-            endpoint_name = ""
             endpoint_url = ""
-        custom_text = f"{endpoint_name} {endpoint_url} {native_id} {normalized}"
-        if any(marker in custom_text for marker in ("opencode", "open code", "opencode zen", "opencode go")):
+        if "opencode.ai" in endpoint_url:
             return True, "free:opencode"
 
     return False, None
@@ -308,11 +306,13 @@ async def _get_pricing_catalog() -> Optional[Dict[str, Any]]:
                 wrapped = {"fetched_at": time.time(), "source_url": url, "data": data}
                 _write_disk_catalog(url, data)
                 _catalog_cache = wrapped
+                _catalog_failure_until = 0.0
                 return _catalog_cache
             except Exception:
                 continue
 
-    _catalog_failure_until = time.time() + PRICING_FAILURE_TTL_SECONDS
+        _catalog_failure_until = time.time() + PRICING_FAILURE_TTL_SECONDS
+
     return None
 
 
@@ -381,7 +381,7 @@ def _choose_ai_pricing_entry(
         price = _to_float(entry.get("input_per_1m_tokens")) or 0.0
         return (long_context_match, tier_score, -price)
 
-    return sorted(candidates, key=score, reverse=True)[0]
+    return max(candidates, key=score)
 
 
 _PROVIDER_PRICING_URLS: Dict[str, str] = {
@@ -427,6 +427,26 @@ def _resolve_ai_model_pricing(
             "confidence": "medium" if provider == "custom" else "high",
         }
     return None
+
+
+def _calculate_token_costs(
+    input_tokens: Optional[int],
+    output_tokens: Optional[int],
+    cached_input_tokens: int,
+    reasoning_tokens: int,
+    input_price: float,
+    output_price: float,
+    cached_price: Optional[float],
+) -> Tuple[float, float, float, float]:
+    billable_input = max((input_tokens or 0) - cached_input_tokens, 0)
+    input_cost = (billable_input * input_price) / 1_000_000
+    cached_cost = 0.0
+    if cached_input_tokens and cached_price is not None:
+        cached_cost = (cached_input_tokens * cached_price) / 1_000_000
+    billable_output = (output_tokens or 0) + reasoning_tokens
+    output_cost = (billable_output * output_price) / 1_000_000
+    total_cost = input_cost + cached_cost + output_cost
+    return input_cost, cached_cost, output_cost, total_cost
 
 
 def _litellm_candidate_keys(provider: str, native_id: str) -> List[str]:
@@ -521,15 +541,16 @@ def _build_opencode_call_cost(
             "notes": ["OpenCode pricing entry was incomplete for this model."],
         }
 
-    billable_input = max((input_tokens or 0) - cached_input_tokens, 0)
-    input_cost = (billable_input * input_price) / 1_000_000
-    cached_cost = 0.0
-    if cached_input_tokens and cached_price is not None:
-        cached_cost = (cached_input_tokens * cached_price) / 1_000_000
     reasoning_tokens = base.get("reasoning_tokens") or 0
-    billable_output = (output_tokens or 0) + reasoning_tokens
-    output_cost = (billable_output * output_price) / 1_000_000
-    total_cost = input_cost + cached_cost + output_cost
+    input_cost, cached_cost, output_cost, total_cost = _calculate_token_costs(
+        input_tokens,
+        output_tokens,
+        cached_input_tokens,
+        reasoning_tokens,
+        input_price,
+        output_price,
+        cached_price,
+    )
 
     note = "OpenCode Go is subscription-based; the per-1M price is shown for reference." if provider == "opencode-go" else None
     return {
@@ -609,7 +630,7 @@ async def estimate_call_cost(model_id: str, usage: Dict[str, Any]) -> Dict[str, 
             "is_estimate": False,
         }
 
-    if provider in ("opencode-zen", "opencode-go"):
+    if provider in _OPENCODE_PROVIDERS:
         return _build_opencode_call_cost(base, provider, native_id, input_tokens, output_tokens, cached_input_tokens)
 
     if input_tokens is None and output_tokens is None and total_tokens is None:
@@ -638,15 +659,16 @@ async def estimate_call_cost(model_id: str, usage: Dict[str, Any]) -> Dict[str, 
             "notes": ["Pricing entry was incomplete for this model."],
         }
 
-    billable_input = max((input_tokens or 0) - cached_input_tokens, 0)
-    input_cost = (billable_input * input_price) / 1_000_000
-    cached_cost = 0.0
-    if cached_input_tokens and cached_price is not None:
-        cached_cost = (cached_input_tokens * cached_price) / 1_000_000
     reasoning_tokens = normalized_usage.get("reasoning_tokens") or 0
-    billable_output = (output_tokens or 0) + reasoning_tokens
-    output_cost = (billable_output * output_price) / 1_000_000
-    total_cost = input_cost + cached_cost + output_cost
+    input_cost, cached_cost, output_cost, total_cost = _calculate_token_costs(
+        input_tokens,
+        output_tokens,
+        cached_input_tokens,
+        reasoning_tokens,
+        input_price,
+        output_price,
+        cached_price,
+    )
 
     is_zero = input_price == 0 and output_price == 0 and (cached_price in (None, 0))
     return {
@@ -670,11 +692,9 @@ async def attach_cost(model_id: str, response: Dict[str, Any]) -> Dict[str, Any]
     """Attach normalized usage and cost data to a provider response."""
     if not isinstance(response, dict):
         return response
+    provider = provider_for_model(model_id)
     raw_usage = response.get("usage")
-    if raw_usage is None:
-        response["usage"] = normalize_usage({}, provider_for_model(model_id))
-    else:
-        response["usage"] = normalize_usage(raw_usage, provider_for_model(model_id))
+    response["usage"] = normalize_usage({} if raw_usage is None else raw_usage, provider)
     response["cost"] = await estimate_call_cost(model_id, response["usage"])
     return response
 
@@ -803,6 +823,65 @@ def _summarize_calls(calls: List[Dict[str, Any]]) -> Dict[str, Any]:
         ),
         "calls": calls,
     }
+
+
+def summarize_buffered_stages(*stage_results: Any) -> Dict[str, Any]:
+    """Build a cost report from arbitrary buffered stage dicts.
+
+    Accepts the shapes produced by ``the_ai_counsel_mcp.stream_buffer``:
+
+    - Stage 1: ``{"results": [{"model", "cost", ...}, ...]}``
+    - Stage 2: ``{"rankings": [{"model", "cost", ...}, ...]}``
+    - Stage 3: ``{"chairman_model", "cost": {...}}`` (single call, top-level)
+    - Iterative debate: ``{"rounds": [{"responses": [{"cost", ...}, ...]}, ...],
+      "stage4": {"cost", ...}}``
+    - Advisor debate: ``{"rounds": {round_num: {"responses": [{"cost", ...}, ...]}},
+      "verdict": {"cost", ...}, "tiebreaker": {"cost", ...}}``
+
+    The same shape is returned as ``_summarize_calls`` (the canonical
+    backend cost report). Re-implementations of this logic in the MCP
+    layer should call this helper instead of duplicating the bucketing.
+    """
+    calls: List[Dict[str, Any]] = []
+
+    def _collect_cost_dict(cost: Any) -> None:
+        if isinstance(cost, dict):
+            calls.append(cost)
+
+    def _walk_item(item: Any) -> None:
+        if not isinstance(item, dict):
+            return
+        if "cost" in item and isinstance(item["cost"], dict):
+            _collect_cost_dict(item["cost"])
+        for key in ("results", "rankings", "responses"):
+            sub = item.get(key)
+            if isinstance(sub, list):
+                for child in sub:
+                    _walk_item(child)
+            elif isinstance(sub, dict):
+                if all(isinstance(v, dict) and "round" in v for v in sub.values()):
+                    for v in sub.values():
+                        _walk_item(v)
+                else:
+                    _walk_item(sub)
+        rounds = item.get("rounds")
+        if isinstance(rounds, list):
+            for r in rounds:
+                _walk_item(r)
+        elif isinstance(rounds, dict):
+            for v in rounds.values():
+                _walk_item(v)
+        for key in ("verdict", "tiebreaker", "stage4", "synthesis"):
+            sub = item.get(key)
+            if isinstance(sub, dict):
+                _walk_item(sub)
+
+    for stage in stage_results:
+        if not isinstance(stage, dict):
+            continue
+        _walk_item(stage)
+
+    return _summarize_calls(calls)
 
 
 def build_council_cost_report(

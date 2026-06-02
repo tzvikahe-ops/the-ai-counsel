@@ -17,6 +17,7 @@ Both products share the same OpenCode auth — one key unlocks Zen balance
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, Dict, List
 
@@ -26,6 +27,9 @@ from ..settings import get_settings
 from .base import LLMProvider
 
 logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 2
+INITIAL_RETRY_DELAY = 1.0
 
 
 class OpenCodeProvider(LLMProvider):
@@ -112,42 +116,90 @@ class OpenCodeProvider(LLMProvider):
         model = self._strip_prefix(model_id)
         if not model:
             return {"error": True, "error_message": f"Missing model id after {self.config['prefix']}: prefix"}
-
-        try:
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
+        if not self._supports_chat_completions(model):
+            return {
+                "error": True,
+                "error_message": (
+                    f"{model} is not a /v1/chat/completions model on {self.name}. "
+                    f"v1 only supports models listed in Settings → Council Config."
+                ),
             }
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.post(
-                    f"{self.config['base_url']}/chat/completions",
-                    headers=headers,
-                    json={
-                        "model": model,
-                        "messages": messages,
-                        "temperature": temperature,
-                    },
-                )
 
-            if response.status_code != 200:
-                return {
-                    "error": True,
-                    "error_message": f"{self.name} API error: {response.status_code} - {response.text[:300]}",
-                }
-
-            data = response.json()
+        last_error: Dict[str, str] = {}
+        for attempt in range(MAX_RETRIES):
             try:
-                content = data["choices"][0]["message"]["content"]
-            except (KeyError, IndexError, TypeError) as e:
-                return {"error": True, "error_message": f"Unexpected {self.name} response shape: {e}"}
-            return {"content": content, "usage": data.get("usage"), "error": False}
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}",
+                }
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    response = await client.post(
+                        f"{self.config['base_url']}/chat/completions",
+                        headers=headers,
+                        json={
+                            "model": model,
+                            "messages": messages,
+                            "temperature": temperature,
+                            "stream": False,
+                        },
+                    )
 
-        except httpx.TimeoutException:
+                if response.status_code == 429:
+                    retry_delay = INITIAL_RETRY_DELAY * (2 ** attempt)
+                    logger.info(
+                        "Rate limited on %s, retrying in %.1fs (attempt %d/%d)",
+                        model, retry_delay, attempt + 1, MAX_RETRIES,
+                    )
+                    last_error = {"code": "rate_limited"}
+                    if attempt < MAX_RETRIES - 1:
+                        await asyncio.sleep(retry_delay)
+                        continue
+
+                if response.status_code != 200:
+                    return {
+                        "error": True,
+                        "error_message": f"{self.name} API error: {response.status_code} - {response.text[:300]}",
+                    }
+
+                content_type = response.headers.get("content-type", "")
+                if not content_type.startswith("application/json"):
+                    return {
+                        "error": True,
+                        "error_message": (
+                            f"Unexpected {self.name} response content-type: {content_type!r}. "
+                            f"Expected application/json (stream:false)."
+                        ),
+                    }
+
+                data = response.json()
+                try:
+                    content = data["choices"][0]["message"]["content"]
+                except (KeyError, IndexError, TypeError) as e:
+                    return {"error": True, "error_message": f"Unexpected {self.name} response shape: {e}"}
+                return {"content": content, "usage": data.get("usage"), "error": False}
+
+            except httpx.TimeoutException:
+                last_error = {"code": "timeout"}
+                if attempt < MAX_RETRIES - 1:
+                    await asyncio.sleep(INITIAL_RETRY_DELAY * (2 ** attempt))
+                    continue
+            except httpx.RemoteProtocolError as e:
+                logger.info("Remote protocol error on %s: %s. Retrying...", model, e)
+                last_error = {"code": "protocol_error"}
+                if attempt < MAX_RETRIES - 1:
+                    await asyncio.sleep(INITIAL_RETRY_DELAY * (2 ** attempt))
+                    continue
+            except httpx.ConnectError:
+                return {"error": True, "error_message": f"Connection failed — could not reach {self.name}"}
+
+        code = last_error.get("code", "unknown")
+        if code == "rate_limited":
+            return {"error": True, "error_message": f"{self.name} rate-limited after {MAX_RETRIES} attempts"}
+        if code == "timeout":
             return {"error": True, "error_message": f"Request timed out after {int(timeout)}s — {self.name} did not respond"}
-        except httpx.ConnectError:
-            return {"error": True, "error_message": f"Connection failed — could not reach {self.name}"}
-        except Exception as e:
-            return {"error": True, "error_message": str(e) or repr(e)}
+        if code == "protocol_error":
+            return {"error": True, "error_message": f"{self.name} closed connection mid-response after {MAX_RETRIES} attempts"}
+        return {"error": True, "error_message": f"{self.name} request failed after {MAX_RETRIES} attempts"}
 
     async def get_models(self) -> List[Dict[str, Any]]:
         api_key = self._get_api_key()

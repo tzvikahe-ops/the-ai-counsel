@@ -508,12 +508,19 @@ async def stage3_synthesize_final(
 
     except Exception as e:
         logger.error(f"Unexpected error in Stage 3 synthesis: {e}")
-        return {
+        error_response = {
             "model": chairman_model,
             "response": f"Error: Unable to generate final synthesis due to unexpected error.",
             "error": True,
-            "error_message": str(e)
+            "error_message": str(e),
+            "usage": None,
+            "cost": None,
         }
+        try:
+            await attach_cost(chairman_model, error_response)
+        except Exception as attach_err:
+            logger.warning("Failed to attach cost on Stage 3 error: %s", attach_err)
+        return error_response
 
 
 def parse_ranking_from_text(

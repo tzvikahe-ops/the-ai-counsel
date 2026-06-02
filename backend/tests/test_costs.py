@@ -55,10 +55,10 @@ async def test_ollama_usage_reports_zero_cost():
 
 
 @pytest.mark.asyncio
-async def test_custom_opencode_endpoint_reports_zero(monkeypatch):
+async def test_custom_opencode_endpoint_with_official_host_reports_zero(monkeypatch):
     class Settings:
-        custom_endpoint_name = "OpenCode Go"
-        custom_endpoint_url = "https://example.test/v1"
+        custom_endpoint_name = "My OpenCode Mirror"
+        custom_endpoint_url = "https://opencode.ai/v1"
 
     from backend import settings as settings_module
 
@@ -72,6 +72,22 @@ async def test_custom_opencode_endpoint_reports_zero(monkeypatch):
     assert cost["total_cost"] == 0.0
     assert cost["cost_status"] == "free"
     assert cost["pricing_source"] == "free:opencode"
+
+
+@pytest.mark.asyncio
+async def test_custom_endpoint_with_opencode_in_name_is_not_free(monkeypatch, fake_settings):
+    """Regression: substring-matching on the endpoint name previously marked
+    paid custom models as $0 free whenever the name mentioned OpenCode."""
+    fake_settings.custom_endpoint_name = "OpenCode Go Proxy"
+    fake_settings.custom_endpoint_url = "https://my-proxy.example.com/v1"
+
+    cost = await costs.estimate_call_cost(
+        "custom:claude-opus-paid-model",
+        {"prompt_tokens": 100, "completion_tokens": 50},
+    )
+
+    assert cost["pricing_source"] != "free:opencode"
+    assert cost["cost_status"] != "free"
 
 
 @pytest.mark.asyncio
@@ -231,53 +247,72 @@ async def test_opencode_free_suffix_detection():
 
 
 @pytest.mark.asyncio
-async def test_opencode_reasoning_tokens_billed(monkeypatch):
+@pytest.mark.parametrize(
+    (
+        "provider",
+        "usage",
+        "pricing",
+        "expected_reasoning_tokens",
+        "expected_input_cost",
+        "expected_output_cost",
+        "expected_total_cost",
+    ),
+    [
+        (
+            "opencode-zen",
+            {
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "completion_tokens_details": {"reasoning_tokens": 200},
+            },
+            {"input": 1.00, "output": 4.00, "cached": 0.10},
+            200,
+            0.0001,
+            0.001,
+            0.0011,
+        ),
+        (
+            "opencode-go",
+            {
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "reasoning_tokens": 67,
+            },
+            {"input": 0.14, "output": 0.28, "cached": 0.0028},
+            67,
+            0.000014,
+            0.00003276,
+            0.00004676,
+        ),
+    ],
+)
+async def test_opencode_reasoning_tokens_billed(
+    monkeypatch,
+    provider,
+    usage,
+    pricing,
+    expected_reasoning_tokens,
+    expected_input_cost,
+    expected_output_cost,
+    expected_total_cost,
+):
     """OpenCode call cost should include reasoning_tokens in the billable output.
 
     Accepts both the OpenAI-nested format (completion_tokens_details.reasoning_tokens)
     and a flat reasoning_tokens key (used by OpenCode Go providers).
     """
-    monkeypatch.setattr(costs, "_OPENCODE_PRICING", {
-        "opencode-zen": {
-            "test-model": {"input": 1.00, "output": 4.00, "cached": 0.10},
-        },
-        "opencode-go": {},
-    })
+    pricing_table = {"opencode-zen": {}, "opencode-go": {}}
+    pricing_table[provider]["test-model"] = pricing
+    monkeypatch.setattr(costs, "_OPENCODE_PRICING", pricing_table)
 
     cost = await costs.estimate_call_cost(
-        "opencode-zen:test-model",
-        {
-            "prompt_tokens": 100,
-            "completion_tokens": 50,
-            "completion_tokens_details": {"reasoning_tokens": 200},
-        },
+        f"{provider}:test-model",
+        usage,
     )
-    assert cost["reasoning_tokens"] == 200
-    # billable_output = 50 + 200 = 250 → 250 × $4.00/M = $0.001000
-    assert cost["output_cost"] == pytest.approx(0.001, rel=1e-6)
-    # input = 100 × $1.00/M = $0.000100
-    assert cost["input_cost"] == pytest.approx(0.0001, rel=1e-6)
-    # total = $0.000100 + $0.001 = $0.0011
-    assert cost["total_cost"] == pytest.approx(0.0011, rel=1e-6)
-
-    # Flat reasoning_tokens key (OpenCode Go style)
-    monkeypatch.setattr(costs, "_OPENCODE_PRICING", {
-        "opencode-zen": {},
-        "opencode-go": {
-            "test-model": {"input": 0.14, "output": 0.28, "cached": 0.0028},
-        },
-    })
-    cost2 = await costs.estimate_call_cost(
-        "opencode-go:test-model",
-        {
-            "prompt_tokens": 100,
-            "completion_tokens": 50,
-            "reasoning_tokens": 67,
-        },
-    )
-    assert cost2["reasoning_tokens"] == 67
-    # billable_output = 50 + 67 = 117 → 117 × $0.28/M = $0.00003276
-    assert cost2["output_cost"] == pytest.approx(0.00003276, rel=1e-6)
+    assert cost["reasoning_tokens"] == expected_reasoning_tokens
+    assert cost["input_cost"] == pytest.approx(expected_input_cost, rel=1e-6)
+    assert cost["output_cost"] == pytest.approx(expected_output_cost, rel=1e-6)
+    assert cost["total_cost"] == pytest.approx(expected_total_cost, rel=1e-6)
 
 
 @pytest.mark.asyncio
@@ -342,3 +377,149 @@ async def test_catalog_source_url_overridden_by_provider(monkeypatch):
     )
     assert openrouter_resolved is not None
     assert openrouter_resolved["source_url"] == "https://openrouter.ai/models"
+
+
+def test_summarize_buffered_stages_handles_all_shapes():
+    stage1 = {
+        "results": [
+            {
+                "model": "openai:gpt-5.4-mini",
+                "response": "hello",
+                "status": "ok",
+                "cost": {
+                    "model": "openai:gpt-5.4-mini",
+                    "input_tokens": 100,
+                    "output_tokens": 50,
+                    "total_tokens": 150,
+                    "total_cost": 0.0001,
+                    "cost_status": "priced",
+                },
+            },
+        ],
+    }
+    stage2 = {
+        "rankings": [
+            {
+                "model": "openai:gpt-5.4-mini",
+                "ranking_text": "1. A",
+                "parsed_ranking": ["A"],
+                "status": "ok",
+                "cost": {
+                    "model": "openai:gpt-5.4-mini",
+                    "input_tokens": 200,
+                    "output_tokens": 80,
+                    "total_tokens": 280,
+                    "total_cost": 0.0002,
+                    "cost_status": "priced",
+                },
+            },
+        ],
+    }
+    stage3 = {
+        "chairman_model": "openai:gpt-5.4-nano",
+        "synthesis": "ok",
+        "status": "ok",
+        "cost": {
+            "model": "openai:gpt-5.4-nano",
+            "input_tokens": 50,
+            "output_tokens": 20,
+            "total_tokens": 70,
+            "total_cost": 0.00005,
+            "cost_status": "priced",
+        },
+    }
+    debate = {
+        "rounds": [
+            {
+                "responses": [
+                    {
+                        "model": "openai:gpt-5.4-mini",
+                        "cost": {
+                            "model": "openai:gpt-5.4-mini",
+                            "input_tokens": 30,
+                            "output_tokens": 10,
+                            "total_tokens": 40,
+                            "total_cost": 0.00003,
+                            "cost_status": "priced",
+                        },
+                    },
+                ],
+            },
+        ],
+        "verdict": {
+            "model": "openai:gpt-5.4-nano",
+            "cost": {
+                "model": "openai:gpt-5.4-nano",
+                "input_tokens": 20,
+                "output_tokens": 5,
+                "total_tokens": 25,
+                "total_cost": 0.00002,
+                "cost_status": "priced",
+            },
+        },
+    }
+
+    report = costs.summarize_buffered_stages(stage1, stage2, stage3, debate)
+    assert report["total_calls"] == 5
+    assert report["known_cost_calls"] == 5
+    assert report["input_tokens"] == 400
+    assert report["output_tokens"] == 165
+    assert report["total_tokens"] == 565
+    assert abs(report["total_cost"] - 0.00040) < 1e-9
+    by_model = {row["name"]: row for row in report["by_model"]}
+    assert "openai:gpt-5.4-mini" in by_model
+    assert "openai:gpt-5.4-nano" in by_model
+
+
+def test_summarize_buffered_stages_ignores_malformed_stages():
+    report = costs.summarize_buffered_stages(
+        None,
+        "garbage",
+        {"results": "not-a-list"},
+        {"results": [{"model": "x"}]},
+        {"rankings": [{"cost": "not-a-dict"}]},
+        {"results": None, "rankings": None, "cost": "not-a-dict"},
+    )
+    assert report["total_calls"] == 0
+    assert report["total_cost"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_stage3_chairman_error_attaches_cost(monkeypatch):
+    """R6: outer-except in stage3_synthesize_final must call attach_cost so
+    chairman errors still appear in the cost report (with cost_status='unknown')."""
+    from backend import council
+
+    async def fake_query_model(model, messages, temperature=None, **kwargs):
+        raise RuntimeError("chairman timed out")
+
+    monkeypatch.setattr(council, "query_model", fake_query_model)
+    monkeypatch.setattr(council, "get_chairman_model", lambda: "openai:gpt-5.4-nano")
+    monkeypatch.setattr(council, "logger", type("L", (), {"error": lambda *a, **k: None, "warning": lambda *a, **k: None})())
+
+    captured = {}
+
+    async def fake_attach_cost(model, response):
+        captured["model"] = model
+        response["cost"] = {
+            "model": model,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0,
+            "total_cost": None,
+            "cost_status": "unknown",
+        }
+
+    monkeypatch.setattr(council, "attach_cost", fake_attach_cost)
+
+    result = await council.stage3_synthesize_final(
+        "user query",
+        [{"model": "openai:gpt-5.4-mini", "response": "ok", "error": False}],
+        [{"model": "openai:gpt-5.4-mini", "ranking_text": "1. A", "parsed_ranking": ["A"]}],
+        chairman_override="openai:gpt-5.4-nano",
+    )
+
+    assert result["error"] is True
+    assert captured.get("model") == "openai:gpt-5.4-nano"
+    assert result["cost"] is not None
+    assert result["cost"]["cost_status"] == "unknown"

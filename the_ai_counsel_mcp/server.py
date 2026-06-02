@@ -26,6 +26,11 @@ def create_server(
             "save_preset|delete_preset|set_default_preset), personas (list|get|update|reset), "
             "conversations (list|get|progress), providers (list_models|health|test|set_api_key|set_search), "
             "config_backup (export|import|reset). "
+            "Provider model IDs use a `provider:model` prefix. Supported prefixes include "
+            "openrouter, ollama, groq, openai, anthropic, google, mistral, deepseek, nvidia, "
+            "custom, opencode-zen, and opencode-go. "
+            "Deliberation, debate, advisor, and model_chat results include a top-level `cost_report` "
+            "(total_cost, total_tokens, by_model, known_cost_calls, unknown_cost_calls, free_calls). "
             "Prefer these MCP tools over curl. Full REST reference: skills/the-ai-counsel-api/SKILL.md."
         ),
         host=host,

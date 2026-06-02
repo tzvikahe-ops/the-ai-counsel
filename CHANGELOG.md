@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Custom endpoint OpenCode free-detection now requires the official host**: A user who names a custom endpoint "opencode" but points it elsewhere was being silently zero-cost. The free heuristic now matches `opencode.ai` substring inside `endpoint_url` only — never the configured name or model text. (1B from v0.8.0 review.)
+- **OpenCode provider request robustness**: `query()` now sends `stream: False`, asserts the response is `application/json` before parsing, retries 429/timeout/remote-protocol errors with exponential backoff (`MAX_RETRIES=2`, initial delay 1s), and rejects embed/audio/tts model IDs up-front with a clear error (no HTTP call). Matches openrouter/ollama retry behavior. (R2/R3/R4.)
+- **Pricing catalog failure-throttle is now race-free**: `_get_pricing_catalog` resets its failure timestamp on a successful refresh so a transient outage doesn't lock the cache for the full throttle window. The `_catalog_failure_until = 0.0` reset runs inside the catalog lock. (R1.)
+- **Stage 3 chairman errors are now cost-tracked**: The outer `except` branch in `stage3_synthesize_final` now calls `attach_cost`, so chairman failures appear in the run's `cost_report` with `cost_status: "unknown"` instead of vanishing from the spend summary. (R6.)
+- **MCP cost-aggregation is now shape-tolerant**: `the_ai_counsel_mcp.tools.deliberation._combine_cost_report` is now a thin wrapper around the new shared `backend.costs.summarize_buffered_stages` helper. The helper walks the four buffered stage shapes (council stage 1/2/3, iterative debate, advisor debate), `isinstance`-guards lists and dicts at every level, and shares a single bucketing implementation with the backend. (R5 + R7.)
+- **`_summarize_calls` math reuses same canonical path**: Replaces ~70 lines of MCP-side bucketing duplication with a call to the same `costs.summarize_buffered_stages` function used in unit tests.
+
 ## [0.8.0] - 2026-06-01
 
 ### Added
