@@ -19,9 +19,10 @@ def register(server: Any, base_url: str) -> None:
     """Register advisor_debate, advisor_settings, and personas tools."""
 
     @server.tool(description=(
-        "Run a multi-round advisor debate. Requires question + 2-4 persona_ids. "
-        "Optional: default_model, model_assignments, max_rounds (3-10), search_provider. "
-        "Results include usage/cost details and a cost_report."
+        "Run a named-persona advisor debate for decisions, risks, strategy, or tradeoffs. "
+        "Requires question + 2-4 persona_ids. Optional: default_model, "
+        "model_assignments, max_rounds (3-10), search_provider. Results include "
+        "usage/cost details, word-limit warnings, and a cost_report."
     ))
     async def advisor_debate(
         question: str,

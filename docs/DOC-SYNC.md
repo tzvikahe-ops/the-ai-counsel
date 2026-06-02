@@ -13,6 +13,9 @@ When bumping version, update **all three together** (see `AGENTS.md` → Version
 | File | What to update |
 |------|----------------|
 | `CHANGELOG.md` | `## [x.y.z]` or `## [Unreleased]` entries |
+| `pyproject.toml` | `[project] version` |
+| `frontend/package.json` | top-level `version` |
+| `frontend/package-lock.json` | root `version` and `packages[""].version` |
 | `frontend/src/components/Sidebar.jsx` | `sidebar-version` |
 | `skills/the-ai-counsel-api/SKILL.md` | YAML frontmatter `version:` |
 

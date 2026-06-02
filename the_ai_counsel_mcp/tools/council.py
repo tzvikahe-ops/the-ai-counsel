@@ -14,10 +14,10 @@ def register(server, base_url: str) -> None:
 
     @server.tool(description=(
         "Manage council configuration. action: 'get' (current config + presets), "
-        "'update' (members/chairman/temps/mode/prompts/provider toggles), "
+        "'update' (members/chairman/temps/mode/prompts/search/debate/provider toggles), "
         "'list_presets', 'save_preset', 'delete_preset', 'set_default_preset'. "
-        "For save_preset provide name + council_models; optional chairman_model, "
-        "preset_id (omit to create), is_default."
+        "save_preset requires preset_name + council_models; optional chairman_model, "
+        "preset_id, is_default."
     ))
     async def council_settings(
         action: str,
@@ -30,6 +30,13 @@ def register(server, base_url: str) -> None:
         stage1_prompt: str | None = None,
         stage2_prompt: str | None = None,
         stage3_prompt: str | None = None,
+        title_prompt: str | None = None,
+        query_prompt: str | None = None,
+        search_provider: str | None = None,
+        search_keyword_extraction: str | None = None,
+        search_result_count: int | None = None,
+        search_hybrid_mode: bool | None = None,
+        full_content_results: int | None = None,
         enabled_providers: dict[str, bool] | None = None,
         direct_provider_toggles: dict[str, bool] | None = None,
         preset_id: str | None = None,
@@ -59,10 +66,16 @@ def register(server, base_url: str) -> None:
                         "stage2_temperature": settings.get("stage2_temperature"),
                         "execution_mode": settings.get("execution_mode"),
                         "search_provider": settings.get("search_provider"),
+                        "search_keyword_extraction": settings.get("search_keyword_extraction"),
+                        "search_result_count": settings.get("search_result_count"),
+                        "search_hybrid_mode": settings.get("search_hybrid_mode"),
+                        "full_content_results": settings.get("full_content_results"),
                         "critique_mode": settings.get("critique_mode"),
                         "debate_rounds": settings.get("debate_rounds"),
                         "auto_converge": settings.get("auto_converge"),
                         "convergence_threshold": settings.get("convergence_threshold"),
+                        "title_prompt": settings.get("title_prompt"),
+                        "query_prompt": settings.get("query_prompt"),
                         "council_presets": settings.get("council_presets", []),
                     }
                     return json.dumps(config, indent=2)
@@ -122,6 +135,29 @@ def register(server, base_url: str) -> None:
                     updates["stage2_prompt"] = stage2_prompt
                 if stage3_prompt is not None:
                     updates["stage3_prompt"] = stage3_prompt
+                if title_prompt is not None:
+                    updates["title_prompt"] = title_prompt
+                if query_prompt is not None:
+                    updates["query_prompt"] = query_prompt
+                if search_provider is not None:
+                    valid_search_providers = ("duckduckgo", "tavily", "brave", "serper", "tinyfish")
+                    if search_provider not in valid_search_providers:
+                        return f"Error: search_provider must be one of: {', '.join(valid_search_providers)}."
+                    updates["search_provider"] = search_provider
+                if search_keyword_extraction is not None:
+                    if search_keyword_extraction not in ("direct", "yake", "llm"):
+                        return "Error: search_keyword_extraction must be direct, yake, or llm."
+                    updates["search_keyword_extraction"] = search_keyword_extraction
+                if search_result_count is not None:
+                    if not (5 <= search_result_count <= 15):
+                        return "Error: search_result_count must be between 5 and 15."
+                    updates["search_result_count"] = search_result_count
+                if search_hybrid_mode is not None:
+                    updates["search_hybrid_mode"] = search_hybrid_mode
+                if full_content_results is not None:
+                    if not (0 <= full_content_results <= 10):
+                        return "Error: full_content_results must be between 0 and 10."
+                    updates["full_content_results"] = full_content_results
                 if enabled_providers is not None:
                     updates["enabled_providers"] = enabled_providers
                 if direct_provider_toggles is not None:

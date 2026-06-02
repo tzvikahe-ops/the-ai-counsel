@@ -1358,6 +1358,8 @@ class UpdateSettingsRequest(BaseModel):
     """Request to update settings."""
     search_provider: Optional[str] = None
     search_keyword_extraction: Optional[str] = None
+    search_result_count: Optional[int] = None
+    search_hybrid_mode: Optional[bool] = None
     ollama_base_url: Optional[str] = None
     full_content_results: Optional[int] = None
 
@@ -1443,6 +1445,8 @@ async def get_app_settings():
     return {
         "search_provider": settings.search_provider,
         "search_keyword_extraction": settings.search_keyword_extraction,
+        "search_result_count": settings.search_result_count,
+        "search_hybrid_mode": settings.search_hybrid_mode,
         "ollama_base_url": settings.ollama_base_url,
         "full_content_results": settings.full_content_results,
 
@@ -1580,6 +1584,17 @@ async def update_app_settings(request: UpdateSettingsRequest):
                 detail="Invalid keyword extraction mode. Must be 'direct', 'yake', or 'llm'"
             )
         updates["search_keyword_extraction"] = request.search_keyword_extraction
+
+    if request.search_result_count is not None:
+        if request.search_result_count < 5 or request.search_result_count > 15:
+            raise HTTPException(
+                status_code=400,
+                detail="search_result_count must be between 5 and 15"
+            )
+        updates["search_result_count"] = request.search_result_count
+
+    if request.search_hybrid_mode is not None:
+        updates["search_hybrid_mode"] = request.search_hybrid_mode
 
     if request.ollama_base_url is not None:
         updates["ollama_base_url"] = request.ollama_base_url
@@ -1751,6 +1766,8 @@ async def update_app_settings(request: UpdateSettingsRequest):
     return {
         "search_provider": settings.search_provider,
         "search_keyword_extraction": settings.search_keyword_extraction,
+        "search_result_count": settings.search_result_count,
+        "search_hybrid_mode": settings.search_hybrid_mode,
         "ollama_base_url": settings.ollama_base_url,
         "full_content_results": settings.full_content_results,
 

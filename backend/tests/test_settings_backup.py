@@ -255,6 +255,38 @@ def test_update_settings_persists_council_title_query_and_advisor_prompts(client
         assert data[key] == value
 
 
+def test_update_settings_persists_search_tuning_fields(client):
+    from backend.settings import Settings
+
+    payload = {
+        "search_keyword_extraction": "llm",
+        "search_result_count": 12,
+        "search_hybrid_mode": False,
+        "full_content_results": 7,
+    }
+
+    updated_settings = Settings(**payload)
+    with patch("backend.main.update_settings", return_value=updated_settings) as mock_update:
+        response = client.put("/api/settings", json=payload)
+
+    assert response.status_code == 200
+    mock_update.assert_called_once()
+    update_kwargs = mock_update.call_args.kwargs
+    for key, value in payload.items():
+        assert update_kwargs[key] == value
+
+    data = response.json()
+    for key, value in payload.items():
+        assert data[key] == value
+
+
+def test_update_settings_rejects_invalid_search_result_count(client):
+    response = client.put("/api/settings", json={"search_result_count": 16})
+
+    assert response.status_code == 400
+    assert "search_result_count" in response.json()["detail"]
+
+
 def test_default_settings_returns_council_and_advisor_prompt_defaults(client):
     response = client.get("/api/settings/defaults")
     assert response.status_code == 200

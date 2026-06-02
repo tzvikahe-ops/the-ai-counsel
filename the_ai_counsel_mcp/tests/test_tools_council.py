@@ -97,6 +97,12 @@ async def test_get_council_config(server):
                 "stage2_temperature": 0.3,
                 "execution_mode": "full",
                 "search_provider": "duckduckgo",
+                "search_keyword_extraction": "direct",
+                "search_result_count": 8,
+                "search_hybrid_mode": True,
+                "full_content_results": 3,
+                "title_prompt": "Title prompt",
+                "query_prompt": "Query prompt",
             })
         )
         result = await server.call_tool("council_settings", {"action": "get"})
@@ -107,6 +113,11 @@ async def test_get_council_config(server):
         assert "anthropic:claude-sonnet-4" in text
         assert "duckduckgo" in text
         data = get_json(result)
+        assert data["search_result_count"] == 8
+        assert data["search_hybrid_mode"] is True
+        assert data["full_content_results"] == 3
+        assert data["title_prompt"] == "Title prompt"
+        assert data["query_prompt"] == "Query prompt"
         assert "council_presets" in data
 
 
@@ -234,6 +245,46 @@ async def test_configure_council_with_stage1_prompt(server):
         })
         data = get_json(result)
         assert data["status"] == "updated"
+
+
+@pytest.mark.asyncio
+async def test_configure_council_with_search_and_prompt_fields(server):
+    with respx.mock:
+        request = respx.put("http://test:8001/api/settings").mock(
+            return_value=httpx.Response(200, json={"success": True})
+        )
+        result = await server.call_tool("council_settings", {"action": "update",
+            "title_prompt": "Make a short title for {user_query}",
+            "query_prompt": "Search for {user_query}",
+            "search_provider": "tinyfish",
+            "search_keyword_extraction": "llm",
+            "search_result_count": 12,
+            "search_hybrid_mode": False,
+            "full_content_results": 7,
+        })
+        data = get_json(result)
+        assert data["status"] == "updated"
+        assert "title_prompt" in data["fields"]
+        assert "search_result_count" in data["fields"]
+
+        payload = request.calls.last.request.content
+        import json
+        sent = json.loads(payload)
+        assert sent["query_prompt"] == "Search for {user_query}"
+        assert sent["search_provider"] == "tinyfish"
+        assert sent["search_keyword_extraction"] == "llm"
+        assert sent["search_result_count"] == 12
+        assert sent["search_hybrid_mode"] is False
+        assert sent["full_content_results"] == 7
+
+
+@pytest.mark.asyncio
+async def test_configure_council_rejects_invalid_search_tuning(server):
+    result = await server.call_tool("council_settings", {"action": "update", "search_result_count": 4})
+    assert "search_result_count" in get_text(result)
+
+    result = await server.call_tool("council_settings", {"action": "update", "full_content_results": 11})
+    assert "full_content_results" in get_text(result)
 
 
 @pytest.mark.asyncio

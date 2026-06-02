@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.8.1] - 2026-06-02
+
 ### Added
 - **Advisor live-progress and reconnect UX**: Advisor runs now publish active round/order/completion state through `/api/conversations/{id}/progress`, and the frontend can reconstruct in-flight advisor runs when navigating away and back.
 - **Cost token split in the UI and docs**: Run-cost panels now surface total, input, and output token counts separately for council and advisor runs, with reasoning tokens preserved in call details and billed as output where providers report them that way.
 - **Council-vs-Advisors guidance**: User and agent docs now clarify that Council is best for direct answers and synthesis, while Advisors are best for tradeoffs, risk reviews, strategy, ethics, prioritization, and real disagreement.
+
+### Changed
+- **Landing page mode guidance**: The front page now explains when to use Council versus Advisors with concrete examples, reducing accidental advisor debates for simple answer prompts.
+- **Release version alignment**: Backend package metadata, frontend package metadata, lockfile metadata, sidebar version, skill frontmatter, and changelog are aligned for this release.
 
 ### Fixed
 - **Provider temperature restrictions**: Direct OpenAI, Anthropic, OpenRouter, and custom OpenAI-compatible calls now omit temperature for models that only accept provider defaults, preventing preflight failures such as unsupported `temperature: 0` or deprecated temperature parameters.
@@ -24,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Stage 3 chairman errors are now cost-tracked**: The outer `except` branch in `stage3_synthesize_final` now calls `attach_cost`, so chairman failures appear in the run's `cost_report` with `cost_status: "unknown"` instead of vanishing from the spend summary. (R6.)
 - **MCP cost-aggregation is now shape-tolerant**: `the_ai_counsel_mcp.tools.deliberation._combine_cost_report` is now a thin wrapper around the new shared `backend.costs.summarize_buffered_stages` helper. The helper walks the four buffered stage shapes (council stage 1/2/3, iterative debate, advisor debate), `isinstance`-guards lists and dicts at every level, and shares a single bucketing implementation with the backend. (R5 + R7.)
 - **`_summarize_calls` math reuses same canonical path**: Replaces ~70 lines of MCP-side bucketing duplication with a call to the same `costs.summarize_buffered_stages` function used in unit tests.
+- **MCP settings docs and tool signatures are aligned**: `council_settings` now accepts and returns title/query prompts plus search tuning fields (`search_provider`, keyword extraction mode, result count, hybrid search, and full-content fetch count), matching the MCP docs and frontend settings.
 
 ## [0.8.0] - 2026-06-01
 

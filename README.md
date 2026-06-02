@@ -462,7 +462,7 @@ data/
 
 This project builds upon the original **[llm-council](https://github.com/karpathy/llm-council)** by **[Andrej Karpathy](https://github.com/karpathy)**.
 
-**The AI Counsel** extends that foundation with dual-mode deliberation (Council + Advisors), 10 provider integrations (including NVIDIA NIM), web search, persona-driven debates, customizable prompts, an MCP server, Docker deployment, and much more.
+**The AI Counsel** extends that foundation with dual-mode deliberation (Council + Advisors), 12 provider integrations (including NVIDIA NIM and OpenCode Zen/Go), web search, persona-driven debates, customizable prompts, an MCP server, Docker deployment, and much more.
 
 We gratefully acknowledge Andrej Karpathy for the original inspiration and codebase.
 

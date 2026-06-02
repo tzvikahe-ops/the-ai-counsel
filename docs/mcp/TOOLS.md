@@ -90,7 +90,7 @@ Chat with a single model.
 }
 ```
 
-Responses include `usage`, `cost`, and `cost_report` alongside the model response. Ollama, NVIDIA, OpenRouter `:free`, and OpenCode custom endpoint calls report zero cost.
+Responses include `usage`, `cost`, and `cost_report` alongside the model response. Ollama, NVIDIA, OpenRouter `:free`, known-free OpenCode models, and custom endpoints whose configured URL points at the official `opencode.ai` host report zero cost.
 
 ---
 
@@ -180,7 +180,7 @@ Manage council configuration and presets.
 | `search_keyword_extraction` | string | `update` | Query processing: `direct` (default), `yake`, or `llm` |
 | `search_result_count` | integer | `update` | Number of results to fetch (5–15, default 8) |
 | `search_hybrid_mode` | boolean | `update` | DuckDuckGo: combine web + news (default `true`) |
-| `full_content_results` | integer | `update` | Jina Reader full-text fetch count (0–5, default 3; 0 = disabled) |
+| `full_content_results` | integer | `update` | Jina Reader full-text fetch count (0–10, default 3; 0 = disabled) |
 | `enabled_providers` | object | `update` | Council-only provider toggles |
 | `direct_provider_toggles` | object | `update` | Per-direct-provider council toggles (keys: `openai`, `anthropic`, `google`, `mistral`, `deepseek`, `groq`, `nvidia`, `opencode-zen`, `opencode-go`) |
 | `preset_id` | string | `save_preset`, `delete_preset`, `set_default_preset` | Preset UUID |
@@ -189,7 +189,7 @@ Manage council configuration and presets.
 | `chairman_model` | string | `save_preset` | Chairman for preset (alias: `chairman`) |
 | `is_default` | boolean | `save_preset` | Mark as default preset |
 
-**`get` response includes:** `council_models`, `chairman_model`, temperatures, `execution_mode`, `search_provider`, `council_presets`.
+**`get` response includes:** `council_models`, `chairman_model`, temperatures, `execution_mode`, search settings, debate settings, title/query prompts, and `council_presets`.
 
 **`update` success:**
 ```json

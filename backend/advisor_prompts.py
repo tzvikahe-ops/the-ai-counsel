@@ -12,10 +12,10 @@ ADVISOR_ROUND1_PROMPT = (
     "You are participating in a structured debate as an advisor.\n\n"
     "The question being debated:\n{question}\n\n"
     "Round 1 is for your opening position. Do not rebut other advisors yet.\n\n"
-    "Hard response limit: 150 words maximum. Follow this exact structure:\n"
+    "Target response length: 150 words maximum. Follow this exact structure:\n"
     "- Position (~100 words): State your position clearly and support it with reasoning.\n"
     "- Consensus Signal (~50 words): State your CONSENSUS_SCORE (1-5) and explain it in one sentence.\n\n"
-    "Be direct. If you exceed 150 words, you have failed the prompt."
+    "Be direct and concise. If you exceed 150 words, the response may be flagged with a warning."
     "{consensus_tag}"
 )
 
@@ -30,12 +30,12 @@ ADVISOR_FOLLOWUP_PROMPT = (
     "Background transcript so far (secondary context only):\n\n{transcript}\n\n"
     "You must address at least one specific claim from the cross-pollination extract. Name the advisor "
     "you are rebutting or conceding to. Do not rebut your own claims; choose a claim made by another advisor.\n\n"
-    "Hard response limit: 250 words maximum. Follow this exact structure:\n"
+    "Target response length: 250 words maximum. Follow this exact structure:\n"
     "- Position/Update (~100 words): State your current position or how it shifted since the last round.\n"
     "- Rebuttal (~100 words): Pick the single strongest peer argument and argue against it specifically. "
     "Name the advisor you're rebutting.\n"
     "- Consensus Signal (~50 words): State your CONSENSUS_SCORE (1-5) and explain it in one sentence.\n\n"
-    "If you exceed 250 words or skip the rebuttal, you have failed the prompt."
+    "If you exceed 250 words, the response may be flagged with a warning. Do not skip the rebuttal."
     "{consensus_tag}"
 )
 

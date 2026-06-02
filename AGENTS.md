@@ -372,10 +372,13 @@ When bumping the version, **all** of the following files must be updated togethe
 | File | Location of version |
 |------|-------------------|
 | `CHANGELOG.md` | `## [x.y.z]` header at top |
+| `pyproject.toml` | `[project] version = "x.y.z"` |
+| `frontend/package.json` | top-level `"version": "x.y.z"` |
+| `frontend/package-lock.json` | root `"version"` and `packages[""].version` |
 | `frontend/src/components/Sidebar.jsx` | `<div className="sidebar-version">vX.Y.Z</div>` |
 | `skills/the-ai-counsel-api/SKILL.md` | YAML frontmatter `version: x.y.z` |
 
-Always update all three in the same commit. The CHANGELOG drives the canonical version; the UI and skill must match.
+Always update all version surfaces in the same commit. The CHANGELOG drives the canonical version; backend metadata, frontend metadata, UI, and skill must match.
 
 **Full documentation sync** (settings fields, MCP tools, advisor/council flows): follow [`docs/DOC-SYNC.md`](docs/DOC-SYNC.md).
 
