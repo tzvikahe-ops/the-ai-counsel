@@ -36,7 +36,7 @@ export default function LandingPage({ onSelectMode }) {
           <h1 className="landing-title">
             The AI <span className="landing-title__plus">Counsel</span>
           </h1>
-          <p className="landing-subtitle">Choose your experience to begin</p>
+          <p className="landing-subtitle">Choose Council for answers. Choose Advisors for decisions.</p>
         </div>
 
         <div className="landing-cards">
@@ -50,13 +50,13 @@ export default function LandingPage({ onSelectMode }) {
                 <div className="landing-card__label">LLM Council</div>
                 <h2 className="landing-card__title">Multi-Model Deliberation</h2>
                 <p className="landing-card__desc">
-                  Multiple AI models deliberate in parallel. Peer ranking surfaces the strongest
-                  arguments. A chairman synthesizes the final answer.
+                  Multiple AI models answer in parallel, rank each other anonymously, and a chairman
+                  synthesizes the best response.
                 </p>
                 <ul className="landing-card__features">
-                  <li>3-stage deliberation pipeline</li>
-                  <li>Anonymous peer ranking</li>
-                  <li>Chairman synthesis</li>
+                  <li>Best for facts, summaries, creative prompts</li>
+                  <li>Use when you want one strong answer</li>
+                  <li>Peer ranking plus chairman synthesis</li>
                 </ul>
               </div>
               <div className="landing-card__cta">
@@ -78,13 +78,13 @@ export default function LandingPage({ onSelectMode }) {
                 <div className="landing-card__label">LLM Advisors</div>
                 <h2 className="landing-card__title">Persona-Driven Debate</h2>
                 <p className="landing-card__desc">
-                  Named advisor personas debate your question across configurable rounds.
-                  They reach consensus or vote, delivering a structured verdict.
+                  Named advisor personas argue through choices where the right answer depends on
+                  priorities, risks, and tradeoffs.
                 </p>
                 <ul className="landing-card__features">
-                  <li>12 distinct advisor personas</li>
-                  <li>Configurable debate rounds</li>
-                  <li>Structured verdict & action plan</li>
+                  <li>Best for strategy, ethics, risk, prioritization</li>
+                  <li>Use when reasonable advisors may disagree</li>
+                  <li>Consensus verdict plus next steps</li>
                 </ul>
               </div>
               <div className="landing-card__cta">
