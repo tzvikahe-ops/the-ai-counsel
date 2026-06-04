@@ -77,6 +77,22 @@ When bumping version, update **all three together** (see `AGENTS.md` → Version
 | `docs/QUICKSTART.md` | Step-by-step |
 | `CHANGELOG.md` | |
 
+### Sidebar run summaries (`run_summary` on conversation index)
+
+| File | Action |
+|------|--------|
+| `backend/storage.py` | `derive_run_summary`, `_build_index_entry`, index field shape |
+| `backend/main.py` | Assistant metadata fields that feed the summary (`web_search`, `auto_converge`, advisor consensus, etc.) |
+| `frontend/src/components/Sidebar.jsx` | Render `conv.run_summary`; sidebar search includes summary text |
+| `frontend/src/constants/critiqueMode.js` | Compact critique labels — keep in sync with `CRITIQUE_MODE_LABELS` in `backend/storage.py` |
+| `backend/tests/test_run_summary.py` | Summary string contract |
+| `CHANGELOG.md` | User-facing sidebar behavior |
+
+Rules:
+- Summary appears only after title is assigned (not while title is `"New Conversation"`).
+- Server builds the string; frontend displays index data only.
+- Existing conversations need a save or `rebuild_index()` to backfill index entries.
+
 ### MCP-only (new/changed tools)
 
 | File | Action |

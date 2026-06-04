@@ -99,7 +99,7 @@ This fixes binary incompatibilities (e.g., `@rollup/rollup-darwin-*` variants).
 | `CouncilSetup.jsx` | Inline council editor on welcome screen (members, chairman, presets; auto-save) |
 | `Settings.jsx` | 8-section settings: General, LLM API Keys, Council Config, Council Debate Config, Council System Prompts, Advisor System Prompts, Search Providers, Backup & Reset |
 | `GeneralSettings.jsx` | Date format and response language (General section) |
-| `Sidebar.jsx` | Conversation list with inline delete confirmation |
+| `Sidebar.jsx` | Conversation list with run summaries, sidebar search on summary text, inline delete confirmation |
 | `SearchableModelSelect.jsx` | Searchable dropdown for model selection |
 
 **Styling**: "Council Chamber" dark theme (refined Midnight Glass). CSS variables in `index.css` (`--font-display`: Syne, `--font-ui`: Plus Jakarta Sans, `--font-content`: Source Serif 4, `--font-code`: JetBrains Mono). Primary accent blue (#3b82f6), chairman gold (#fbbf24). Staggered hero/card animations; glass panels with backdrop-filter.

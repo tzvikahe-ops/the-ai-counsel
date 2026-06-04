@@ -789,6 +789,7 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
 
             if search_context:
                 metadata["search_context"] = search_context
+                metadata["web_search"] = True
             if search_query:
                 metadata["search_query"] = search_query
 
@@ -1012,6 +1013,7 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
                 "debate_rounds_configured": effective_rounds,
                 "debate_rounds_executed": len(rounds_data),
                 "converged": debate_converged,
+                "auto_converge": settings.auto_converge,
                 "rounds": rounds_data,
                 "cost_report": cost_report or build_iterative_debate_cost_report(rounds_data, final_stage4),
             }
@@ -1026,6 +1028,7 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
                 metadata["stage4"] = final_stage4
             if search_context:
                 metadata["search_context"] = search_context
+                metadata["web_search"] = True
             if search_query:
                 metadata["search_query"] = search_query
 
@@ -1150,6 +1153,8 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
             tiebreaker_data = None
             saved_personas = []
             cost_report = None
+            consensus_reached = False
+            consensus_round = None
 
             web_search_used = bool(body.search_provider or body.web_search)
             async for event in run_debate(
@@ -1173,6 +1178,8 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
                     tiebreaker_data = event["data"].get("tiebreaker")
                     saved_personas = event["data"].get("personas", [])
                     cost_report = event["data"].get("cost_report")
+                    consensus_reached = bool(event["data"].get("consensus_reached"))
+                    consensus_round = event["data"].get("consensus_round")
 
                 if event_type == "advisor_error":
                     message = event.get("message", "Advisor debate failed")
@@ -1188,6 +1195,9 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
                 "tiebreaker_model": body.tiebreaker_model,
                 "model_assignments": body.model_assignments,
                 "max_rounds": body.max_rounds,
+                "rounds_executed": len(all_rounds),
+                "consensus_reached": consensus_reached,
+                "consensus_round": consensus_round,
                 "web_search": web_search_used,
                 "cost_report": cost_report or build_advisor_cost_report(all_rounds, verdict_data, tiebreaker_data),
             }
@@ -1270,6 +1280,7 @@ async def send_message_sync(conversation_id: str, body: SendMessageRequest):
         metadata["aggregate_rankings"] = result.aggregate_rankings
     if search_context:
         metadata["search_context"] = search_context
+        metadata["web_search"] = True
     if search_query:
         metadata["search_query"] = search_query
 

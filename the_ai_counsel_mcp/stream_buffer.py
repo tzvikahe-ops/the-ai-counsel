@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Any
 
+from backend.metadata_utils import metadata_used_search
+
 from .errors import classify_http_error, classify_exception
 
 
@@ -52,7 +54,7 @@ def _build_stage1_result(conversation_id: str, query: str, stage1_data: list, se
     return {
         "conversation_id": conversation_id,
         "query": query,
-        "web_search": bool(search.get("search_context")),
+        "web_search": metadata_used_search(search),
         "search_context": search.get("search_context"),
         "results": results,
         "summary": {"total": len(results), "succeeded": succeeded, "failed": len(results) - succeeded},

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Response language setting**: Council and advisor model outputs can be pinned to one of 17 languages via Settings → General → Response Language. Title generation and internal search queries stay in English.
 - **General settings section**: Display preferences (date format) and response language moved out of Backup & Reset into a dedicated General section at the top of Settings.
 - **API-driven language list**: `GET /api/settings` returns `valid_response_languages` and `response_language_default` so the UI and MCP read from one backend source (`VALID_RESPONSE_LANGUAGES` in `backend/prompts.py`).
+- **Sidebar run summaries**: After a titled council or advisor run completes, the sidebar shows a compact line (rounds, critique mode, auto-converge, advisor personas, consensus, search). Sidebar search matches this line. `GET /api/conversations` index entries may include optional `run_summary`.
 
 ### Changed
 - **Date format location**: Settings → General → Display Preferences (was Backup & Reset).

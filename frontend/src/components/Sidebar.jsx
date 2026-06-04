@@ -28,7 +28,12 @@ export default function Sidebar({
 
   const filteredConversations = conversations.filter(conv => {
     if (!searchQuery.trim()) return true;
-    return getConversationTitle(conv).toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    const haystack = [
+      getConversationTitle(conv),
+      conv.run_summary || '',
+    ].join(' ').toLowerCase();
+    return haystack.includes(query);
   });
 
   const handleAbortClick = (e) => {
@@ -139,12 +144,17 @@ export default function Sidebar({
                 className={`conversation-item conversation-item--${mode} ${conv.id === currentConversationId ? 'active' : ''}`}
                 onClick={() => onSelectConversation(conv.id)}
               >
-                <div className="conversation-title" title={conv.title || undefined}>
+                <div className="conversation-title" title={displayTitle}>
                   <span className={`conv-mode-tag conv-mode-tag--${mode}`}>
                     {mode === 'advisors' ? 'ADV' : 'CNC'}
                   </span>
-                  <span className="conversation-title-text">{displayTitle}</span>
+                  <span className="conversation-title-text conversation-item-clamp">{displayTitle}</span>
                 </div>
+                {conv.run_summary && (
+                  <div className="conversation-run-summary conversation-item-clamp" title={conv.run_summary}>
+                    {conv.run_summary}
+                  </div>
+                )}
                 <div className="conversation-meta">
                   <span>{formatTimestamp(conv.created_at, dateFormat)}</span>
                   {isLoading && conv.id === currentConversationId ? (

@@ -67,11 +67,7 @@ function isCouncilTurnPending(msg, isActiveTurn, isLoading) {
     return true;
 }
 
-const CRITIQUE_MODE_LABELS = {
-    freeform: 'Freeform',
-    paragraph: 'Paragraph',
-    claim: 'Claim-by-Claim',
-};
+import { CRITIQUE_MODE_LABELS } from '../constants/critiqueMode';
 
 function DebateConfigBar({ critiqueMode, debateRounds, autoConverge, convergenceThreshold, onOpenSettings }) {
     const modeLabel = CRITIQUE_MODE_LABELS[critiqueMode] || critiqueMode;

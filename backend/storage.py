@@ -6,10 +6,19 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 from .config import DATA_DIR
+from .metadata_utils import metadata_used_search
 
 
 INDEX_FILE_NAME = "conversations_index.json"
 VALID_CONVERSATION_MODES = {"council", "advisors"}
+DEFAULT_CONVERSATION_TITLE = "New Conversation"
+
+# Keep in sync with frontend/src/constants/critiqueMode.js
+CRITIQUE_MODE_LABELS = {
+    "freeform": "Freeform",
+    "paragraph": "Paragraph",
+    "claim": "Claim-by-Claim",
+}
 
 
 def ensure_data_dir():
@@ -93,6 +102,91 @@ def _is_conversation_record(data: Any) -> bool:
     )
 
 
+def derive_run_summary(conversation: Dict[str, Any]) -> Optional[str]:
+    """Build a compact sidebar summary from the latest assistant message."""
+    if conversation.get("title", DEFAULT_CONVERSATION_TITLE) == DEFAULT_CONVERSATION_TITLE:
+        return None
+
+    message = None
+    for msg in reversed(conversation.get("messages", [])):
+        if msg.get("role") == "assistant" and not msg.get("error"):
+            message = msg
+            break
+    if message is None:
+        return None
+
+    metadata = message.get("metadata") or {}
+    parts: List[str] = []
+
+    if _message_is_advisor_debate(message):
+        persona_ids = metadata.get("persona_ids") or [
+            persona.get("id")
+            for persona in (message.get("personas") or [])
+            if isinstance(persona, dict) and persona.get("id")
+        ]
+        if persona_ids:
+            parts.append(f"{len(persona_ids)} advisors")
+
+        rounds_executed = metadata.get("rounds_executed")
+        if rounds_executed is None:
+            rounds_executed = len(message.get("rounds") or [])
+        max_rounds = metadata.get("max_rounds")
+        if rounds_executed and max_rounds:
+            parts.append(f"{rounds_executed}/{max_rounds} rnd")
+        elif rounds_executed:
+            parts.append(f"{rounds_executed} rnd")
+
+        if metadata.get("consensus_reached"):
+            parts.append("Consensus")
+    else:
+        execution_mode = metadata.get("execution_mode")
+        critique_mode = metadata.get("critique_mode", "freeform")
+        rounds_configured = metadata.get("debate_rounds_configured")
+        is_multi_round_debate = bool(rounds_configured and rounds_configured > 1)
+        is_structured_critique = critique_mode in {"paragraph", "claim"}
+
+        if is_multi_round_debate or is_structured_critique:
+            rounds = (
+                metadata.get("debate_rounds_executed")
+                or rounds_configured
+                or 1
+            )
+            parts.append(f"{rounds} rnd")
+            if critique_mode != "freeform":
+                parts.append(CRITIQUE_MODE_LABELS.get(critique_mode, critique_mode))
+            if rounds > 1 and metadata.get("auto_converge"):
+                parts.append("Auto-converge")
+            if metadata.get("converged"):
+                parts.append("Converged early")
+        elif execution_mode == "chat_only":
+            parts.append("Chat Only")
+        elif execution_mode == "chat_ranking":
+            parts.append("Chat + Ranking")
+
+    if metadata_used_search(metadata):
+        parts.append("Search")
+
+    return " · ".join(parts) if parts else None
+
+
+def _build_index_entry(
+    conversation: Dict[str, Any],
+    *,
+    mode: Optional[str] = None,
+) -> Dict[str, Any]:
+    entry = {
+        "id": conversation["id"],
+        "created_at": conversation["created_at"],
+        "title": conversation.get("title", DEFAULT_CONVERSATION_TITLE),
+        "mode": mode if mode is not None else infer_conversation_mode(conversation),
+        "message_count": len(conversation["messages"]),
+    }
+    run_summary = derive_run_summary(conversation)
+    if run_summary:
+        entry["run_summary"] = run_summary
+    return entry
+
+
 def rebuild_index() -> List[Dict[str, Any]]:
     """
     Rebuild the conversation index from actual conversation files.
@@ -109,13 +203,7 @@ def rebuild_index() -> List[Dict[str, Any]]:
                     data = json.load(f)
                     if not _is_conversation_record(data):
                         continue
-                    index.append({
-                        "id": data["id"],
-                        "created_at": data["created_at"],
-                        "title": data.get("title", "New Conversation"),
-                        "mode": infer_conversation_mode(data),
-                        "message_count": len(data["messages"])
-                    })
+                    index.append(_build_index_entry(data))
             except (json.JSONDecodeError, OSError):
                 continue
 
@@ -125,22 +213,14 @@ def rebuild_index() -> List[Dict[str, Any]]:
     return index
 
 
-def _update_index_entry(conversation: Dict[str, Any]):
+def _update_index_entry(conversation: Dict[str, Any], *, mode: Optional[str] = None):
     """Update or add a single entry in the index."""
     index = _load_index()
     if index is None:
         index = rebuild_index()
         return  # rebuild already includes the current state if file was saved
 
-    # Create metadata entry
-    entry = {
-        "id": conversation["id"],
-        "created_at": conversation["created_at"],
-        "title": conversation.get("title", "New Conversation"),
-        "mode": infer_conversation_mode(conversation),
-        "message_count": len(conversation["messages"])
-    }
-
+    entry = _build_index_entry(conversation, mode=mode)
     # Remove existing entry if present
     index = [item for item in index if item["id"] != conversation["id"]]
     
@@ -192,7 +272,7 @@ def create_conversation(conversation_id: str, mode: str = "council") -> Dict[str
         json.dump(conversation, f, indent=2)
 
     # Update index
-    _update_index_entry(conversation)
+    _update_index_entry(conversation, mode=conversation["mode"])
 
     return conversation
 
@@ -233,7 +313,7 @@ def save_conversation(conversation: Dict[str, Any]):
         json.dump(conversation, f, indent=2)
 
     # Update index
-    _update_index_entry(conversation)
+    _update_index_entry(conversation, mode=conversation["mode"])
 
 
 def list_conversations() -> List[Dict[str, Any]]:

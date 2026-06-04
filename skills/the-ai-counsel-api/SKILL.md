@@ -588,6 +588,28 @@ for m in models[:10]:
 
 ---
 
+### 12b. List Conversations (index metadata)
+
+`GET /api/conversations` returns lightweight index entries (not full message bodies):
+
+```json
+[
+  {
+    "id": "uuid",
+    "created_at": "2026-06-03T19:41:00+00:00",
+    "title": "Remote-First vs Hybrid Policy",
+    "mode": "council",
+    "message_count": 2,
+    "run_summary": "2 rnd · Paragraph · Auto-converge · Search"
+  }
+]
+```
+
+- `run_summary` is optional — present only after the conversation has a real title (not `"New Conversation"`) and the latest assistant message has derivable metadata.
+- Existing conversations backfill on next save or after `rebuild_index()`.
+
+---
+
 ### 13. Retrieve a Past Conversation
 
 ```python
