@@ -24,13 +24,31 @@ VALID_RESPONSE_LANGUAGES = (
 
 
 def apply_response_language(content: str, language: str | None = None) -> str:
-    """Prepend a response-language instruction to a model prompt."""
+    """Prepend a response-language instruction to a model prompt.
+
+    The instruction explicitly covers structural headings (markdown ##,
+    table column headers, list labels) so that English wording embedded
+    in the prompt template - e.g. "## Summary", "Consensus Points",
+    "Position A | Position B | Stronger Argument" - gets translated in the
+    model's output instead of being preserved verbatim.
+    """
     lang = (language or RESPONSE_LANGUAGE_DEFAULT).strip() or RESPONSE_LANGUAGE_DEFAULT
     if lang == RESPONSE_LANGUAGE_DEFAULT:
         return content
     instruction = (
-        f"You MUST respond in {lang}. "
-        f"Use {lang} for all prose, critiques, synthesis, and explanations."
+        f"You MUST respond entirely in {lang}.\n"
+        f"This applies to EVERYTHING in your output:\n"
+        f"- all prose, critiques, synthesis, explanations, bullet points, and examples\n"
+        f"- every markdown heading (e.g. lines starting with ##, ###)\n"
+        f"- every table column header and every cell value\n"
+        f"- every list label and section title\n\n"
+        f"If the instructions below use English words like \"Summary\", "
+        f"\"Consensus Points\", \"Disagreements\", \"Verdict\", \"Position A\", "
+        f"\"Stronger Argument\", \"Recommended Next Steps\", \"Open Uncertainties\", "
+        f"or similar structural terms, you MUST translate those words into {lang} "
+        f"in your response. Do NOT keep any English structural wording - only "
+        f"proper nouns (names of people, products, models) and inline code may "
+        f"stay in their original form."
     )
     return f"{instruction}\n\n{content}"
 
@@ -293,4 +311,4 @@ Instructions:
 - Incorporate adopted improvements from the deliberation
 - Preserve the original document's structure, tone, and intent
 - Mark significant changes with [REVISED] or [NEW] inline so the author can see what changed
-- Do NOT add commentary or meta-discussion — produce only the corrected document"""
+- Do NOT add commentary or meta-discussion - produce only the corrected document"""

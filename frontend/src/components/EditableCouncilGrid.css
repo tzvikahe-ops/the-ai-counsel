@@ -48,7 +48,7 @@
 .council-grid--editable .council-card--empty {
   border-style: dashed;
   border-color: rgba(148, 163, 184, 0.28);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--tint-1);
 }
 
 .council-grid--editable .council-card--empty .council-avatar {
@@ -64,8 +64,8 @@
   margin-top: 8px;
   padding: 4px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--tint-border);
+  background: var(--tint-2);
   color: rgba(226, 232, 240, 0.9);
   font-family: var(--font-ui);
   font-size: 11px;
@@ -128,14 +128,14 @@
   padding: 6px;
   border: none;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--tint-3);
   color: rgba(226, 232, 240, 0.75);
   font-size: 12px;
   cursor: pointer;
 }
 
 .council-card__picker-close:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--tint-3);
 }
 
 .council-card--add {

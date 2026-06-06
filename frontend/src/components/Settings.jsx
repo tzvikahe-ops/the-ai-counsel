@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api, DEFAULT_EXECUTION_MODE } from '../api';
 import SearchableModelSelect from './SearchableModelSelect';
 import ProviderSettings from './settings/ProviderSettings';
@@ -61,6 +62,7 @@ const normalizeDirectProviderToggles = (toggles, data) => ({
 });
 
 export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initialSection = 'llm_keys' }) {
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState(initialSection);
 
   const [settings, setSettings] = useState(null);
@@ -109,7 +111,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
   });
   const [directAvailableModels, setDirectAvailableModels] = useState([]);
 
-  // OpenCode (Zen + Go) State — single key, shared between products
+  // OpenCode (Zen + Go) State - single key, shared between products
   const [opencodeApiKey, setOpencodeApiKey] = useState('');
   const [isTestingOpencode, setIsTestingOpencode] = useState(false);
   const [opencodeTestResult, setOpencodeTestResult] = useState(null);
@@ -420,7 +422,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
           : RESPONSE_LANGUAGES_FALLBACK
       );
 
-      // Enabled Providers — never show ON for sources that aren't configured
+      // Enabled Providers - never show ON for sources that aren't configured
       if (data.enabled_providers) {
         setEnabledProviders(normalizeEnabledProviders(
           data.enabled_providers,
@@ -1025,7 +1027,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
           .join(' / ');
         setOpencodeTestResult({
           success: result.success,
-          message: `${summary} — ${messages}`,
+          message: `${summary} - ${messages}`,
         });
       } else {
         setOpencodeTestResult({
@@ -1321,14 +1323,14 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       <div className="settings-overlay" onClick={onClose}>
         <div className="settings-modal" onClick={e => e.stopPropagation()}>
           <div className="settings-header">
-            <h2>Settings</h2>
+            <h2>{t('settingsShell.title')}</h2>
             <button className="close-button" onClick={onClose}>&times;</button>
           </div>
           <div className="settings-body" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
             {error ? (
               <div className="settings-error">{error}</div>
             ) : (
-              <div className="settings-loading">Loading settings...</div>
+              <div className="settings-loading">{t('settingsShell.loading')}</div>
             )}
           </div>
         </div>
@@ -1345,8 +1347,8 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       <div className="settings-modal" onClick={e => e.stopPropagation()}>
         <div className="settings-header">
           <div>
-            <h2>Settings</h2>
-            <p className="settings-header-subtitle">Changes save automatically</p>
+            <h2>{t('settingsShell.title')}</h2>
+            <p className="settings-header-subtitle">{t('settingsShell.autoSaveHint')}</p>
           </div>
           <button className="close-button" onClick={onClose}>&times;</button>
         </div>
@@ -1358,49 +1360,49 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
               className={`sidebar-nav-item ${activeSection === 'general' ? 'active' : ''}`}
               onClick={() => setActiveSection('general')}
             >
-              General
+              {t('settingsShell.nav.general')}
             </button>
             <button
               className={`sidebar-nav-item ${activeSection === 'llm_keys' ? 'active' : ''}`}
               onClick={() => setActiveSection('llm_keys')}
             >
-              LLM API Keys
+              {t('settingsShell.nav.llmKeys')}
             </button>
             <button
               className={`sidebar-nav-item ${activeSection === 'council' ? 'active' : ''}`}
               onClick={() => setActiveSection('council')}
             >
-              Council Config
+              {t('settingsShell.nav.council')}
             </button>
             <button
               className={`sidebar-nav-item ${activeSection === 'debate' ? 'active' : ''}`}
               onClick={() => setActiveSection('debate')}
             >
-              Council Debate Config
+              {t('settingsShell.nav.debate')}
             </button>
             <button
               className={`sidebar-nav-item ${activeSection === 'prompts' ? 'active' : ''}`}
               onClick={() => setActiveSection('prompts')}
             >
-              Council System Prompts
+              {t('settingsShell.nav.prompts')}
             </button>
             <button
               className={`sidebar-nav-item ${activeSection === 'advisor_prompts' ? 'active' : ''}`}
               onClick={() => setActiveSection('advisor_prompts')}
             >
-              Advisor System Prompts
+              {t('settingsShell.nav.advisorPrompts')}
             </button>
             <button
               className={`sidebar-nav-item ${activeSection === 'search' ? 'active' : ''}`}
               onClick={() => setActiveSection('search')}
             >
-              Search Providers
+              {t('settingsShell.nav.search')}
             </button>
             <button
               className={`sidebar-nav-item ${activeSection === 'import_export' ? 'active' : ''}`}
               onClick={() => setActiveSection('import_export')}
             >
-              Backup & Reset
+              {t('settingsShell.nav.backup')}
             </button>
           </div>
 
@@ -1582,13 +1584,13 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
             {/* IMPORT & EXPORT (New Section) */}
             {activeSection === 'import_export' && (
               <section className="settings-section">
-                <h3>Backup & Reset</h3>
+                <h3>{t('settingsShell.backup.heading')}</h3>
 
                 <div className="subsection">
-                  <h4>Import / Export</h4>
+                  <h4>{t('settingsShell.backup.importExport')}</h4>
                   <p className="section-description">
-                    Save or restore your council configuration (models, prompts, settings).
-                    <br /><em>Note: API keys are NOT exported for security.</em>
+                    {t('settingsShell.backup.description')}
+                    <br /><em>{t('settingsShell.backup.noteApiKeys')}</em>
                   </p>
                 </div>
 
@@ -1604,25 +1606,24 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
                     <button
                       className="action-btn"
                       onClick={() => document.getElementById('import-council').click()}
-                      title="Import Configuration"
+                      title={t('settingsShell.backup.importTitle')}
                     >
-                      Import Config
+                      {t('settingsShell.backup.importBtn')}
                     </button>
                     <button
                       className="action-btn"
                       onClick={handleExportCouncil}
-                      title="Export Configuration"
+                      title={t('settingsShell.backup.exportTitle')}
                     >
-                      Export Config
+                      {t('settingsShell.backup.exportBtn')}
                     </button>
                   </div>
                 </div>
 
                 <div className="subsection" style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                  <h4 style={{ color: '#f87171' }}>Danger Zone</h4>
+                  <h4 style={{ color: '#f87171' }}>{t('settingsShell.backup.dangerZone')}</h4>
                   <p className="section-description">
-                    Reset all settings to their default values. This will clear your council selection and custom prompts.
-                    API keys will be preserved.
+                    {t('settingsShell.backup.dangerDesc')}
                   </p>
                   <button
                     className="reset-button"
@@ -1630,7 +1631,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
                     onClick={handleResetToDefaults}
                     style={{ marginTop: '10px' }}
                   >
-                    Reset to Defaults
+                    {t('settingsShell.backup.resetBtn')}
                   </button>
                 </div>
               </section>
@@ -1644,18 +1645,18 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
           {success && (
             <div className="settings-success">
               {activeSection === 'llm_keys' && !settings?.openrouter_api_key_set && !ollamaStatus?.connected
-                ? 'Defaults loaded. Please configure an API Key.'
-                : 'Settings saved!'}
+                ? t('settingsShell.defaultsLoadedMsg')
+                : t('settingsShell.settingsSavedMsg')}
             </div>
           )}
 
           <div className="footer-actions">
             <button className="cancel-button" onClick={onClose}>
-              Close
+              {t('settingsShell.close')}
             </button>
-            {isSaving && <span className="settings-autosave-status">Saving…</span>}
+            {isSaving && <span className="settings-autosave-status">{t('settingsShell.saving')}</span>}
             {!isSaving && success && (
-              <span className="settings-autosave-status saved">Saved</span>
+              <span className="settings-autosave-status saved">{t('settingsShell.saved')}</span>
             )}
           </div>
         </div>
@@ -1666,29 +1667,29 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
           <div className="settings-overlay confirmation-overlay" onClick={() => setShowResetConfirm(false)}>
             <div className="settings-modal confirmation-modal" onClick={e => e.stopPropagation()}>
               <div className="settings-header">
-                <h2>Confirm Reset</h2>
+                <h2>{t('settingsShell.backup.confirmTitle')}</h2>
               </div>
               <div className="settings-content confirmation-content" style={{ padding: '20px 24px' }}>
-                <p style={{ marginBottom: '16px' }}>Are you sure you want to reset to defaults?</p>
+                <p style={{ marginBottom: '16px' }}>{t('settingsShell.backup.confirmPrompt')}</p>
                 <div className="confirmation-details" style={{ padding: '16px 20px' }}>
-                  <p><strong>This will reset:</strong></p>
+                  <p><strong>{t('settingsShell.backup.confirmListIntro')}</strong></p>
                   <ul style={{ margin: '12px 0', lineHeight: '1.8' }}>
-                    <li>Provider toggles → All disabled</li>
-                    <li>Model selections → Cleared</li>
-                    <li>Council size → Reset to 2 members</li>
-                    <li>Temperatures → Defaults (0.5 / 0.4 / 0.3)</li>
-                    <li>System prompts → Defaults</li>
-                    <li>Search provider → DuckDuckGo</li>
-                    <li>Jina fetch count → 3</li>
-                    <li>Ollama URL → localhost:11434</li>
+                    <li>{t('settingsShell.backup.confirmItem1')}</li>
+                    <li>{t('settingsShell.backup.confirmItem2')}</li>
+                    <li>{t('settingsShell.backup.confirmItem3')}</li>
+                    <li>{t('settingsShell.backup.confirmItem4')}</li>
+                    <li>{t('settingsShell.backup.confirmItem5')}</li>
+                    <li>{t('settingsShell.backup.confirmItem6')}</li>
+                    <li>{t('settingsShell.backup.confirmItem7')}</li>
+                    <li>{t('settingsShell.backup.confirmItem8')}</li>
                   </ul>
-                  <p className="confirmation-safe" style={{ marginTop: '14px' }}>✓ API keys will be PRESERVED</p>
+                  <p className="confirmation-safe" style={{ marginTop: '14px' }}>{t('settingsShell.backup.confirmSafe')}</p>
                 </div>
               </div>
               <div className="settings-footer">
                 <div className="footer-actions" style={{ width: '100%', justifyContent: 'flex-end' }}>
-                  <button className="cancel-button" onClick={() => setShowResetConfirm(false)}>Cancel</button>
-                  <button className="reset-button" onClick={confirmResetToDefaults}>Confirm Reset</button>
+                  <button className="cancel-button" onClick={() => setShowResetConfirm(false)}>{t('settingsShell.backup.confirmCancel')}</button>
+                  <button className="reset-button" onClick={confirmResetToDefaults}>{t('settingsShell.backup.confirmReset')}</button>
                 </div>
               </div>
             </div>

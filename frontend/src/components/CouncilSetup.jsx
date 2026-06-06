@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../api';
 import CouncilGrid from './CouncilGrid';
 import EditableCouncilGrid, { NEW_MEMBER_INDEX } from './EditableCouncilGrid';
@@ -88,6 +89,7 @@ export default function CouncilSetup({
   onCouncilChange,
   onOpenSettings,
 }) {
+  const { t } = useTranslation();
   const [models, setModels] = useState([]);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [presets, setPresets] = useState([]);
@@ -422,7 +424,7 @@ export default function CouncilSetup({
           >
             <span className="council-setup__preset-btn-icon" aria-hidden="true">📁</span>
             <span className="council-setup__preset-btn-label">
-              {activePreset ? activePreset.name : 'Custom lineup'}
+              {activePreset ? activePreset.name : t('councilSetup.customLineup')}
             </span>
             <span className="council-setup__preset-chevron">›</span>
           </button>
@@ -433,10 +435,10 @@ export default function CouncilSetup({
                 className={`council-setup__preset-option ${!activePresetId ? 'council-setup__preset-option--selected' : ''}`}
                 onClick={handleSelectCustomSetup}
               >
-                Custom lineup
+                {t('councilSetup.customLineup')}
               </button>
               {presets.length === 0 ? (
-                <div className="council-setup__preset-empty">No saved presets yet</div>
+                <div className="council-setup__preset-empty">{t('councilSetup.noSavedPresets')}</div>
               ) : (
                 presets.map((preset) => (
                   <div key={preset.id} className="council-setup__preset-option-row">
@@ -453,8 +455,8 @@ export default function CouncilSetup({
                         <button
                           type="button"
                           className="council-setup__preset-action-btn"
-                          title="Set as default"
-                          aria-label={`Set ${preset.name} as default`}
+                          title={t('councilSetup.setAsDefault')}
+                          aria-label={t('councilSetup.setAsDefaultAria', { name: preset.name })}
                           onClick={() => handleSetDefaultPreset(preset.id)}
                         >
                           ☆
@@ -463,8 +465,8 @@ export default function CouncilSetup({
                       <button
                         type="button"
                         className="council-setup__preset-action-btn council-setup__preset-action-btn--delete"
-                        title="Delete preset"
-                        aria-label={`Delete ${preset.name}`}
+                        title={t('councilSetup.deletePreset')}
+                        aria-label={t('councilSetup.deletePresetAria', { name: preset.name })}
                         onClick={() => handleDeletePreset(preset.id)}
                       >
                         ✕
@@ -479,7 +481,7 @@ export default function CouncilSetup({
                   className="council-setup__preset-footer-btn"
                   onClick={openSavePresetModal}
                 >
-                  Save current as…
+                  {t('councilSetup.saveCurrentAs')}
                 </button>
               </div>
             </div>
@@ -489,9 +491,9 @@ export default function CouncilSetup({
           type="button"
           className="council-setup__new-council-btn"
           onClick={handleNewCouncil}
-          title="Clear all current members and chairman to start fresh"
+          title={t('councilSetup.newCouncilClearTitle')}
         >
-          + New Council · Clear Current
+          {t('councilSetup.newCouncilClear')}
         </button>
         {(isPresetDirty || !activePresetId) && (
           <button
@@ -499,16 +501,16 @@ export default function CouncilSetup({
             className="council-setup__preset-save-link"
             onClick={openSavePresetModal}
           >
-            Save preset…
+            {t('councilSetup.savePresetEllipsis')}
           </button>
         )}
       </div>
 
       {!modelsLoading && models.length === 0 && (
         <p className="council-setup__model-empty">
-          No models available.{' '}
+          {t('councilSetup.noModelsAvailable')}{' '}
           <button type="button" className="council-setup__link" onClick={() => onOpenSettings?.('llm_keys')}>
-            Configure API keys
+            {t('councilSetup.configureApiKeys')}
           </button>
         </p>
       )}
@@ -531,7 +533,7 @@ export default function CouncilSetup({
       />
 
       {isPresetDirty && (
-        <p className="council-setup__preset-dirty">Unsaved changes from preset</p>
+        <p className="council-setup__preset-dirty">{t('councilSetup.unsavedChanges')}</p>
       )}
 
       {saveModalOpen && (
@@ -542,9 +544,9 @@ export default function CouncilSetup({
             aria-labelledby="council-preset-save-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 id="council-preset-save-title">Save council preset</h3>
+            <h3 id="council-preset-save-title">{t('councilSetup.savePresetTitle')}</h3>
             <label className="council-setup__modal-label">
-              Preset name
+              {t('councilSetup.presetName')}
               <input
                 type="text"
                 value={saveForm.name}
@@ -559,7 +561,7 @@ export default function CouncilSetup({
                 checked={saveForm.isDefault}
                 onChange={(e) => setSaveForm((f) => ({ ...f, isDefault: e.target.checked }))}
               />
-              Set as default lineup
+              {t('councilSetup.setAsDefaultLineup')}
             </label>
             {activePresetId && (
               <>
@@ -569,18 +571,18 @@ export default function CouncilSetup({
                     checked={saveForm.updateExisting}
                     onChange={(e) => setSaveForm((f) => ({ ...f, updateExisting: e.target.checked }))}
                   />
-                  Overwrite existing preset
+                  {t('councilSetup.overwriteExisting')}
                 </label>
                 {saveForm.updateExisting && (
                   <p className="council-setup__modal-warning">
-                    Saving will replace &ldquo;{activePreset?.name}&rdquo; with your current lineup.
+                    {t('councilSetup.overwriteWarning', { name: activePreset?.name || '' })}
                   </p>
                 )}
               </>
             )}
             <div className="council-setup__modal-actions">
               <button type="button" className="council-setup__modal-cancel" onClick={closeSavePresetModal}>
-                Cancel
+                {t('councilSetup.cancel')}
               </button>
               <button
                 type="button"
@@ -588,7 +590,7 @@ export default function CouncilSetup({
                 onClick={handleSavePreset}
                 disabled={!saveForm.name.trim() || presetSaving}
               >
-                {presetSaving ? 'Saving…' : (saveForm.updateExisting ? 'Overwrite preset' : 'Save')}
+                {presetSaving ? t('councilSetup.saving') : (saveForm.updateExisting ? t('councilSetup.overwritePreset') : t('councilSetup.save'))}
               </button>
             </div>
           </div>

@@ -14,16 +14,16 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--tint-2);
   border: none;
   cursor: pointer;
   font-size: 14px;
-  color: #e5e7eb;
+  color: var(--text-primary);
   transition: background 0.2s;
 }
 
 .search-accordion-header:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--tint-3);
 }
 
 .search-accordion-header.expanded {
@@ -83,7 +83,7 @@
 /* Sources Section */
 .search-sources {
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--tint-1);
   display: flex;
   flex-wrap: wrap;
   align-items: center;

@@ -1,7 +1,7 @@
 {
   "name": "the-ai-counsel",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.9.0-he.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "i18next": "^26.3.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-i18next": "^17.0.8",
     "react-markdown": "^10.1.0",
     "react-select": "^5.10.2",
     "remark-gfm": "^4.0.1"

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import SearchableModelSelect from './SearchableModelSelect';
 import {
   getProviderInfo,
@@ -25,6 +26,7 @@ function isReactSelectTarget(target) {
 }
 
 function ModelPicker({ modelId, models, modelsLoading, onSelect, onCloseEditor }) {
+  const { t } = useTranslation();
   return (
     <div className="council-card__picker" onClick={(e) => e.stopPropagation()}>
       <SearchableModelSelect
@@ -33,13 +35,13 @@ function ModelPicker({ modelId, models, modelsLoading, onSelect, onCloseEditor }
         onChange={(id) => {
           if (id) onSelect(id);
         }}
-        placeholder={modelsLoading ? 'Loading models…' : 'Search models…'}
+        placeholder={modelsLoading ? t('editableCouncil.loadingModels') : t('editableCouncil.searchModels')}
         isLoading={modelsLoading}
         isDisabled={modelsLoading || models.length === 0}
         autoOpen
       />
       <button type="button" className="council-card__picker-close" onClick={onCloseEditor}>
-        Cancel
+        {t('editableCouncil.cancel')}
       </button>
     </div>
   );
@@ -60,6 +62,7 @@ function EditableCouncilCard({
   onSelectModel,
   onCloseEditor,
 }) {
+  const { t } = useTranslation();
   const isChairman = role === 'chairman';
   const hasModel = Boolean(modelId);
   const info = hasModel ? getProviderInfo(modelId) : PROVIDER_CONFIG.default;
@@ -89,7 +92,7 @@ function EditableCouncilCard({
       }}
     >
       <div className={`role-badge ${isChairman ? 'chairman' : 'member'}`}>
-        {isChairman ? 'Chairman' : `Member #${memberLabel}`}
+        {isChairman ? t('editableCouncil.chairman') : t('editableCouncil.memberN', { n: memberLabel })}
       </div>
 
       {!isChairman && onRemove && (
@@ -100,7 +103,7 @@ function EditableCouncilCard({
             e.stopPropagation();
             onRemove(memberIndex);
           }}
-          aria-label={`Remove member ${memberLabel}`}
+          aria-label={t('editableCouncil.removeMemberAria', { n: memberLabel })}
         >
           ✕
         </button>
@@ -115,11 +118,11 @@ function EditableCouncilCard({
       </div>
 
       <div className="council-info">
-        <span className={`model-name ${!hasModel ? 'model-name--placeholder' : ''}`}>
-          {hasModel ? getModelDisplayName(modelId) : 'Choose model'}
+        <span className={`model-name ${hasModel ? 'ltr' : 'model-name--placeholder'}`}>
+          {hasModel ? getModelDisplayName(modelId) : t('editableCouncil.chooseModel')}
         </span>
-        <span className="provider-label">
-          {isChairman ? 'Final Verdict' : (hasModel ? info.label : 'Pick a model')}
+        <span className={`provider-label ${hasModel && !isChairman ? 'ltr' : ''}`}>
+          {isChairman ? t('editableCouncil.finalVerdict') : (hasModel ? info.label : t('editableCouncil.pickAModel'))}
         </span>
       </div>
 
@@ -129,7 +132,7 @@ function EditableCouncilCard({
           className={`council-card__edit${isChairman ? ' council-card__edit--chairman' : ''}`}
           onClick={handleEdit}
         >
-          Edit
+          {t('editableCouncil.edit')}
         </button>
       )}
 
@@ -162,6 +165,7 @@ export default function EditableCouncilGrid({
   onAddMemberClick,
   onCloseEditor,
 }) {
+  const { t } = useTranslation();
   const gridRef = useRef(null);
 
   useEffect(() => {
@@ -173,7 +177,6 @@ export default function EditableCouncilGrid({
       onCloseEditor?.();
     };
 
-    // Defer so the same click that opened the editor does not close it immediately.
     const timer = window.setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
     }, 0);
@@ -240,10 +243,10 @@ export default function EditableCouncilGrid({
               onAddMemberClick();
             }}
             disabled={modelsLoading || models.length === 0}
-            aria-label="Add council member"
+            aria-label={t('editableCouncil.addCouncilMember')}
           >
             <span className="council-card-add-icon" aria-hidden="true">+</span>
-            <span className="council-card-add-label">Add member</span>
+            <span className="council-card-add-label">{t('editableCouncil.addMember')}</span>
           </button>
         )}
 

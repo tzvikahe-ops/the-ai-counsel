@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import openrouterIcon from '../../assets/icons/openrouter.svg';
 import groqIcon from '../../assets/icons/groq.svg';
 import ollamaIcon from '../../assets/icons/ollama.svg';
@@ -82,6 +83,7 @@ export default function ProviderSettings({
     customEndpointModels,
     onClearCustomEndpoint
 }) {
+    const { t } = useTranslation();
     const getDirectProviderModelsCount = (providerId) => {
         const providerNameMap = {
             openai: 'OpenAI',
@@ -100,22 +102,22 @@ export default function ProviderSettings({
 
     return (
         <section className="settings-section">
-            <h3>LLM API Keys</h3>
+            <h3>{t('providers.heading')}</h3>
             <p className="section-description">
-                Configure keys for LLM providers.
-                Keys are <strong>auto-saved</strong> immediately upon successful test.
+                {t('providers.description')}
             </p>
 
             {/* OpenRouter */}
             <form className="api-key-section" onSubmit={e => e.preventDefault()}>
                 <label>
                     <img src={openrouterIcon} alt="" className="provider-icon" />
-                    OpenRouter API Key
+                    {t('providers.openrouterLabel')}
                 </label>
                 <div className="api-key-input-row">
                     <input
                         type="password"
-                        placeholder={settings?.openrouter_api_key_set ? '••••••••••••••••' : 'Enter API key'}
+                        className="ltr"
+                        placeholder={settings?.openrouter_api_key_set ? '••••••••••••••••' : t('providers.enterApiKey')}
                         value={openrouterApiKey}
                         onChange={(e) => {
                             setOpenrouterApiKey(e.target.value);
@@ -143,13 +145,13 @@ export default function ProviderSettings({
                         onClick={handleTestOpenRouter}
                         disabled={!openrouterApiKey && !settings?.openrouter_api_key_set || isTestingOpenRouter}
                     >
-                        {isTestingOpenRouter ? 'Testing...' : (settings?.openrouter_api_key_set && !openrouterApiKey ? 'Retest' : 'Test')}
+                        {isTestingOpenRouter ? t('providers.testing') : (settings?.openrouter_api_key_set && !openrouterApiKey ? t('providers.retest') : t('providers.test'))}
                     </button>
                 </div>
                 {settings?.openrouter_api_key_set && !openrouterApiKey && (
                     <div className="key-status set">
-                        ✓ API key configured
-                        {availableModels.length > 0 && ` · ${availableModels.length} models available`}
+                        {t('providers.apiKeyConfigured')}
+                        {availableModels.length > 0 && ` · ${availableModels.length} ${t('providers.modelsAvailableSuffix')}`}
                     </div>
                 )}
                 {openrouterTestResult && (
@@ -158,7 +160,7 @@ export default function ProviderSettings({
                     </div>
                 )}
                 <p className="api-key-hint">
-                    Get key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">openrouter.ai</a>
+                    {t('providers.openrouterHint')} <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="ltr">openrouter.ai</a>
                 </p>
             </form>
 
@@ -166,31 +168,31 @@ export default function ProviderSettings({
             <form className="api-key-section" onSubmit={e => e.preventDefault()}>
                 <label>
                     <img src={groqIcon} alt="" className="provider-icon" />
-                    Groq API Key
+                    {t('providers.groqLabel')}
                 </label>
                 <div className="api-key-input-row">
                     <input
                         type="password"
-                        placeholder={settings?.groq_api_key_set ? '••••••••••••••••' : 'Enter API key'}
+                        className="ltr"
+                        placeholder={settings?.groq_api_key_set ? '••••••••••••••••' : t('providers.enterApiKey')}
                         value={groqApiKey}
                         onChange={(e) => {
                             setGroqApiKey(e.target.value);
-                            // setGroqTestResult(null); // Missing prop
                         }}
-                        className={settings?.groq_api_key_set && !groqApiKey ? 'key-configured' : ''}
+                        className={settings?.groq_api_key_set && !groqApiKey ? 'key-configured ltr' : 'ltr'}
                     />
                     <button
                         className="test-button"
                         onClick={handleTestGroq}
                         disabled={!groqApiKey && !settings?.groq_api_key_set || isTestingGroq}
                     >
-                        {isTestingGroq ? 'Testing...' : (settings?.groq_api_key_set && !groqApiKey ? 'Retest' : 'Test')}
+                        {isTestingGroq ? t('providers.testing') : (settings?.groq_api_key_set && !groqApiKey ? t('providers.retest') : t('providers.test'))}
                     </button>
                 </div>
                 {settings?.groq_api_key_set && !groqApiKey && (
                     <div className="key-status set">
-                        ✓ API key configured
-                        {groqModelsCount > 0 && ` · ${groqModelsCount} models available`}
+                        {t('providers.apiKeyConfigured')}
+                        {groqModelsCount > 0 && ` · ${groqModelsCount} ${t('providers.modelsAvailableSuffix')}`}
                     </div>
                 )}
                 {groqTestResult && (
@@ -199,7 +201,7 @@ export default function ProviderSettings({
                     </div>
                 )}
                 <p className="api-key-hint">
-                    Get key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com</a>
+                    {t('providers.groqHint')} <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="ltr">console.groq.com</a>
                 </p>
             </form>
 
@@ -207,16 +209,16 @@ export default function ProviderSettings({
             <form className="api-key-section" onSubmit={e => e.preventDefault()}>
                 <label>
                     <img src={ollamaIcon} alt="" className="provider-icon" />
-                    Ollama Base URL
+                    {t('providers.ollamaLabel')}
                 </label>
                 <div className="api-key-input-row">
                     <input
                         type="text"
+                        className="ltr"
                         placeholder="http://localhost:11434"
                         value={ollamaBaseUrl}
                         onChange={(e) => {
                             setOllamaBaseUrl(e.target.value);
-                            // setOllamaTestResult(null); // Missing prop
                         }}
                     />
                     <button
@@ -224,7 +226,7 @@ export default function ProviderSettings({
                         onClick={handleTestOllama}
                         disabled={!ollamaBaseUrl || isTestingOllama}
                     >
-                        {isTestingOllama ? 'Testing...' : 'Connect'}
+                        {isTestingOllama ? t('providers.testing') : t('providers.connect')}
                     </button>
                 </div>
                 {ollamaTestResult && (
@@ -236,17 +238,17 @@ export default function ProviderSettings({
                     <div className="ollama-auto-status connected">
                         <span className="status-indicator connected">●</span>
                         <span className="status-text">
-                            <strong>Connected</strong>
-                            {ollamaAvailableModels.length > 0 && ` · ${ollamaAvailableModels.length} models available`}
+                            <strong>{t('providers.ollamaConnected')}</strong>
+                            {ollamaAvailableModels.length > 0 && ` · ${ollamaAvailableModels.length} ${t('providers.ollamaModelsAvailable')}`}
                             <span className="status-separator">·</span>
-                            <span className="status-time">Last: {new Date(ollamaStatus.lastConnected).toLocaleTimeString()}</span>
+                            <span className="status-time">{t('providers.ollamaLast')} <span className="ltr">{new Date(ollamaStatus.lastConnected).toLocaleTimeString()}</span></span>
                         </span>
                     </div>
                 )}
                 {ollamaStatus && !ollamaStatus.connected && !ollamaStatus.testing && (
                     <div className="ollama-auto-status">
                         <span className="status-indicator disconnected">●</span>
-                        <span className="status-text">Not connected</span>
+                        <span className="status-text">{t('providers.ollamaNotConnected')}</span>
                     </div>
                 )}
                 <div className="model-options-row" style={{ marginTop: '12px' }}>
@@ -255,40 +257,40 @@ export default function ProviderSettings({
                         className="reset-defaults-button"
                         onClick={() => loadOllamaModels(ollamaBaseUrl)}
                     >
-                        Refresh Local Models
+                        {t('providers.refreshLocalModels')}
                     </button>
                 </div>
             </form>
 
             {/* Direct LLM API Connections */}
             <div className="subsection" style={{ marginTop: '24px' }}>
-                <h4>Direct LLM Connections</h4>
+                <h4>{t('providers.directHeading')}</h4>
                 {DIRECT_PROVIDERS.map(dp => (
                     <form key={dp.id} className="api-key-section" onSubmit={e => e.preventDefault()}>
                         <label>
                             <img src={PROVIDER_ICONS[dp.id]} alt="" className="provider-icon" />
-                            {dp.name} API Key
+                            <span className="ltr">{dp.name}</span> {t('providers.directKeyLabelSuffix')}
                         </label>
                         <div className="api-key-input-row">
                             <input
                                 type="password"
-                                placeholder={settings?.[`${dp.key}_set`] ? '••••••••••••••••' : 'Enter API key'}
+                                placeholder={settings?.[`${dp.key}_set`] ? '••••••••••••••••' : t('providers.enterApiKey')}
                                 value={directKeys[dp.key]}
                                 onChange={e => setDirectKeys(prev => ({ ...prev, [dp.key]: e.target.value }))}
-                                className={settings?.[`${dp.key}_set`] && !directKeys[dp.key] ? 'key-configured' : ''}
+                                className={`ltr ${settings?.[`${dp.key}_set`] && !directKeys[dp.key] ? 'key-configured' : ''}`}
                             />
                             <button
                                 className="test-button"
                                 onClick={() => handleTestDirectKey(dp.id, dp.key)}
                                 disabled={(!directKeys[dp.key] && !settings?.[`${dp.key}_set`]) || validatingKeys[dp.id]}
                             >
-                                {validatingKeys[dp.id] ? 'Testing...' : (settings?.[`${dp.key}_set`] && !directKeys[dp.key] ? 'Retest' : 'Test')}
+                                {validatingKeys[dp.id] ? t('providers.testing') : (settings?.[`${dp.key}_set`] && !directKeys[dp.key] ? t('providers.retest') : t('providers.test'))}
                             </button>
                         </div>
                         {settings?.[`${dp.key}_set`] && !directKeys[dp.key] && (
                             <div className="key-status set">
-                                ✓ API key configured
-                                {getDirectProviderModelsCount(dp.id) > 0 && ` · ${getDirectProviderModelsCount(dp.id)} models available`}
+                                {t('providers.apiKeyConfigured')}
+                                {getDirectProviderModelsCount(dp.id) > 0 && ` · ${getDirectProviderModelsCount(dp.id)} ${t('providers.modelsAvailableSuffix')}`}
                             </div>
                         )}
                         {keyValidationStatus[dp.id] && (
@@ -304,35 +306,33 @@ export default function ProviderSettings({
             <div className="subsection" style={{ marginTop: '24px' }}>
                 <h4>
                     <img src={opencodeIcon} alt="" className="provider-icon" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-                    OpenCode (Zen + Go)
+                    {t('providers.opencodeHeading')}
                 </h4>
                 <p className="subsection-description" style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
-                    One OpenCode API key unlocks <strong>Zen</strong> (curated, per-token) and <strong>Go</strong> (subscription).
-                    v1 supports OpenAI-compatible chat/completions models only — GPT Responses, Claude Messages, and per-model
-                    Gemini endpoints are not yet wired up.
+                    {t('providers.opencodeDescription')}
                 </p>
                 <form className="api-key-section" onSubmit={e => e.preventDefault()}>
-                    <label>OpenCode API Key</label>
+                    <label>{t('providers.opencodeApiKey')}</label>
                     <div className="api-key-input-row">
                         <input
                             type="password"
-                            placeholder={settings?.opencode_api_key_set ? '••••••••••••••••' : 'Enter API key'}
+                            placeholder={settings?.opencode_api_key_set ? '••••••••••••••••' : t('providers.enterApiKey')}
                             value={opencodeApiKey}
                             onChange={e => setOpencodeApiKey(e.target.value)}
-                            className={settings?.opencode_api_key_set && !opencodeApiKey ? 'key-configured' : ''}
+                            className={`ltr ${settings?.opencode_api_key_set && !opencodeApiKey ? 'key-configured' : ''}`}
                         />
                         <button
                             className="test-button"
                             onClick={handleTestOpencode}
                             disabled={(!opencodeApiKey && !settings?.opencode_api_key_set) || isTestingOpencode}
                         >
-                            {isTestingOpencode ? 'Testing...' : (settings?.opencode_api_key_set && !opencodeApiKey ? 'Retest' : 'Test')}
+                            {isTestingOpencode ? t('providers.testing') : (settings?.opencode_api_key_set && !opencodeApiKey ? t('providers.retest') : t('providers.test'))}
                         </button>
                     </div>
                     {settings?.opencode_api_key_set && !opencodeApiKey && (
                         <div className="key-status set">
-                            ✓ API key configured
-                            {opencodeAvailableModels.length > 0 && ` · ${opencodeAvailableModels.length} models available`}
+                            {t('providers.apiKeyConfigured')}
+                            {opencodeAvailableModels.length > 0 && ` · ${opencodeAvailableModels.length} ${t('providers.modelsAvailableSuffix')}`}
                         </div>
                     )}
                     {opencodeTestResult && (
@@ -341,80 +341,77 @@ export default function ProviderSettings({
                         </div>
                     )}
                     <p className="api-key-hint">
-                        Get a key at <a href="https://opencode.ai/auth" target="_blank" rel="noopener noreferrer">opencode.ai/auth</a> —
-                        add a Zen balance for pay-per-token, subscribe to Go for $5/$10 monthly, or both.
+                        {t('providers.opencodeHint')} <a href="https://opencode.ai/auth" target="_blank" rel="noopener noreferrer" className="ltr">opencode.ai/auth</a>
                     </p>
                 </form>
             </div>
 
             {/* Custom OpenAI-compatible Endpoint */}
             <div className="subsection" style={{ marginTop: '24px' }}>
-                <h4>Custom OpenAI-Compatible Endpoint</h4>
+                <h4>{t('providers.customHeading')}</h4>
                 <p className="subsection-description" style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
-                    Connect to any OpenAI-compatible API (Together AI, Fireworks, vLLM, LM Studio, etc.)
+                    {t('providers.customDescription')}
                 </p>
                 <form className="api-key-section" onSubmit={e => e.preventDefault()}>
                     <label>
                         <img src={customEndpointIcon} alt="" className="provider-icon" />
-                        Display Name
+                        {t('providers.displayName')}
                     </label>
                     <div className="api-key-input-row">
                         <input
                             type="text"
-                            placeholder="e.g., Together AI, My vLLM Server"
+                            placeholder={t('providers.displayNamePlaceholder')}
                             value={customEndpointName}
                             onChange={(e) => {
                                 setCustomEndpointName(e.target.value);
-                                // setCustomEndpointTestResult(null); // Missing prop
                             }}
                         />
                     </div>
 
-                    <label style={{ marginTop: '12px' }}>Base URL</label>
+                    <label style={{ marginTop: '12px' }}>{t('providers.baseUrl')}</label>
                     <div className="api-key-input-row">
                         <input
                             type="text"
+                            className="ltr"
                             placeholder="https://api.together.xyz/v1"
                             value={customEndpointUrl}
                             onChange={(e) => {
                                 setCustomEndpointUrl(e.target.value);
-                                // setCustomEndpointTestResult(null); // Missing prop
                             }}
                         />
                     </div>
 
-                    <label style={{ marginTop: '12px' }}>API Key <span style={{ fontWeight: 'normal', opacity: 0.7 }}>(optional for local servers)</span></label>
+                    <label style={{ marginTop: '12px' }}>{t('providers.apiKeyLabel')} <span style={{ fontWeight: 'normal', opacity: 0.7 }}>{t('providers.optionalLocal')}</span></label>
                     <div className="api-key-input-row">
                         <input
                             type="password"
-                            placeholder={settings?.custom_endpoint_url ? '••••••••••••••••' : 'Enter API key'}
+                            placeholder={settings?.custom_endpoint_url ? '••••••••••••••••' : t('providers.enterApiKey')}
                             value={customEndpointApiKey}
                             onChange={(e) => {
                                 setCustomEndpointApiKey(e.target.value);
-                                // setCustomEndpointTestResult(null); // Missing prop
                             }}
+                            className="ltr"
                         />
                         <button
                             className="test-button"
                             onClick={handleTestCustomEndpoint}
                             disabled={!customEndpointName || !customEndpointUrl || isTestingCustomEndpoint}
                         >
-                            {isTestingCustomEndpoint ? 'Testing...' : 'Connect'}
+                            {isTestingCustomEndpoint ? t('providers.testing') : t('providers.connect')}
                         </button>
                     </div>
 
-                    {/* Show configured status and disconnect button when endpoint is saved */}
                     {settings?.custom_endpoint_url && (
                         <div className="key-status set key-status-row">
                             <span>
-                                ✓ Endpoint configured
-                                {customEndpointModels.length > 0 && ` · ${customEndpointModels.length} models available`}
+                                {t('providers.endpointConfigured')}
+                                {customEndpointModels.length > 0 && ` · ${customEndpointModels.length} ${t('providers.modelsAvailableSuffix')}`}
                             </span>
                             <button
                                 className="test-button danger"
                                 onClick={onClearCustomEndpoint}
                             >
-                                Disconnect
+                                {t('providers.disconnect')}
                             </button>
                         </div>
                     )}

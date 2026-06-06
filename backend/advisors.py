@@ -12,13 +12,104 @@ from .personas import get_personas_by_ids, Persona
 from .settings import get_settings
 from .advisor_prompts import (
     ADVISOR_ROUND1_PROMPT,
+    ADVISOR_ROUND1_PROMPT_HEBREW,
     ADVISOR_FOLLOWUP_PROMPT,
+    ADVISOR_FOLLOWUP_PROMPT_HEBREW,
     ADVISOR_CROSS_POLLINATION_PROMPT,
+    ADVISOR_CROSS_POLLINATION_PROMPT_HEBREW,
     ADVISOR_VERDICT_PROMPT,
+    ADVISOR_VERDICT_PROMPT_HEBREW,
     ADVISOR_TIEBREAKER_PROMPT,
+    ADVISOR_TIEBREAKER_PROMPT_HEBREW,
     CONSENSUS_TAG_INSTRUCTION,
+    CONSENSUS_TAG_INSTRUCTION_HEBREW,
 )
 from .prompts import apply_response_language
+
+
+# Map English persona display names to Hebrew. Used when the response
+# language is Hebrew so the transcripts fed to models - and therefore the
+# names advisors call each other by - appear in Hebrew. Keys match the
+# Persona.name field in personas.py.
+_PERSONA_NAME_HEBREW = {
+    "The Skeptic": "הספקן",
+    "The Pragmatist": "הפרגמטיסט",
+    "The Innovator": "החדשן",
+    "The Historian": "ההיסטוריון",
+    "The Ethicist": "האתיקאי",
+    "The Data Analyst": "מנתח הנתונים",
+    "The Contrarian": "המנוגד",
+    "The Strategist": "האסטרטג",
+    "The Humanist": "ההומניסט",
+    "The Risk Assessor": "מעריך הסיכונים",
+    "The Comedian": "הליצן",
+    "The Economist": "הכלכלן",
+}
+
+# Hebrew role labels - used alongside names in the transcript header line
+# "{name} ({role}):" so role text doesn't slip back to English.
+_PERSONA_ROLE_HEBREW = {
+    "Critical Thinker": "חושב ביקורתי",
+    "Practical Advisor": "יועץ מעשי",
+    "Creative Thinker": "חושב יצירתי",
+    "Pattern Analyst": "מנתח דפוסים",
+    "Moral Compass": "מצפן מוסרי",
+    "Evidence Evaluator": "מעריך ראיות",
+    "Devil's Advocate": "פרקליט השטן",
+    "Big-Picture Thinker": "חושב תמונה גדולה",
+    "People-First Advocate": "סנגור האנשים",
+    "Risk Analyst": "מנתח סיכונים",
+    "Humorist Critic": "מבקר הומוריסטי",
+    "Incentives Analyst": "מנתח תמריצים",
+}
+
+
+def _is_hebrew(language: Optional[str]) -> bool:
+    return ((language or "").strip()) == "Hebrew"
+
+
+def _persona_display_name(persona: Optional[Persona], fallback: str, language: Optional[str]) -> str:
+    """Resolve the name the model should see for a persona in a given language.
+
+    Falls back to the persona's native ``name`` when no override exists, and
+    finally to ``fallback`` (typically the persona id) when no persona is
+    known at all.
+    """
+    if not persona:
+        return fallback
+    if _is_hebrew(language) and not getattr(persona, "is_customized", False):
+        return _PERSONA_NAME_HEBREW.get(persona.name, persona.name)
+    return persona.name
+
+
+def _persona_display_role(persona: Optional[Persona], language: Optional[str]) -> str:
+    if not persona:
+        return ""
+    if _is_hebrew(language) and not getattr(persona, "is_customized", False):
+        return _PERSONA_ROLE_HEBREW.get(persona.role, persona.role)
+    return persona.role
+
+
+def _pick_advisor_prompt(
+    settings: Any,
+    settings_key: str,
+    english_default: str,
+    hebrew_default: str,
+) -> str:
+    """Choose the default template, preferring a user-customized version
+    from settings, then language-appropriate built-in default."""
+    user_template = getattr(settings, settings_key, None)
+    if isinstance(user_template, str) and user_template.strip():
+        return user_template
+    if _is_hebrew(getattr(settings, "response_language", None)):
+        return hebrew_default
+    return english_default
+
+
+def _consensus_tag(settings: Any) -> str:
+    return CONSENSUS_TAG_INSTRUCTION_HEBREW if _is_hebrew(
+        getattr(settings, "response_language", None)
+    ) else CONSENSUS_TAG_INSTRUCTION
 
 logger = logging.getLogger(__name__)
 
@@ -47,15 +138,24 @@ def build_rotation_order(persona_ids: List[str], round_number: int) -> List[str]
     return persona_ids[shift:] + persona_ids[:shift]
 
 
-def _format_transcript(rounds: List[Dict[str, Any]], personas: Dict[str, Persona]) -> str:
-    """Format the debate transcript for injection into prompts."""
+def _format_transcript(
+    rounds: List[Dict[str, Any]],
+    personas: Dict[str, Persona],
+    language: Optional[str] = None,
+) -> str:
+    """Format the debate transcript for injection into prompts.
+
+    When ``language`` is Hebrew, persona names and roles in the speaker
+    headers are translated so the model reads (and refers back to) the
+    advisors by their Hebrew names.
+    """
     lines = []
     for r in rounds:
         lines.append(f"--- Round {r['round_number']} ---")
         for resp in r["responses"]:
             p = personas.get(resp["persona_id"])
-            name = p.name if p else resp["persona_id"]
-            role = p.role if p else ""
+            name = _persona_display_name(p, resp["persona_id"], language)
+            role = _persona_display_role(p, language)
             lines.append(f"\n{name} ({role}):\n{resp['content']}")
     return "\n".join(lines)
 
@@ -88,6 +188,7 @@ def _format_debate_arc(
     round_extracts: List[Dict[str, Any]],
     consensus_reached: bool,
     consensus_round: Optional[int],
+    language: Optional[str] = None,
 ) -> str:
     """Build a compact debate-arc signal for the verdict model."""
     if not all_rounds:
@@ -111,7 +212,7 @@ def _format_debate_arc(
     for resp in final_round.get("responses", []):
         pid = resp["persona_id"]
         persona = personas.get(pid)
-        name = persona.name if persona else resp.get("persona_name", pid)
+        name = _persona_display_name(persona, resp.get("persona_name", pid), language)
         content = (resp.get("content") or "").strip().replace("\n", " ")
         summary = content[:300] + ("..." if len(content) > 300 else "")
         lines.append(
@@ -123,7 +224,7 @@ def _format_debate_arc(
     final_by_pid = {resp["persona_id"]: resp for resp in final_round.get("responses", [])}
     for pid, final_resp in final_by_pid.items():
         persona = personas.get(pid)
-        name = persona.name if persona else final_resp.get("persona_name", pid)
+        name = _persona_display_name(persona, final_resp.get("persona_name", pid), language)
         start = (first_by_pid.get(pid, {}).get("content") or "").strip().replace("\n", " ")
         final = (final_resp.get("content") or "").strip().replace("\n", " ")
         start_summary = start[:220] + ("..." if len(start) > 220 else "")
@@ -314,22 +415,30 @@ async def run_debate(
         word_limit = 150 if is_first_round else 250
 
         if is_first_round:
-            prompt_template = _settings_prompt(
-                settings, "advisor_round1_prompt", ADVISOR_ROUND1_PROMPT
+            prompt_template = _pick_advisor_prompt(
+                settings,
+                "advisor_round1_prompt",
+                ADVISOR_ROUND1_PROMPT,
+                ADVISOR_ROUND1_PROMPT_HEBREW,
             ).format(
                 search_context_block=search_context_block,
                 question=safe_question,
-                consensus_tag=CONSENSUS_TAG_INSTRUCTION,
+                consensus_tag=_consensus_tag(settings),
             )
         else:
-            transcript_text = _format_transcript(all_rounds, personas_map)
+            transcript_text = _format_transcript(
+                all_rounds, personas_map, settings.response_language
+            )
             previous_extract = (
                 round_extracts[-1]["content"]
                 if round_extracts and round_extracts[-1].get("content")
                 else "No distilled extract was produced for the previous round. Use the transcript as fallback context."
             )
-            prompt_template = _settings_prompt(
-                settings, "advisor_followup_prompt", ADVISOR_FOLLOWUP_PROMPT
+            prompt_template = _pick_advisor_prompt(
+                settings,
+                "advisor_followup_prompt",
+                ADVISOR_FOLLOWUP_PROMPT,
+                ADVISOR_FOLLOWUP_PROMPT_HEBREW,
             ).format(
                 search_context_block=search_context_block if round_num == 2 else "",
                 question=safe_question,
@@ -337,7 +446,7 @@ async def run_debate(
                 round_number=round_num,
                 previous_round_number=round_num - 1,
                 cross_pollination_extract=previous_extract,
-                consensus_tag=CONSENSUS_TAG_INSTRUCTION,
+                consensus_tag=_consensus_tag(settings),
             )
 
         localized_prompt = apply_response_language(prompt_template, settings.response_language)
@@ -472,11 +581,14 @@ async def run_debate(
             if request and await request.is_disconnected():
                 logger.info("Client disconnected during advisor extract.")
                 return
-            round_transcript = _format_transcript([all_rounds[-1]], personas_map)
-            extract_prompt = _settings_prompt(
+            round_transcript = _format_transcript(
+                [all_rounds[-1]], personas_map, settings.response_language
+            )
+            extract_prompt = _pick_advisor_prompt(
                 settings,
                 "advisor_cross_pollination_prompt",
                 ADVISOR_CROSS_POLLINATION_PROMPT,
+                ADVISOR_CROSS_POLLINATION_PROMPT_HEBREW,
             ).format(
                 question=safe_question,
                 round_number=round_num,
@@ -505,14 +617,19 @@ async def run_debate(
                 "cost": extract_result.get("cost"),
             })
 
-    transcript_text = _format_transcript(all_rounds, personas_map)
+    transcript_text = _format_transcript(
+        all_rounds, personas_map, settings.response_language
+    )
 
     tiebreaker_result = None
     if not consensus_reached and len(persona_ids) == 2:
         yield {"type": "advisor_tiebreaker_start"}
 
-        tiebreaker_prompt = _settings_prompt(
-            settings, "advisor_tiebreaker_prompt", ADVISOR_TIEBREAKER_PROMPT
+        tiebreaker_prompt = _pick_advisor_prompt(
+            settings,
+            "advisor_tiebreaker_prompt",
+            ADVISOR_TIEBREAKER_PROMPT,
+            ADVISOR_TIEBREAKER_PROMPT_HEBREW,
         ).format(
             question=safe_question,
             transcript=transcript_text,
@@ -532,9 +649,19 @@ async def run_debate(
         round_extracts,
         consensus_reached,
         consensus_round,
+        settings.response_language,
     )
+    # Pick the verdict template. If the user customized their advisor verdict
+    # prompt in Settings, that always wins. Otherwise, when response language
+    # is Hebrew we swap in the pre-translated Hebrew variant so the model
+    # emits "## סיכום" instead of "## Summary".
+    default_verdict_prompt = ADVISOR_VERDICT_PROMPT
+    if not getattr(settings, "advisor_verdict_prompt", None):
+        lang = (getattr(settings, "response_language", "") or "").strip()
+        if lang == "Hebrew":
+            default_verdict_prompt = ADVISOR_VERDICT_PROMPT_HEBREW
     verdict_prompt = _settings_prompt(
-        settings, "advisor_verdict_prompt", ADVISOR_VERDICT_PROMPT
+        settings, "advisor_verdict_prompt", default_verdict_prompt
     ).format(
         question=safe_question,
         transcript=transcript_text,

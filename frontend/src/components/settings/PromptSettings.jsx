@@ -1,50 +1,52 @@
+import { useTranslation } from 'react-i18next';
+
 const COUNCIL_PROMPTS = [
   {
     id: 'stage1',
     key: 'stage1_prompt',
-    label: 'Stage 1',
-    heading: 'Stage 1: Initial Response',
-    description: 'Used when each council model answers the user question independently.',
+    labelKey: 'prompts.council.stage1Label',
+    headingKey: 'prompts.council.stage1Heading',
+    descriptionKey: 'prompts.council.stage1Description',
     variables: ['user_query', 'search_context_block'],
   },
   {
     id: 'stage2',
     key: 'stage2_prompt',
-    label: 'Stage 2',
-    heading: 'Stage 2: Peer Ranking',
-    description: 'Used when council models anonymously review and rank the Stage 1 responses.',
+    labelKey: 'prompts.council.stage2Label',
+    headingKey: 'prompts.council.stage2Heading',
+    descriptionKey: 'prompts.council.stage2Description',
     variables: ['user_query', 'responses_text', 'search_context_block'],
   },
   {
     id: 'stage3',
     key: 'stage3_prompt',
-    label: 'Stage 3',
-    heading: 'Stage 3: Chairman Synthesis',
-    description: 'Used when the chairman model synthesizes the council output into the final answer.',
+    labelKey: 'prompts.council.stage3Label',
+    headingKey: 'prompts.council.stage3Heading',
+    descriptionKey: 'prompts.council.stage3Description',
     variables: ['user_query', 'stage1_responses', 'rankings_text', 'search_context_block'],
   },
   {
     id: 'stage4',
     key: 'stage4_prompt',
-    label: 'Stage 4',
-    heading: 'Stage 4: Corrected Draft (Multi-Round)',
-    description: 'Used when the chairman synthesizes claims and edits the previous responses into a finalized, revised draft after multiple debate rounds.',
+    labelKey: 'prompts.council.stage4Label',
+    headingKey: 'prompts.council.stage4Heading',
+    descriptionKey: 'prompts.council.stage4Description',
     variables: ['total_rounds', 'original_text', 'verdict_text'],
   },
   {
     id: 'title',
     key: 'title_prompt',
-    label: 'Title',
-    heading: 'Conversation Title',
-    description: 'Used to generate a short title for saved conversations.',
+    labelKey: 'prompts.council.titleLabel',
+    headingKey: 'prompts.council.titleHeading',
+    descriptionKey: 'prompts.council.titleDescription',
     variables: ['user_query'],
   },
   {
     id: 'query',
     key: 'query_prompt',
-    label: 'Query',
-    heading: 'Search Query Generation',
-    description: 'Used to turn a user question into a concise web search query.',
+    labelKey: 'prompts.council.queryLabel',
+    headingKey: 'prompts.council.queryHeading',
+    descriptionKey: 'prompts.council.queryDescription',
     variables: ['user_query'],
   },
 ];
@@ -53,17 +55,17 @@ const ADVISOR_PROMPTS = [
   {
     id: 'advisor_round1',
     key: 'advisor_round1_prompt',
-    label: 'Round 1',
-    heading: 'Round 1: Opening Position',
-    description: 'Used for each advisor opening statement before the debate has peer claims to rebut.',
+    labelKey: 'prompts.advisor.round1Label',
+    headingKey: 'prompts.advisor.round1Heading',
+    descriptionKey: 'prompts.advisor.round1Description',
     variables: ['search_context_block', 'question', 'consensus_tag'],
   },
   {
     id: 'advisor_followup',
     key: 'advisor_followup_prompt',
-    label: 'Follow-up',
-    heading: 'Round 2+: Structured Critique',
-    description: 'Used after Round 1 so advisors respond to the distilled strongest claims from peers.',
+    labelKey: 'prompts.advisor.followupLabel',
+    headingKey: 'prompts.advisor.followupHeading',
+    descriptionKey: 'prompts.advisor.followupDescription',
     variables: [
       'search_context_block',
       'question',
@@ -77,25 +79,25 @@ const ADVISOR_PROMPTS = [
   {
     id: 'advisor_extract',
     key: 'advisor_cross_pollination_prompt',
-    label: 'Extract',
-    heading: 'Cross-Pollination Extract',
-    description: 'Used by the tiebreaker model after each round to summarize the strongest claims.',
+    labelKey: 'prompts.advisor.extractLabel',
+    headingKey: 'prompts.advisor.extractHeading',
+    descriptionKey: 'prompts.advisor.extractDescription',
     variables: ['question', 'round_number', 'round_transcript'],
   },
   {
     id: 'advisor_verdict',
     key: 'advisor_verdict_prompt',
-    label: 'Verdict',
-    heading: 'Final Advisor Verdict',
-    description: 'Used to synthesize the full advisor debate and the debate arc into a final verdict.',
+    labelKey: 'prompts.advisor.verdictLabel',
+    headingKey: 'prompts.advisor.verdictHeading',
+    descriptionKey: 'prompts.advisor.verdictDescription',
     variables: ['question', 'transcript', 'debate_arc'],
   },
   {
     id: 'advisor_tiebreaker',
     key: 'advisor_tiebreaker_prompt',
-    label: 'Tiebreaker',
-    heading: 'Two-Advisor Tiebreaker',
-    description: 'Used when two advisors fail to reach consensus and a tiebreaker verdict is needed.',
+    labelKey: 'prompts.advisor.tiebreakerLabel',
+    headingKey: 'prompts.advisor.tiebreakerHeading',
+    descriptionKey: 'prompts.advisor.tiebreakerDescription',
     variables: ['question', 'transcript'],
   },
 ];
@@ -108,12 +110,13 @@ export default function PromptSettings({
   activePromptTab,
   setActivePromptTab,
 }) {
+  const { t } = useTranslation();
   const promptConfigs = variant === 'advisor' ? ADVISOR_PROMPTS : COUNCIL_PROMPTS;
   const activeConfig = promptConfigs.find(prompt => prompt.id === activePromptTab) || promptConfigs[0];
-  const sectionTitle = variant === 'advisor' ? 'Advisor System Prompts' : 'Council System Prompts';
+  const sectionTitle = variant === 'advisor' ? t('prompts.advisorHeading') : t('prompts.councilHeading');
   const sectionDescription = variant === 'advisor'
-    ? 'Customize the orchestration prompts used by advisor debates.'
-    : 'Customize the system prompts used by the council workflow.';
+    ? t('prompts.advisorDescription')
+    : t('prompts.councilDescription');
   const textAreaRows = variant === 'advisor' ? 18 : 20;
 
   return (
@@ -129,18 +132,18 @@ export default function PromptSettings({
             className={`prompt-tab ${activeConfig.id === prompt.id ? 'active' : ''}`}
             onClick={() => setActivePromptTab(prompt.id)}
           >
-            {prompt.label}
+            {t(prompt.labelKey)}
           </button>
         ))}
       </div>
 
       <div className="prompt-content">
-        <label htmlFor={`${activeConfig.id}-prompt`}>{activeConfig.heading}</label>
+        <label htmlFor={`${activeConfig.id}-prompt`}>{t(activeConfig.headingKey)}</label>
         <p className="prompt-help">
-          {activeConfig.description}
-          <span>Available variables:</span>
+          {t(activeConfig.descriptionKey)}
+          <span>{t('prompts.availableVariables')}</span>
           {activeConfig.variables.map(variable => (
-            <code key={variable}>{`{${variable}}`}</code>
+            <code key={variable} className="ltr">{`{${variable}}`}</code>
           ))}
         </p>
         <textarea
@@ -149,13 +152,15 @@ export default function PromptSettings({
           onChange={(event) => handlePromptChange(activeConfig.key, event.target.value)}
           rows={textAreaRows}
           spellCheck={false}
+          className="ltr"
+          dir="ltr"
         />
         <button
           type="button"
           className="reset-prompt-btn"
           onClick={() => handleResetPrompt(activeConfig.key)}
         >
-          Reset to Default
+          {t('prompts.resetToDefault')}
         </button>
       </div>
 

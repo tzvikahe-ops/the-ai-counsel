@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Skeleton from './common/Skeleton';
 import { getModelVisuals, getShortModelName } from '../utils/modelHelpers';
 import ThinkBlockRenderer from './ThinkBlockRenderer';
@@ -12,10 +13,11 @@ function highlightRevisionMarkers(text) {
     return text
         .replace(/\[REVISED[:\s]*/gi, '**🔶 REVISED:** *')
         .replace(/\[NEW[:\s]*/gi, '**🟢 NEW:** *')
-        .replace(/(?<=\*)(\.?\])/g, '*');  // close the italic before the bracket
+        .replace(/(?<=\*)(\.?\])/g, '*');
 }
 
 export default function Stage4({ correctedDraft, startTime, endTime }) {
+    const { t } = useTranslation();
     const [isCopied, setIsCopied] = useState(false);
 
     if (!correctedDraft) return null;
@@ -40,14 +42,12 @@ export default function Stage4({ correctedDraft, startTime, endTime }) {
             <div className="stage-header">
                 <div className="stage-title">
                     <span className="stage-icon">📝</span>
-                    Stage 4: Corrected Draft
+                    {t('stage4.title')}
                 </div>
-                <StageTimer startTime={startTime} endTime={endTime} label="Duration" />
+                <StageTimer startTime={startTime} endTime={endTime} label={t('stage4.duration')} />
             </div>
             <p className="stage-4-description">
-                The chairman has rewritten the original document incorporating all corrections,
-                fixing flawed claims, and applying recommendations from the deliberation.
-                Changes are marked with <strong>[REVISED]</strong> or <strong>[NEW]</strong>.
+                {t('stage4.description')}
             </p>
             <div className="corrected-draft-response">
                 <div className="corrected-draft-header">
@@ -57,21 +57,21 @@ export default function Stage4({ correctedDraft, startTime, endTime }) {
                         </span>
                         <div className="corrected-draft-info">
                             <span className="corrected-draft-role">
-                                <span>📝</span> Corrected Draft
+                                <span>📝</span> {t('stage4.draftLabel')}
                             </span>
-                            <span className="corrected-draft-model">{shortName}</span>
-                            <span className="corrected-draft-provider-badge">{visuals.name}</span>
+                            <span className="corrected-draft-model ltr">{shortName}</span>
+                            <span className="corrected-draft-provider-badge ltr">{visuals.name}</span>
                         </div>
                     </div>
                     <button
                         className={`copy-button ${isCopied ? 'copied' : ''}`}
                         onClick={handleCopy}
-                        title="Copy corrected draft to clipboard"
+                        title={t('stage4.copyTitle')}
                     >
                         {isCopied ? (
-                            <><span className="icon">✓</span><span className="label">Copied</span></>
+                            <><span className="icon">✓</span><span className="label">{t('stage4.copied')}</span></>
                         ) : (
-                            <><span className="icon">📋</span><span className="label">Copy</span></>
+                            <><span className="icon">📋</span><span className="label">{t('stage4.copy')}</span></>
                         )}
                     </button>
                 </div>
@@ -80,7 +80,7 @@ export default function Stage4({ correctedDraft, startTime, endTime }) {
                         content={highlightRevisionMarkers(
                             typeof correctedDraft?.response === 'string'
                                 ? correctedDraft.response
-                                : String(correctedDraft?.response || 'No corrected draft generated.')
+                                : String(correctedDraft?.response || t('stage4.noDraft'))
                         )}
                     />
                 </div>
@@ -90,12 +90,13 @@ export default function Stage4({ correctedDraft, startTime, endTime }) {
 }
 
 export function Stage4Skeleton() {
+    const { t } = useTranslation();
     return (
         <div className="stage-container stage-4 skeleton-mode">
             <div className="stage-header">
                 <div className="stage-title">
                     <span className="stage-icon">📝</span>
-                    Stage 4: Corrected Draft
+                    {t('stage4.title')}
                 </div>
                 <div className="stage-timer-skeleton"><Skeleton variant="text" width="60px" /></div>
             </div>

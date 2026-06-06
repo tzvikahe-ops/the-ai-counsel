@@ -142,7 +142,7 @@
     left: 50%;
     transform: translateX(-50%);
     background: rgba(15, 23, 42, 0.95);
-    color: #f8fafc;
+    color: var(--text-primary);
     padding: 6px 10px;
     border-radius: 6px;
     font-size: 12px;
@@ -151,7 +151,7 @@
     z-index: 100;
     pointer-events: none;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--tint-border);
     margin-bottom: 5px;
 }
 
@@ -176,7 +176,7 @@
 .custom-tooltip {
     position: fixed;
     background: rgba(15, 23, 42, 0.95);
-    color: #f8fafc;
+    color: var(--text-primary);
     padding: 6px 10px;
     border-radius: 6px;
     font-size: 12px;
@@ -185,7 +185,7 @@
     z-index: 9999;
     pointer-events: none;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--tint-border);
     transform: translate(-50%, 20px);
     /* Center horizontally, push down vertically */
 }
@@ -219,10 +219,10 @@
     filter: grayscale(0.6);
 }
 
-/* Hover — only when idle/ready */
+/* Hover - only when idle/ready */
 .council-card.ready:hover {
     transform: translateY(-4px);
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: var(--tint-border);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
 }
 
@@ -319,7 +319,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #1e293b;
+    border: 2px solid var(--surface-raised);
     z-index: 3;
     animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -418,7 +418,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #1e293b;
+    border: 2px solid var(--surface-raised);
     z-index: 3;
     animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), pulse-spin 2s infinite ease-in-out;
 }

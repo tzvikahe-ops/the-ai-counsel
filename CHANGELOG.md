@@ -7,10 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0-he.1] - 2026-06-06
+
+> Hebrew (RTL) edition - fork of upstream v0.9.0 with localization and a new light theme. No upstream features were removed; English mode is preserved as a togglable UI language.
+
+### Added
+- **Full Hebrew (he) UI localization with RTL layout**: All user-facing strings - landing page, sidebar, chat, stages 1-4, council grid + setup, advisors, debate view, claim cards, ranking heatmap, round navigator, cost report, and all 8 Settings sections - translated and laid out right-to-left. Model IDs, code blocks, URLs, and numbers stay LTR via a global `.ltr` utility.
+- **i18n infrastructure**: `react-i18next` with `he.json` (default) and `en.json` (fallback). UI language preference persists in `localStorage` and toggling it auto-updates `<html lang>` and `dir`.
+- **UI language switch in Settings → General**: Dedicated "שפת הממשק / Interface Language" section above date format. Distinct from the existing "Response Language" that controls model output.
+- **Sage light theme**: A warm calm-modern palette (forest green `#15803D` primary, copper `#9A3412` chairman, cream `#F0EEE6` body) replacing the previous cool-blue light theme. Pairs with the existing dark "Midnight Glass" via the existing theme toggle.
+- **Localized advisor personas (display layer)**: All 12 built-in personas - Skeptic, Pragmatist, Innovator, Historian, Ethicist, Data Analyst, Contrarian, Strategist, Humanist, Risk Assessor, Comedian, Economist - get Hebrew name/role/description in the gallery, the edit modal, the advisor grid, and the debate view. System prompts stay English per project convention.
+- **Hebrew advisor prompts**: Pre-translated variants of `ADVISOR_ROUND1_PROMPT`, `ADVISOR_FOLLOWUP_PROMPT`, `ADVISOR_CROSS_POLLINATION_PROMPT`, `ADVISOR_TIEBREAKER_PROMPT`, `ADVISOR_VERDICT_PROMPT`, and `CONSENSUS_TAG_INSTRUCTION`. Selected automatically when `response_language == "Hebrew"` and the user has not customized the prompt in Settings. Section headings are baked into the prompt as `## עמדה`, `## הפרכה`, `## אות הסכמה`, `## סיכום`, `## נקודות הסכמה`, `## חילוקי דעות`, `## פסיקה`, `## צעדים הבאים מומלצים`, `## אי-ודאויות פתוחות`. The verdict table is provided in Hebrew with columns `נושא | עמדה א | עמדה ב | הטיעון החזק יותר`.
+- **Hebrew persona names in transcripts**: `_format_transcript` and `_format_debate_arc` swap `persona.name` and `persona.role` to their Hebrew equivalents (`The Skeptic` → `הספקן`, `Critical Thinker` → `חושב ביקורתי`, etc.) when the response language is Hebrew, so advisors address each other by their Hebrew names instead of switching back to English mid-debate.
+
+### Changed
+- **`apply_response_language` instruction strengthened**: Now explicitly tells the model to translate every markdown heading, table column header, list label, and section title - covering structural English wording embedded in prompt templates (`## Summary`, `Consensus Points`, etc.). The `CONSENSUS_SCORE: N` sentinel and inline code stay in their original form so the consensus parser keeps working.
+- **Default UI language is Hebrew (he)** - English is still available via Settings → Interface Language → English.
+
+### Fixed
+- **Sage light theme readability across all surfaces**: Hardcoded dark `rgba(15, 23, 42, ...)` / `rgba(30, 41, 59, ...)` backgrounds in CostReport, Stage 1/2 tab content, Council Grid card states (active/done/waiting), Debate mode list cards (free-form/paragraph/claim), Advisor Grid, DebateView (live status, response cards, verdict, tiebreaker), AdvisorSetup (sections, modals, persona gallery), Claim Cards, Ranking Heatmap, and Round Navigator now have light-theme overrides that respect the Sage palette.
+- **Advisor persona edit button**: Moved from bottom-right to top-left of each persona card so it no longer overlaps the end of the Hebrew description text (which wraps to the visual left in RTL).
+- **DebateView live-status text contrast**: The bold title (`<strong>`) inside the orange "Preparing advisor panel…" banner is now deep copper instead of pale lavender so it's readable on the Sage cream background.
+- **Sidebar cost pill**: Switched from dark-theme gold (`#fbbf24`, invisible on cream) to deep copper text on a saturated copper-tint background.
+
+### Notes
+- This release adds languages on top of existing functionality. The wire format, settings file format, persona file format, and all APIs are unchanged. A user can switch the UI to English and the model response language to English to get the original behavior.
+- Stage 3 (chairman synthesis) and Stage 4 (corrected draft) in the council flow rely on the strengthened `apply_response_language` instruction. If those stages still leak English headings under heavy English-pretrained models, the same pre-translated-template pattern used for the advisor verdict can be applied - left as future work.
+
 ## [0.9.0] - 2026-06-03
 
 ### Added
-- **Configurable date format**: Conversation timestamps in the sidebar can be set to Auto (browser locale), MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD via Settings → General → Display Preferences. The setting is retroactive — all existing conversations update immediately.
+- **Configurable date format**: Conversation timestamps in the sidebar can be set to Auto (browser locale), MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD via Settings → General → Display Preferences. The setting is retroactive - all existing conversations update immediately.
 - **General settings section**: Display preferences (date format) and response language moved out of Backup & Reset into a dedicated General section at the top of Settings.
 - **Response language setting**: Council and advisor model outputs can be pinned to one of 17 languages via Settings → General → Response Language. Title generation and internal search queries stay in English.
 - **Sidebar run summaries**: After a titled council or advisor run completes, the sidebar shows a compact line (rounds, critique mode, auto-converge, advisor personas, consensus, search). Sidebar search matches this line.
@@ -19,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Settings auto-save**: All Settings sections now save automatically (debounced). The Save Changes button was removed; API keys still save on successful test.
-- **Global provider toggles**: `enabled_providers` and `direct_provider_toggles` now apply to **all** model pickers — Council Setup, Advisor Setup, and Settings. Previously they only affected council model pickers in Settings.
+- **Global provider toggles**: `enabled_providers` and `direct_provider_toggles` now apply to **all** model pickers - Council Setup, Advisor Setup, and Settings. Previously they only affected council model pickers in Settings.
 - **Simplified Settings → Council Config**: Removed council member/chairman model selection, "I'm Feeling Lucky" randomizer, "Show free OpenRouter models only" filter, and related validation from Settings. Model composition is now managed exclusively via the welcome-screen Council Setup. Settings retains provider toggles (now global) and all three temperature sliders (Council Heat, Peer Ranking Heat, Chairman Heat).
 - **Provider toggle restructure**: Local (Ollama) is now standalone at the top; all remote providers (OpenRouter, Groq, Custom, Direct Connections) are grouped under a single "Remote APIs" master toggle.
 - **Stage 2 Heat moved**: The Peer Ranking temperature slider moved from Council System Prompts (Stage 2 tab) into the Council Config temperature section alongside the other sliders.
@@ -42,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Hidden reasoning cleanup**: Council Stage 1, Stage 2, Stage 3, title generation, and search-query generation strip `<think>` blocks from visible/stored content so reasoning markup does not leak into conversation titles or final answers.
 - **Stage 2 detail matrix overflow**: Wide peer-review matrices now use horizontal scrolling with a sticky rater column so larger councils are not visually truncated.
 - **Conversation mode tagging**: Conversation history now normalizes/repairs Council vs Advisor modes so sidebar badges consistently render `CNC` and `ADV` with the intended color coding.
-- **Custom endpoint OpenCode free-detection now requires the official host**: A user who names a custom endpoint "opencode" but points it elsewhere was being silently zero-cost. The free heuristic now matches `opencode.ai` substring inside `endpoint_url` only — never the configured name or model text. (1B from v0.8.0 review.)
+- **Custom endpoint OpenCode free-detection now requires the official host**: A user who names a custom endpoint "opencode" but points it elsewhere was being silently zero-cost. The free heuristic now matches `opencode.ai` substring inside `endpoint_url` only - never the configured name or model text. (1B from v0.8.0 review.)
 - **OpenCode provider request robustness**: `query()` now sends `stream: False`, asserts the response is `application/json` before parsing, retries 429/timeout/remote-protocol errors with exponential backoff (`MAX_RETRIES=2`, initial delay 1s), and rejects embed/audio/tts model IDs up-front with a clear error (no HTTP call). Matches openrouter/ollama retry behavior. (R2/R3/R4.)
 - **Pricing catalog failure-throttle is now race-free**: `_get_pricing_catalog` resets its failure timestamp on a successful refresh so a transient outage doesn't lock the cache for the full throttle window. The `_catalog_failure_until = 0.0` reset runs inside the catalog lock. (R1.)
 - **Stage 3 chairman errors are now cost-tracked**: The outer `except` branch in `stage3_synthesize_final` now calls `attach_cost`, so chairman failures appear in the run's `cost_report` with `cost_status: "unknown"` instead of vanishing from the spend summary. (R6.)
@@ -54,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **OpenCode Zen and OpenCode Go as direct providers** — Two new council model sources, addressing [opencode.ai](https://opencode.ai) without going through OpenRouter.
+- **OpenCode Zen and OpenCode Go as direct providers** - Two new council model sources, addressing [opencode.ai](https://opencode.ai) without going through OpenRouter.
   - Prefixes: `opencode-zen:` (Zen dispatch) and `opencode-go:` (Go dispatch).
   - v1 scope: chat/completions only. The provider filters each product's `/v1/models` listing to chat-capable model families and drops non-`/chat/completions` endpoints (GPT Responses, Anthropic Messages, per-model Gemini). Multi-protocol support is a future release.
   - Single shared API key field. A user with only a Zen subscription, only a Go subscription, or both on the same key is supported. Go users can also use Zen's free models.
@@ -70,12 +97,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-**Multi-Round Iterative Council Debate** — Contributed by **@manavgup** ([PR #11](https://github.com/jacob-bd/llm-council-plus/pull/11), building on his earlier iterative debate foundation):
+**Multi-Round Iterative Council Debate** - Contributed by **@manavgup** ([PR #11](https://github.com/jacob-bd/llm-council-plus/pull/11), building on his earlier iterative debate foundation):
 
-- **Multi-Round Debate Orchestration**: Models debate across configurable rounds (1–5), refining answers based on peer feedback with convergence detection and early stopping.
+- **Multi-Round Debate Orchestration**: Models debate across configurable rounds (1-5), refining answers based on peer feedback with convergence detection and early stopping.
 - **Three Critique Modes**: "Free-form" (open-ended feedback), "Paragraph-level" (per-paragraph structured evaluation with stable `[Para N]` markers), and "Claim-level" (per-claim canonical extraction and verdict mapping).
 - **Canonical Claim Extraction & Verification**: Chairman model decomposes responses into falsifiable claims; peer models evaluate each claim with color-coded verdicts (strong/weak/flawed). Includes JSON extraction and repair utilities for robust LLM structured output parsing.
-- **Cross-Pollination**: Per-model personalized prompts — each model receives its own critiques plus top-rated claims from peers for adoption in subsequent rounds.
+- **Cross-Pollination**: Per-model personalized prompts - each model receives its own critiques plus top-rated claims from peers for adoption in subsequent rounds.
 - **ClaimCards UI**: Expandable cards grouped by source model with per-evaluator verdicts, contested-first layout, and evolution timeline.
 - **Stateful Interactive Round Selector**: `.round-navigator` in the frontend for clicking and navigating individual debate rounds retroactively.
 - **Stage 4: Corrected Draft**: Post-debate rewriting stage where the chairman synthesizes the final corrected draft, highlighting `[REVISED]` or `[NEW]` components.
@@ -122,12 +149,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Inline council setup**: Edit council members and chairman on the welcome screen (landing + empty conversation) with auto-save, compact member list (+ Add up to 8), live grid preview, and **council presets** (members + chairman only; default auto-loads).
 - **Interactive Council Grid**: Introduced `EditableCouncilGrid` supporting inline slot editing, adding member models up to 8, and quick-swapping models directly on the landing screen.
 - **Advisor model presets**: Save and load named advisor setups (selected personas, Simple/Advanced model assignment, optional rounds and web search) from the Model Assignment section in Advisor Setup. Presets persist in `settings.json` via `advisor_presets`.
-- **Documentation sync checklist**: [`docs/DOC-SYNC.md`](docs/DOC-SYNC.md) — required file matrix for keeping REST API, MCP tools, skill, and user docs aligned on every change.
+- **Documentation sync checklist**: [`docs/DOC-SYNC.md`](docs/DOC-SYNC.md) - required file matrix for keeping REST API, MCP tools, skill, and user docs aligned on every change.
 - **MCP preset CRUD**: `council_settings` and `advisor_settings` now support `list_presets`, `save_preset`, `delete_preset`, and `set_default_preset` actions.
 - **Presets & parsing unit tests**: Added comprehensive backend test suites (`test_advisor_presets.py`, `test_council_presets.py`, `test_ranking_parse.py`) and updated MCP integration tests to verify consolidated 9-tool behavior.
 
 ### Changed
-- **MCP tool consolidation (breaking)**: Replaced 25 single-purpose MCP tools with **9 action-based tools** — `council_deliberate`, `model_chat`, `advisor_debate`, `council_settings`, `advisor_settings`, `personas`, `conversations`, `providers`, `config_backup`. Legacy names (`run_deliberation`, `get_council_config`, `check_health`, etc.) removed.
+- **MCP tool consolidation (breaking)**: Replaced 25 single-purpose MCP tools with **9 action-based tools** - `council_deliberate`, `model_chat`, `advisor_debate`, `council_settings`, `advisor_settings`, `personas`, `conversations`, `providers`, `config_backup`. Legacy names (`run_deliberation`, `get_council_config`, `check_health`, etc.) removed.
 - **MCP-first agent routing**: Skill and MCP server instructions tell agents to prefer MCP tools over curl when both are available; REST documented as fallback (`skills/the-ai-counsel-api/SKILL.md`, `the_ai_counsel_mcp/server.py`, `docs/mcp/INSTRUCTIONS.md`, `docs/mcp/TOOLS.md`).
 - **Advisor model sources decoupled from Council toggles**: Advisor Setup model pickers list all **configured** providers (API keys, Ollama URL, custom endpoint). Settings → Council Config `enabled_providers` toggles apply to **LLM Council only**.
 - **Council Config copy**: Clarifies provider toggles are council-only; advisors always use configured providers from LLM API Keys.
@@ -143,7 +170,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Direct installation layout lockups**: Standardized `--prefix frontend` usage for all install instructions to avoid nested directory lockups when switching between environments.
 
 ### Removed
-- **25 legacy MCP tools** — see migration table in `docs/mcp/INSTRUCTIONS.md`.
+- **25 legacy MCP tools** - see migration table in `docs/mcp/INSTRUCTIONS.md`.
 
 ## [0.5.1] - 2026-05-24
 
@@ -160,8 +187,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **LLM Advisors mode**: Entirely new persona-driven debate system where named advisor personas argue your question across configurable rounds, reaching consensus or voting to deliver a structured verdict with action plan
-- **10 built-in advisor personas**: The Skeptic, The Pragmatist, The Innovator, The Historian, The Ethicist, The Data Analyst, The Contrarian, The Strategist, The Humanist, and The Risk Assessor — each with unique system prompts, roles, emoji avatars, and color-coded identities
-- **Persona customization**: Edit any persona's name, role, description, system prompt, and avatar emoji — overrides persist to `data/persona_overrides.json` with per-persona reset to defaults
+- **10 built-in advisor personas**: The Skeptic, The Pragmatist, The Innovator, The Historian, The Ethicist, The Data Analyst, The Contrarian, The Strategist, The Humanist, and The Risk Assessor - each with unique system prompts, roles, emoji avatars, and color-coded identities
+- **Persona customization**: Edit any persona's name, role, description, system prompt, and avatar emoji - overrides persist to `data/persona_overrides.json` with per-persona reset to defaults
 - **Debate orchestration** (`backend/advisors.py`): Multi-round debate engine with rotating speaking order, consensus detection via `CONSENSUS:YES/NO` tags, automatic early termination on agreement, and tiebreaker invocation when advisors remain split
 - **Structured verdict system**: Neutral analyst synthesizes debate transcript into Summary, Consensus Points, Disagreements table, Verdict, Recommended Next Steps, and Open Uncertainties
 - **NVIDIA NIM provider** (`backend/providers/nvidia.py`): Native support for NVIDIA Build (NIM) models at `integrate.api.nvidia.com/v1` with `nvidia:` prefix routing, API key management, and model listing
@@ -171,14 +198,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Advisor Grid** (`AdvisorGrid.jsx`, `AdvisorGrid.css`): Visual grid showing active debate participants with round progress and active-speaker highlighting
 - **Advisor API endpoints**: `POST /api/advisor/debate/stream` (SSE streaming debate), `GET /api/personas` (list all personas), `PATCH /api/personas/{id}` (save overrides), `DELETE /api/personas/{id}/override` (reset to default)
 - **Advisor conversation persistence**: `add_advisor_message()` in storage saves full debate transcripts (rounds, verdict, tiebreaker, persona IDs) alongside existing council conversations
-- **Advisor settings**: `advisor_default_model` and `advisor_default_rounds` fields in settings with validation (1–10 rounds, 2–4 advisors per debate)
+- **Advisor settings**: `advisor_default_model` and `advisor_default_rounds` fields in settings with validation (1-10 rounds, 2-4 advisors per debate)
 - **NVIDIA SVG icon** (`frontend/src/assets/icons/nvidia.svg`) with provider detection in `CouncilGrid.jsx`
 - **Complete MCP documentation rewrite** (`docs/mcp/TOOLS.md`): Exposes all **25 tools** across 5 categories, with full parameter listings and JSON output examples (including 11 new tools previously missing from docs)
 - **Advisor MCP examples** (`docs/mcp/EXAMPLES.md`): Added 3 comprehensive walkthrough examples covering running advisor debates, customizing/resetting personas via tools, and configuring global advisor preferences
 - **Quickstart Advisor Integration** (`docs/QUICKSTART.md`): Added complete walkthroughs for configuring and running the first Advisor debate, custom personas tips, and mode comparison matrix
 
 ### Changed
-- **App architecture**: `App.jsx` refactored to support dual-mode routing — landing page → council mode or advisors mode, with independent state management for each
+- **App architecture**: `App.jsx` refactored to support dual-mode routing - landing page → council mode or advisors mode, with independent state management for each
 - **Sidebar**: Updated to show mode-aware conversation list with Home button navigation back to landing page
 - **`SearchableModelSelect`**: Now normalizes dashes to spaces during search so NVIDIA model names (e.g., `nvidia/llama-3.1-nemotron-ultra-253b-v1`) match correctly
 - **CouncilGrid provider detection**: NVIDIA prefix (`nvidia:`) added to provider icon lookup chain
@@ -195,7 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.2] - 2026-05-15
 
 ### Added
-- **AGENTS.md canonical agent guide**: Single source of truth for AI agents (Claude Code, Codex, Gemini CLI) working in this repository — replaces scattered instructions across CLAUDE.md and GEMINI.md
+- **AGENTS.md canonical agent guide**: Single source of truth for AI agents (Claude Code, Codex, Gemini CLI) working in this repository - replaces scattered instructions across CLAUDE.md and GEMINI.md
 - **Admin endpoint security** (PR #9): `/api/settings/export`, `/api/settings/import`, and `/api/settings/reset` now require `LLM_COUNCIL_ADMIN_TOKEN` when accessed by remote or proxied clients. Direct loopback clients are still allowed without a token. Thanks @jonathanzhan1975!
 
 ### Changed
@@ -213,23 +240,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Per-request model overrides**: `council_models` and `chairman_model` fields on both streaming and sync message endpoints. Never mutates global config for ad-hoc queries.
 - **`PipelineResult` dataclass**: Shared orchestration helper (`_run_council_pipeline`) eliminates duplicated stage1/2/3 collection logic across sync endpoints.
 - **Multi-turn conversation memory**: Conversation endpoints pass full prior chat history to models. Follow-up questions carry context automatically.
-- **MCP `chat` tool**: Multi-turn equivalent of `quick_chat` — pass `conversation_id` to continue a conversation with memory. (14 tools total)
+- **MCP `chat` tool**: Multi-turn equivalent of `quick_chat` - pass `conversation_id` to continue a conversation with memory. (14 tools total)
 - **UI: single-model council support**: Council members can now be reduced to 1 in the Settings UI (was minimum 2).
 - **UI: chairman auto-disables**: Chairman section dims and becomes non-interactive when execution mode is not "Full Deliberation".
 
 ### Changed
 - **Minimum council models reduced to 1**: Single-model queries are now valid for any execution mode (was 2 minimum).
 - **`execution_mode` uses `Literal` type**: Pydantic rejects invalid values at parse time instead of runtime checks in each handler.
-- **Settings cache**: `get_settings()` now uses mtime-based caching — repeated calls within the same request return the cached instance instead of re-reading disk (eliminates 5-10 redundant file reads per deliberation).
+- **Settings cache**: `get_settings()` now uses mtime-based caching - repeated calls within the same request return the cached instance instead of re-reading disk (eliminates 5-10 redundant file reads per deliberation).
 - **Storage I/O reduced**: `add_user_message()` and `add_assistant_message()` accept pre-loaded `conversation` kwarg, avoiding redundant reads after 404 checks.
 - **Web search setup deduplicated**: Shared `_apply_search_env()` and `_fetch_search_context()` helpers replace 3 copy-pasted blocks (also fixes missing Serper env var in sync/oneshot paths).
 - **Dead import removed**: `from .search import perform_web_search, SearchProvider` removed from `council.py` (unused there).
-- **MCP `quick_chat` uses `/api/ask`**: No more save/restore of global settings — calls one-shot endpoint directly.
+- **MCP `quick_chat` uses `/api/ask`**: No more save/restore of global settings - calls one-shot endpoint directly.
 - **MCP `run_deliberation` uses per-request overrides**: Passes `council_models` in stream body instead of mutating settings with try/finally restore.
 - **MCP client `ask()` method added**: `CouncilClient.ask()` wraps `POST /api/ask` for one-shot queries.
 - **MCP client `stream_message` accepts overrides**: `council_models` and `chairman_model` params added to avoid settings mutation.
 - **`the-ai-counsel-api` skill updated to v0.4.1**: Documents `/api/ask`, per-request overrides, sync endpoint, multi-turn conversations, SSE event table, and "Choosing the Right Endpoint" decision matrix.
-- **`DEFAULT_EXECUTION_MODE` constant**: Extracted shared default (`'full'`) to `api.js` — eliminates magic string duplication across `App.jsx`, `Settings.jsx`, `CouncilConfig.jsx`.
+- **`DEFAULT_EXECUTION_MODE` constant**: Extracted shared default (`'full'`) to `api.js` - eliminates magic string duplication across `App.jsx`, `Settings.jsx`, `CouncilConfig.jsx`.
 - **`.subsection--disabled` CSS class**: Replaces inline opacity/pointer-events with reusable class (consistent with `.source-disabled`).
 - **Chairman `SearchableModelSelect` respects disabled state**: `isDisabled` prop wired so keyboard users cannot change chairman when irrelevant.
 
@@ -237,14 +264,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Settings export/import/reset endpoints**: `GET /api/settings/export` returns a full settings backup including actual API key values; `POST /api/settings/import` restores from a backup blob; `POST /api/settings/reset` wipes all settings to factory defaults
-- **4 new MCP tools** (17 total): `set_api_key` — set any provider API key by name; `export_config` — backup full config as JSON; `import_config` — restore config from JSON string; `reset_config` — factory reset
+- **4 new MCP tools** (17 total): `set_api_key` - set any provider API key by name; `export_config` - backup full config as JSON; `import_config` - restore config from JSON string; `reset_config` - factory reset
 - **Extended `configure_council` MCP tool**: now accepts `stage1_prompt`, `stage2_prompt`, `stage3_prompt`, `enabled_providers`, and `direct_provider_toggles` in addition to existing parameters
 - **Sidebar delete button always visible**: trash icon now shows at 40% opacity on all conversations (was hover-only), brightens to full on hover
 - **18 new tests**: backend export/import/reset endpoint tests, MCP tool tests for all new tools, and client method tests (108 total, up from 90)
 
 ### Changed
 - **`the-ai-counsel-api` skill updated to v0.4.0**: documents system prompt fields, `enabled_providers`/`direct_provider_toggles` dict formats, all API key field names, and backup/restore endpoints
-- **`import_settings` endpoint simplified**: uses Pydantic body parsing (`Settings` model) instead of manual JSON parsing — FastAPI now returns field-level 422 validation errors instead of generic 400s
+- **`import_settings` endpoint simplified**: uses Pydantic body parsing (`Settings` model) instead of manual JSON parsing - FastAPI now returns field-level 422 validation errors instead of generic 400s
 - **`export_settings` endpoint**: uses `model_dump_json()` (single-pass) instead of `model_dump()` + `json.dumps()` (two-pass)
 
 ## [0.3.0] - 2026-05-10
@@ -257,7 +284,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TinyFish search provider**: 5th web search option using TinyFish's free-tier Fetch API (5 req/min); requires free API key from agent.tinyfish.ai
 - **90 tests**: backend TinyFish provider tests, MCP integration tests covering all 13 tools and both transport modes
 - **`docs/mcp/`**: Comprehensive MCP documentation including transport selection guide, step-by-step setup for stdio and SSE, full tools reference, and real-world usage examples
-- **`the-ai-counsel-api` Claude Code skill** (`skills/the-ai-counsel-api/SKILL.md`, v0.3.0): Installable skill for interacting with the Council via REST API without MCP — covers all endpoints, SSE parsing, error handling, and troubleshooting
+- **`the-ai-counsel-api` Claude Code skill** (`skills/the-ai-counsel-api/SKILL.md`, v0.3.0): Installable skill for interacting with the Council via REST API without MCP - covers all endpoints, SSE parsing, error handling, and troubleshooting
 
 ## [0.2.3] - 2026-05-04
 
@@ -269,7 +296,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`docs/DOCKER.md`**: Comprehensive Docker deployment guide covering environment variables, persistent storage, Ollama integration, reverse proxy setup (nginx/Caddy with SSE notes), upgrades, and troubleshooting
 
 ### Changed
-- **CORS hardening**: Dev-ports regex (`5173|5174|3000`) is now suppressed when the built frontend is present (Docker/production mode) — same-origin deployments no longer expose API to external dev-port origins
+- **CORS hardening**: Dev-ports regex (`5173|5174|3000`) is now suppressed when the built frontend is present (Docker/production mode) - same-origin deployments no longer expose API to external dev-port origins
 - **Root cleanup**: Removed stub `main.py`; moved `QUICKSTART.md` and `TEST_PLAN_SEARCH.md` into `docs/`
 - **README**: Docker section condensed to quick-start + link to `docs/DOCKER.md`; stale CORS description updated
 

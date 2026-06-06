@@ -1,4 +1,4 @@
-/* ── Landing Page — Obsidian Intelligence ── */
+/* ── Landing Page - Obsidian Intelligence ── */
 
 .landing-page {
   position: relative;
@@ -123,12 +123,12 @@
   position: relative;
   flex: 1;
   background: rgba(10, 14, 28, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--tint-border);
   border-radius: 20px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   padding: 0;
   overflow: hidden;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
@@ -291,7 +291,7 @@
 .landing-card__features li {
   font-size: 0.8rem;
   color: var(--text-muted);
-  padding-left: 18px;
+  padding-inline-start: 18px;
   position: relative;
   line-height: 1.4;
 }
@@ -299,7 +299,7 @@
 .landing-card__features li::before {
   content: '';
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   top: 50%;
   transform: translateY(-50%);
   width: 4px;
@@ -327,6 +327,104 @@
 
 .landing-card:hover .landing-card__cta {
   gap: 12px;
+}
+
+/* Flip the CTA arrow under RTL so it still points toward the inline-end */
+[dir="rtl"] .landing-card__cta-arrow {
+  transform: scaleX(-1);
+}
+
+/* ============================================================
+   Sage light theme - landing page overrides
+   Forest-green primary, copper chairman, plum advisor. Warm
+   cream surfaces with subtle sage / copper ambient glow.
+   ============================================================ */
+
+/* Decorative orbs become a calm sage + copper ambient wash */
+[data-theme="light"] .landing-orb--blue {
+  background: radial-gradient(ellipse, rgba(21, 128, 61, 0.12) 0%, transparent 70%);
+  filter: blur(100px);
+}
+[data-theme="light"] .landing-orb--violet {
+  background: radial-gradient(ellipse, rgba(154, 52, 18, 0.10) 0%, transparent 70%);
+  filter: blur(100px);
+}
+
+/* Grid overlay: warm earth-tone hairlines */
+[data-theme="light"] .landing-grid {
+  background-image:
+    linear-gradient(rgba(31, 42, 36, 0.030) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 42, 36, 0.030) 1px, transparent 1px);
+}
+
+/* Title accent: forest → plum (cool→warm sage harmony) */
+[data-theme="light"] .landing-title__plus {
+  background: linear-gradient(135deg, #15803D 0%, #0F766E 50%, #86198F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card hover glows: forest for council, copper for advisors */
+[data-theme="light"] .landing-card--council .landing-card__glow {
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(21, 128, 61, 0.10) 0%, transparent 70%);
+}
+[data-theme="light"] .landing-card--advisors .landing-card__glow {
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(154, 52, 18, 0.10) 0%, transparent 70%);
+}
+
+[data-theme="light"] .landing-card--council:hover {
+  border-color: rgba(21, 128, 61, 0.32);
+  box-shadow: 0 16px 40px rgba(21, 128, 61, 0.10), 0 0 0 0.5px rgba(21, 128, 61, 0.20);
+}
+[data-theme="light"] .landing-card--advisors:hover {
+  border-color: rgba(154, 52, 18, 0.32);
+  box-shadow: 0 16px 40px rgba(154, 52, 18, 0.10), 0 0 0 0.5px rgba(154, 52, 18, 0.22);
+}
+
+/* Top hairline accent on each card */
+[data-theme="light"] .landing-card--council::before {
+  background: linear-gradient(90deg, transparent, rgba(21, 128, 61, 0.55), transparent);
+}
+[data-theme="light"] .landing-card--advisors::before {
+  background: linear-gradient(90deg, transparent, rgba(154, 52, 18, 0.55), transparent);
+}
+
+/* Icon tiles */
+[data-theme="light"] .landing-card__icon--council {
+  background: rgba(21, 128, 61, 0.07);
+  border: 1px solid rgba(21, 128, 61, 0.20);
+  color: #15803D;
+}
+[data-theme="light"] .landing-card__icon--advisors {
+  background: rgba(154, 52, 18, 0.07);
+  border: 1px solid rgba(154, 52, 18, 0.20);
+  color: #9A3412;
+}
+
+/* Labels above each card title */
+[data-theme="light"] .landing-card--council .landing-card__label { color: #15803D; }
+[data-theme="light"] .landing-card--advisors .landing-card__label { color: #9A3412; }
+
+/* CTA link color matches the card identity */
+[data-theme="light"] .landing-card--council .landing-card__cta { color: #15803D; }
+[data-theme="light"] .landing-card--advisors .landing-card__cta { color: #9A3412; }
+
+/* Feature bullet dots */
+[data-theme="light"] .landing-card--council .landing-card__features li::before { background: #15803D; }
+[data-theme="light"] .landing-card--advisors .landing-card__features li::before { background: #9A3412; }
+
+/* CTA divider hairline */
+[data-theme="light"] .landing-card__cta {
+  border-top-color: rgba(31, 42, 36, 0.08);
+}
+
+/* Eyebrow / subtitle */
+[data-theme="light"] .landing-eyebrow {
+  color: #5A6A5A;
+}
+[data-theme="light"] .landing-subtitle {
+  color: #4A5648;
 }
 
 /* Stagger animation */

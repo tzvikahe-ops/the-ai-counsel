@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatDatePart, formatTimePart } from '../utils/dateFormat';
 import { formatSidebarCost, sidebarCostTooltip } from '../utils/formatCost';
+import ThemeToggle from './ThemeToggle';
 import './Sidebar.css';
 
 const getConversationMode = (conversation) => (
   conversation?.mode === 'advisors' ? 'advisors' : 'council'
 );
-
-const getConversationTitle = (conv) => conv.title || 'New Conversation';
 
 export default function Sidebar({
   conversations,
@@ -23,9 +23,14 @@ export default function Sidebar({
   onClose,
   onGoHome,
   dateFormat = 'auto',
+  theme = 'dark',
+  onToggleTheme,
 }) {
+  const { t } = useTranslation();
   const [confirmingDelete, setConfirmingDelete] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const getConversationTitle = (conv) => conv.title || t('sidebar.newConversation');
 
   const filteredConversations = conversations.filter(conv => {
     if (!searchQuery.trim()) return true;
@@ -62,33 +67,50 @@ export default function Sidebar({
     <>
       {/* Mobile backdrop */}
       {isOpen && <div className="sidebar-backdrop" onClick={onClose} />}
-      
+
       <div className={`sidebar ${isOpen ? 'open' : ''}`}>
         {/* Mobile close button */}
-        <button className="sidebar-close-btn" onClick={onClose} aria-label="Close menu">
+        <button className="sidebar-close-btn" onClick={onClose} aria-label={t('sidebar.closeMenu')}>
           ×
         </button>
-        
+
         <div className="sidebar-header">
         <div className="sidebar-title-wrapper">
-          <div className="sidebar-title">The AI <span className="title-plus">Counsel</span></div>
-          <div className="sidebar-subtitle">Created by: <a href="https://github.com/jacob-bd" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none', borderBottom: '1px dotted rgba(255,255,255,0.3)', paddingBottom: '1px', transition: 'border-color 0.2s' }} onMouseEnter={e => e.target.style.borderBottomColor = 'rgba(255,255,255,0.7)'} onMouseLeave={e => e.target.style.borderBottomColor = 'rgba(255,255,255,0.3)'}>Jacob Ben-David</a></div>
-          <div className="sidebar-version">v0.9.0</div>
+          <div className="sidebar-title" lang="en" dir="ltr">The AI <span className="title-plus">Counsel</span></div>
+          <div className="sidebar-subtitle">
+            {t('common.createdBy')}{' '}
+            <a
+              href="https://github.com/jacob-bd"
+              target="_blank"
+              rel="noopener noreferrer"
+              lang="en"
+              dir="ltr"
+              style={{ color: 'inherit', textDecoration: 'none', borderBottom: '1px dotted currentColor', paddingBottom: '1px', opacity: 0.7, transition: 'opacity 0.2s', display: 'inline-block' }}
+              onMouseEnter={e => e.target.style.opacity = '1'}
+              onMouseLeave={e => e.target.style.opacity = '0.7'}
+            >Jacob Ben-David</a>
+          </div>
+          <div className="sidebar-version" lang="en" dir="ltr">v0.9.0-he.1</div>
         </div>
-        <button
-          className="icon-button"
-          onClick={onOpenSettings}
-          title="Settings"
-        >
-          ⚙️
-        </button>
+        <div className="sidebar-header-actions">
+          {onToggleTheme && (
+            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          )}
+          <button
+            className="icon-button"
+            onClick={onOpenSettings}
+            title={t('sidebar.settings')}
+          >
+            ⚙️
+          </button>
+        </div>
       </div>
 
       {/* Mode Actions */}
       <div className="sidebar-actions">
         <button className="sidebar-action-btn sidebar-action-btn--home" onClick={onGoHome}>
           <span className="btn-icon">⌂</span>
-          <span className="btn-text">Home</span>
+          <span className="btn-text">{t('sidebar.home')}</span>
         </button>
         <div className="sidebar-action-row">
           <button
@@ -97,7 +119,7 @@ export default function Sidebar({
             disabled={isLoading}
           >
             <span className="btn-icon">+</span>
-            <span className="btn-text">New Council</span>
+            <span className="btn-text">{t('sidebar.newCouncil')}</span>
           </button>
           <button
             className="sidebar-action-btn sidebar-action-btn--advisors"
@@ -105,7 +127,7 @@ export default function Sidebar({
             disabled={isLoading}
           >
             <span className="btn-icon">+</span>
-            <span className="btn-text">New Advisors</span>
+            <span className="btn-text">{t('sidebar.newAdvisors')}</span>
           </button>
         </div>
       </div>
@@ -115,15 +137,15 @@ export default function Sidebar({
         <input
           type="text"
           className="search-input"
-          placeholder="Search conversations..."
+          placeholder={t('sidebar.searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         {searchQuery && (
-          <button 
-            className="search-clear" 
+          <button
+            className="search-clear"
             onClick={() => setSearchQuery('')}
-            title="Clear search"
+            title={t('sidebar.clearSearch')}
           >
             ×
           </button>
@@ -133,7 +155,7 @@ export default function Sidebar({
       <div className="conversation-list">
         {filteredConversations.length === 0 ? (
           <div className="sidebar-empty-state">
-            {searchQuery ? 'No matching conversations' : 'No history'}
+            {searchQuery ? t('sidebar.noMatches') : t('sidebar.noHistory')}
           </div>
         ) : (
           filteredConversations.map((conv) => {
@@ -147,7 +169,7 @@ export default function Sidebar({
               >
                 <div className="conversation-title" title={displayTitle}>
                   <span className={`conv-mode-tag conv-mode-tag--${mode}`}>
-                    {mode === 'advisors' ? 'ADV' : 'CNC'}
+                    {mode === 'advisors' ? t('sidebar.advisorsTag') : t('sidebar.councilTag')}
                   </span>
                   <span className="conversation-title-text conversation-item-clamp">{displayTitle}</span>
                 </div>
@@ -160,7 +182,7 @@ export default function Sidebar({
                   <div className="conversation-meta__left">
                     {conv.total_cost != null && (
                       <span
-                        className="conversation-cost-pill"
+                        className="conversation-cost-pill ltr"
                         title={sidebarCostTooltip(conv.total_cost, conv.cost_status, conv.total_calls)}
                       >
                         {formatSidebarCost(conv.total_cost, conv.cost_status)}
@@ -177,21 +199,21 @@ export default function Sidebar({
                   </div>
                   {isLoading && conv.id === currentConversationId ? (
                     <button className="stop-generation-btn small" onClick={handleAbortClick}>
-                      Stop
+                      {t('sidebar.stop')}
                     </button>
                   ) : confirmingDelete === conv.id ? (
                     <div className="delete-confirm">
                       <button
                         className="confirm-yes-btn"
                         onClick={(e) => handleConfirmDelete(e, conv.id)}
-                        title="Confirm delete"
+                        title={t('sidebar.confirmDelete')}
                       >
                         ✓
                       </button>
                       <button
                         className="confirm-no-btn"
                         onClick={handleCancelDelete}
-                        title="Cancel"
+                        title={t('sidebar.cancelDelete')}
                       >
                         ✕
                       </button>
@@ -200,7 +222,7 @@ export default function Sidebar({
                     <button
                       className="delete-btn"
                       onClick={(e) => handleDeleteClick(e, conv.id)}
-                      title="Delete conversation"
+                      title={t('sidebar.deleteConversation')}
                     >
                       🗑️
                     </button>

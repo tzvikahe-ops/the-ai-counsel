@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { getShortModelName, getModelVisuals } from '../utils/modelHelpers';
 import './RankingHeatmap.css';
 
@@ -13,10 +14,11 @@ function ordinal(n) {
  * ranked every other model in Stage 2. Fully optimized for Midnight Glass dark theme.
  *
  * Props:
- *   rankings      – Stage 2 rankings array: [{model, parsed_ranking, error, ...}]
- *   labelToModel  – Map of "Response A" -> full model id
+ *   rankings      - Stage 2 rankings array: [{model, parsed_ranking, error, ...}]
+ *   labelToModel  - Map of "Response A" -> full model id
  */
 export default function RankingHeatmap({ rankings, labelToModel }) {
+  const { t } = useTranslation();
   if (!rankings || !labelToModel || rankings.length === 0) return null;
 
   // Filter out any models that failed to rank (failed peer review runs)
@@ -58,10 +60,9 @@ export default function RankingHeatmap({ rankings, labelToModel }) {
   return (
     <div className="ranking-heatmap glass-panel">
       <div className="heatmap-header">
-        <h4 className="heatmap-title">📊 Peer Deliberation Matrix</h4>
+        <h4 className="heatmap-title">{t('rankingHeatmap.title')}</h4>
         <p className="heatmap-description">
-          Detailed matrix of anonymous peer reviews. Raters are on the left; rated responses are on top.
-          Self-review cells (—) are excluded from the grid but counted as a perfect <strong>1st place (1.00)</strong> in aggregate score calculations to match the leaderboard averages.
+          {t('rankingHeatmap.description')}
         </p>
       </div>
 
@@ -69,7 +70,7 @@ export default function RankingHeatmap({ rankings, labelToModel }) {
         <table className="heatmap-table">
           <thead>
             <tr>
-              <th className="heatmap-corner">Rater ↓ / Rated →</th>
+              <th className="heatmap-corner">{t('rankingHeatmap.raterRated')}</th>
               {rankeeModels.map((model) => {
                 const visuals = getModelVisuals(model);
                 const short = getShortModelName(model);
@@ -79,7 +80,7 @@ export default function RankingHeatmap({ rankings, labelToModel }) {
                       <span className="mini-avatar" style={{ backgroundColor: visuals.color }}>
                         {visuals.icon}
                       </span>
-                      <span className="col-name-text" title={short}>{short}</span>
+                      <span className="col-name-text ltr" title={short}>{short}</span>
                     </div>
                   </th>
                 );
@@ -97,14 +98,14 @@ export default function RankingHeatmap({ rankings, labelToModel }) {
                       <span className="mini-avatar" style={{ backgroundColor: rankerVisuals.color }}>
                         {rankerVisuals.icon}
                       </span>
-                      <span className="row-name-text" title={rankerShort}>{rankerShort}</span>
+                      <span className="row-name-text ltr" title={rankerShort}>{rankerShort}</span>
                     </div>
                   </td>
                   {rankeeModels.map((rankee) => {
                     if (ranker === rankee) {
                       return (
                         <td key={rankee} className="heatmap-cell heatmap-self">
-                          —
+                          -
                         </td>
                       );
                     }
@@ -132,12 +133,12 @@ export default function RankingHeatmap({ rankings, labelToModel }) {
               <td className="heatmap-row-header heatmap-avg-label">
                 <div className="row-cell-content">
                   <span className="mini-avatar" style={{ backgroundColor: 'var(--accent-stage2)' }}>📈</span>
-                  <span className="row-name-text font-semibold">Average Rank</span>
+                  <span className="row-name-text font-semibold">{t('rankingHeatmap.averageRank')}</span>
                 </div>
               </td>
               {rankeeModels.map((rankee) => (
                 <td key={rankee} className="heatmap-cell heatmap-avg">
-                  {avgRanks[rankee] ?? '—'}
+                  {avgRanks[rankee] ?? '-'}
                 </td>
               ))}
             </tr>

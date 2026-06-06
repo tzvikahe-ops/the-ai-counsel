@@ -1,5 +1,5 @@
 /* ========================================
-   Claim Cards — Council Chamber Theme
+   Claim Cards - Council Chamber Theme
    Uses design system tokens from index.css
    ======================================== */
 
@@ -128,7 +128,7 @@
 }
 
 .claim-card-detailed:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--tint-1);
   box-shadow: var(--shadow-soft);
 }
 
@@ -194,7 +194,7 @@
 .claim-verdict-badge.strong { color: var(--verdict-strong); background: var(--verdict-strong-dim); }
 .claim-verdict-badge.weak { color: var(--verdict-weak); background: var(--verdict-weak-dim); }
 .claim-verdict-badge.flawed { color: var(--verdict-flawed); background: var(--verdict-flawed-dim); }
-.claim-verdict-badge.unknown { color: var(--text-muted); background: rgba(255,255,255,0.04); }
+.claim-verdict-badge.unknown { color: var(--text-muted); background: var(--tint-1); }
 
 .claim-agreement {
   font-family: var(--font-code);
@@ -207,7 +207,7 @@
 .claim-text {
   font-family: var(--font-content);
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.6;
   font-style: italic;
@@ -316,7 +316,7 @@
   align-items: center;
   gap: 10px;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--tint-1);
   border-radius: 6px;
   margin-bottom: 6px;
 }
@@ -423,7 +423,7 @@
   font-size: 11px;
   font-weight: 700;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--tint-2);
   padding: 3px 12px;
   border-radius: 5px;
   min-width: 68px;
@@ -441,7 +441,7 @@
   height: 40px;
   border-radius: 8px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--tint-1);
   border: 1px solid var(--border-glass);
 }
 
@@ -515,7 +515,7 @@
   font-family: var(--font-code);
   font-size: 10px;
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--tint-2);
   padding: 2px 7px;
   border-radius: 4px;
   text-align: center;

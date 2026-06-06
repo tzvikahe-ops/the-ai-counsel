@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import './RoundNavigator.css';
 
 export default function RoundNavigator({ currentRound, totalRounds, converged, onSelectRound }) {
+  const { t } = useTranslation();
   if (!totalRounds || totalRounds <= 1) return null;
 
   return (
@@ -15,15 +17,15 @@ export default function RoundNavigator({ currentRound, totalRounds, converged, o
             <div
               key={roundNum}
               className={`round-dot ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${onSelectRound ? 'clickable' : ''}`}
-              title={`Round ${roundNum}`}
+              title={t('roundNav.round', { n: roundNum })}
               onClick={() => onSelectRound && onSelectRound(roundNum)}
             />
           );
         })}
       </div>
       <span className="round-label">
-        Round {currentRound} of {totalRounds}
-        {converged && ` — Converged`}
+        {t('roundNav.roundOfTotal', { current: currentRound, total: totalRounds })}
+        {converged && ` ${t('roundNav.converged')}`}
       </span>
     </div>
   );

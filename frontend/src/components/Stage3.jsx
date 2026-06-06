@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Skeleton from './common/Skeleton';
 import { getModelVisuals, getShortModelName } from '../utils/modelHelpers';
 import ThinkBlockRenderer from './ThinkBlockRenderer';
@@ -10,7 +11,6 @@ function deAnonymizeText(text, labelToModel) {
     if (!labelToModel) return text;
 
     let result = text;
-    // Replace each "Response X" with the actual model name
     Object.entries(labelToModel).forEach(([label, model]) => {
         const modelShortName = getShortModelName(model);
         result = result.replace(new RegExp(label, 'g'), `**${modelShortName}**`);
@@ -19,6 +19,7 @@ function deAnonymizeText(text, labelToModel) {
 }
 
 export default function Stage3({ finalResponse, labelToModel, startTime, endTime }) {
+    const { t } = useTranslation();
     const [isCopied, setIsCopied] = useState(false);
 
     if (!finalResponse) {
@@ -44,9 +45,8 @@ export default function Stage3({ finalResponse, labelToModel, startTime, endTime
 
     const displayContent = typeof finalResponse?.response === 'string'
         ? finalResponse.response
-        : String(finalResponse?.response || 'No response');
+        : String(finalResponse?.response || t('stage1.noResponse'));
 
-    // De-anonymize names for user viewing
     const deAnonymizedContent = labelToModel
         ? deAnonymizeText(displayContent, labelToModel)
         : displayContent;
@@ -56,9 +56,9 @@ export default function Stage3({ finalResponse, labelToModel, startTime, endTime
             <div className="stage-header">
                 <div className="stage-title">
                     <span className="stage-icon">⚖️</span>
-                    Stage 3: Final Council Answer
+                    {t('stage3.title')}
                 </div>
-                <StageTimer startTime={startTime} endTime={endTime} label="Duration" />
+                <StageTimer startTime={startTime} endTime={endTime} label={t('stage3.duration')} />
             </div>
             <div className="final-response">
                 <div className="chairman-header">
@@ -68,27 +68,27 @@ export default function Stage3({ finalResponse, labelToModel, startTime, endTime
                         </span>
                         <div className="chairman-info">
                             <span className="chairman-role">
-                                <span>👨‍⚖️</span> Chairman's Verdict
+                                <span>👨‍⚖️</span> {t('stage3.chairmansVerdict')}
                             </span>
-                            <span className="chairman-model">{shortName}</span>
-                            <span className="chairman-provider-badge">{visuals.name}</span>
+                            <span className="chairman-model ltr">{shortName}</span>
+                            <span className="chairman-provider-badge ltr">{visuals.name}</span>
                         </div>
                     </div>
 
                     <button
                         className={`copy-button ${isCopied ? 'copied' : ''}`}
                         onClick={handleCopy}
-                        title="Copy to clipboard"
+                        title={t('stage1.copyToClipboard')}
                     >
                         {isCopied ? (
                             <>
                                 <span className="icon">✓</span>
-                                <span className="label">Copied</span>
+                                <span className="label">{t('stage3.copied')}</span>
                             </>
                         ) : (
                             <>
                                 <span className="icon">📋</span>
-                                <span className="label">Copy</span>
+                                <span className="label">{t('stage3.copy')}</span>
                             </>
                         )}
                     </button>
@@ -104,12 +104,13 @@ export default function Stage3({ finalResponse, labelToModel, startTime, endTime
 }
 
 export function Stage3Skeleton() {
+    const { t } = useTranslation();
     return (
         <div className="stage-container stage-3 skeleton-mode">
             <div className="stage-header">
                 <div className="stage-title">
                     <span className="stage-icon">⚖️</span>
-                    Stage 3: Final Council Answer
+                    {t('stage3.title')}
                 </div>
                 <div className="stage-timer-skeleton">
                     <Skeleton variant="text" width="60px" />

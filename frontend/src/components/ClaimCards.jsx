@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getShortModelName } from '../utils/modelHelpers';
 import './ClaimCards.css';
 
 export default function ClaimCards({ claims, labelToModel }) {
+  const { t } = useTranslation();
   if (!claims || Object.keys(claims).length === 0) return null;
 
   const flatClaims = [];
@@ -16,8 +18,8 @@ export default function ClaimCards({ claims, labelToModel }) {
 
   return (
     <div className="claim-cards">
-      <h4>Canonical Claims</h4>
-      <p className="claim-cards-description">Claims extracted from each response and evaluated by all peers.</p>
+      <h4>{t('claimCards.canonicalClaims')}</h4>
+      <p className="claim-cards-description">{t('claimCards.description')}</p>
       <div className="claim-cards-grid">
         {flatClaims.map((claim) => (
           <ClaimCardSimple key={claim.id} claim={claim} />
@@ -31,8 +33,8 @@ function ClaimCardSimple({ claim }) {
   return (
     <div className="claim-card">
       <div className="claim-header">
-        <span className="claim-id">{claim.id}</span>
-        <span className="claim-source">{getShortModelName(claim.sourceModel)}</span>
+        <span className="claim-id ltr">{claim.id}</span>
+        <span className="claim-source ltr">{getShortModelName(claim.sourceModel)}</span>
       </div>
       <p className="claim-text">&ldquo;{claim.claim}&rdquo;</p>
     </div>
@@ -44,6 +46,7 @@ function ClaimCardSimple({ claim }) {
  * Surfaces contested/flawed claims prominently at the top.
  */
 export function ClaimCardWithVerdicts({ claims, aggregatedVerdicts, labelToModel, stage2Results }) {
+  const { t } = useTranslation();
   const [showAllStrong, setShowAllStrong] = useState(false);
 
   if (!claims || Object.keys(claims).length === 0) return null;
@@ -94,18 +97,18 @@ export function ClaimCardWithVerdicts({ claims, aggregatedVerdicts, labelToModel
       <div className="claim-summary-bar">
         <div className="claim-summary-title">
           <span className="claim-summary-icon">🔬</span>
-          <span>Claim-Level Evaluation</span>
+          <span>{t('claimCards.claimEvaluation')}</span>
         </div>
         <div className="claim-summary-stats">
           {contested.length > 0 && (
             <span className="claim-stat contested">
-              <span className="claim-stat-num">{contested.length}</span> contested
+              <span className="claim-stat-num ltr">{contested.length}</span> {t('claimCards.contested')}
             </span>
           )}
           <span className="claim-stat strong">
-            <span className="claim-stat-num">{strong.length}</span> strong
+            <span className="claim-stat-num ltr">{strong.length}</span> {t('claimCards.strong')}
           </span>
-          <span className="claim-stat total">{totalClaims} total</span>
+          <span className="claim-stat total"><span className="ltr">{totalClaims}</span> {t('claimCards.total')}</span>
         </div>
       </div>
 
@@ -114,7 +117,7 @@ export function ClaimCardWithVerdicts({ claims, aggregatedVerdicts, labelToModel
         <div className="claim-contested-section">
           <div className="claim-section-label contested-label">
             <span className="pulse-dot"></span>
-            Contested Claims
+            {t('claimCards.contestedClaims')}
           </div>
           {contested.map((claim) => (
             <ClaimCardDetailed key={claim.id} claim={claim} prominent />
@@ -125,7 +128,7 @@ export function ClaimCardWithVerdicts({ claims, aggregatedVerdicts, labelToModel
       {contested.length === 0 && (
         <div className="claim-all-strong-banner">
           <span className="check-icon">✓</span>
-          All {totalClaims} claims reached <strong>STRONG</strong> consensus across evaluators.
+          {t('claimCards.allStrong', { n: totalClaims })} <strong>{t('claimCards.strongStrong')}</strong> {t('claimCards.consensusSuffix')}
         </div>
       )}
 
@@ -143,10 +146,10 @@ export function ClaimCardWithVerdicts({ claims, aggregatedVerdicts, labelToModel
           >
             <span className="toggle-icon">{showAllStrong ? '▾' : '▸'}</span>
             <span className="claim-section-label">
-              {strong.length} Strong Claims
+              {t('claimCards.strongClaimsN', { n: strong.length })}
             </span>
             <span className="claim-section-hint">
-              {showAllStrong ? 'click to collapse' : 'click to expand'}
+              {showAllStrong ? t('claimCards.clickToCollapse') : t('claimCards.clickToExpand')}
             </span>
           </button>
 
@@ -155,11 +158,11 @@ export function ClaimCardWithVerdicts({ claims, aggregatedVerdicts, labelToModel
               {Object.entries(strongBySource).map(([label, groupClaims]) => (
                 <div key={label} className="claim-source-group">
                   <div className="claim-source-header">
-                    <span className="claim-source-label">{label}</span>
-                    <span className="claim-source-model">
+                    <span className="claim-source-label ltr">{label}</span>
+                    <span className="claim-source-model ltr">
                       {labelToModel?.[label] ? getShortModelName(labelToModel[label]) : ''}
                     </span>
-                    <span className="claim-source-count">{groupClaims.length} claims</span>
+                    <span className="claim-source-count">{t('claimCards.claimsCount', { n: groupClaims.length })}</span>
                   </div>
                   {groupClaims.map((claim) => (
                     <ClaimCardCompact key={claim.id} claim={claim} />
@@ -178,6 +181,7 @@ export function ClaimCardWithVerdicts({ claims, aggregatedVerdicts, labelToModel
  * Claim Evolution: shows how claims changed across rounds.
  */
 export function ClaimEvolution({ rounds, labelToModel: finalLabelToModel }) {
+  const { t } = useTranslation();
   if (!rounds || rounds.length < 2) return null;
 
   // Build claim data per round
@@ -229,7 +233,7 @@ export function ClaimEvolution({ rounds, labelToModel: finalLabelToModel }) {
     <div className="claim-evolution">
       <div className="claim-evolution-header">
         <span className="claim-evolution-icon">📊</span>
-        <span className="claim-evolution-title">Claim Evolution Across Rounds</span>
+        <span className="claim-evolution-title">{t('claimCards.claimEvolutionTitle')}</span>
       </div>
 
       {/* Round-by-round summary */}
@@ -237,9 +241,9 @@ export function ClaimEvolution({ rounds, labelToModel: finalLabelToModel }) {
         {roundData.map((rd, i) => (
           <div key={rd.round} className="claim-evolution-round">
             <div className="evolution-round-header">
-              <span className="evolution-round-badge">Round {rd.round}</span>
+              <span className="evolution-round-badge">{t('claimCards.roundBadge', { n: rd.round })}</span>
               <span className="evolution-round-stats">
-                {rd.totalClaims} claims
+                {t('claimCards.claimsCountStat', { n: rd.totalClaims })}
               </span>
             </div>
             <div className="evolution-bar-container">
@@ -247,14 +251,14 @@ export function ClaimEvolution({ rounds, labelToModel: finalLabelToModel }) {
                 className="evolution-bar strong"
                 style={{ width: `${(rd.strong / rd.totalClaims) * 100}%` }}
               >
-                {rd.strong} strong
+                {t('claimCards.strongStat', { n: rd.strong })}
               </div>
               {rd.contested.length > 0 && (
                 <div
                   className="evolution-bar contested"
                   style={{ width: `${(rd.contested.length / rd.totalClaims) * 100}%` }}
                 >
-                  {rd.contested.length} contested
+                  {t('claimCards.contestedStat', { n: rd.contested.length })}
                 </div>
               )}
             </div>
@@ -268,11 +272,11 @@ export function ClaimEvolution({ rounds, labelToModel: finalLabelToModel }) {
       {/* Contested claims detail */}
       {uniqueContested.length > 0 && (
         <div className="claim-evolution-contested">
-          <div className="evolution-contested-label">Claims That Were Contested</div>
+          <div className="evolution-contested-label">{t('claimCards.wereContested')}</div>
           {uniqueContested.map((claim) => (
             <div key={`${claim.id}-${claim.round}`} className="evolution-contested-item">
-              <span className="evolution-claim-id">{claim.id}</span>
-              <span className="evolution-claim-round">R{claim.round}</span>
+              <span className="evolution-claim-id ltr">{claim.id}</span>
+              <span className="evolution-claim-round ltr">{t('claimCards.rRound', { n: claim.round })}</span>
               <span className={`evolution-claim-verdict ${claim.verdict}`}>
                 {claim.verdict?.toUpperCase()}
               </span>
@@ -285,7 +289,7 @@ export function ClaimEvolution({ rounds, labelToModel: finalLabelToModel }) {
       {uniqueContested.length === 0 && roundData.length >= 2 && (
         <div className="claim-all-strong-banner" style={{ marginTop: '12px' }}>
           <span className="check-icon">✓</span>
-          No claims were contested in any round. Full consensus across all evaluators.
+          {t('claimCards.noContested')}
         </div>
       )}
     </div>
@@ -300,21 +304,21 @@ function ClaimCardDetailed({ claim, prominent }) {
   return (
     <div className={`claim-card-detailed ${verdictClass} ${prominent ? 'prominent' : ''}`} onClick={() => setExpanded(!expanded)}>
       <div className="claim-header">
-        <span className="claim-id">{claim.id}</span>
+        <span className="claim-id ltr">{claim.id}</span>
         <span className={`claim-verdict-badge ${verdictClass}`}>
           {(claim.majority_verdict || 'N/A').toUpperCase()}
         </span>
         {claim.agreement != null && (
-          <span className="claim-agreement">{agreementPct}%</span>
+          <span className="claim-agreement ltr">{agreementPct}%</span>
         )}
-        <span className="claim-source-tag">{getShortModelName(claim.sourceModel)}</span>
+        <span className="claim-source-tag ltr">{getShortModelName(claim.sourceModel)}</span>
       </div>
       <p className="claim-text">&ldquo;{claim.claim}&rdquo;</p>
       {expanded && claim.evaluator_verdicts && claim.evaluator_verdicts.length > 0 && (
         <div className="claim-evaluators">
           {claim.evaluator_verdicts.map((ev, i) => (
             <div key={i} className="evaluator-verdict">
-              <span className="ev-model">{getShortModelName(ev.model)}</span>
+              <span className="ev-model ltr">{getShortModelName(ev.model)}</span>
               <span className={`ev-verdict ${ev.verdict}`}>{ev.verdict}</span>
               {ev.reason && <span className="ev-reason">{ev.reason}</span>}
             </div>
@@ -329,9 +333,9 @@ function ClaimCardCompact({ claim }) {
   const agreementPct = Math.round((claim.agreement || 0) * 100);
   return (
     <div className="claim-card-compact">
-      <span className="claim-id">{claim.id}</span>
+      <span className="claim-id ltr">{claim.id}</span>
       <span className="claim-compact-text">{claim.claim}</span>
-      <span className="claim-compact-pct">{agreementPct}%</span>
+      <span className="claim-compact-pct ltr">{agreementPct}%</span>
     </div>
   );
 }

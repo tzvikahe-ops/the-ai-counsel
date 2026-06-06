@@ -1,0 +1,1362 @@
+/* ============================================================
+   Standard Light Theme — global surface overrides
+   Catches hardcoded dark backgrounds in components so the whole
+   app reads as a clean, plain light UI when data-theme="light".
+   Loaded after index.css and component CSS via main.jsx.
+   ============================================================ */
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* ---- Scrollbars ---- */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.04);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.3);
+}
+
+/* ---- App shell / mobile button ---- */
+[data-theme="light"] .mobile-menu-btn {
+  background: #ffffff;
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---- Landing page ---- */
+[data-theme="light"] .landing-card {
+  background: #ffffff;
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-soft);
+}
+[data-theme="light"] .landing-card:hover {
+  box-shadow: var(--shadow-glass);
+}
+
+/* ---- Chat interface ---- */
+[data-theme="light"] .chat-container,
+[data-theme="light"] .chat-messages,
+[data-theme="light"] .messages-area {
+  background: transparent;
+}
+[data-theme="light"] .message-bubble,
+[data-theme="light"] .chat-input-wrapper,
+[data-theme="light"] .chat-input-area {
+  background: var(--surface-panel);
+  border-color: var(--border-color);
+}
+
+/* ---- Generic dark glass panels -> white cards ----
+   Many components use opaque slate panels; remap to clean surfaces. */
+[data-theme="light"] .glass-panel {
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---- Council / advisor grids ---- */
+[data-theme="light"] .council-member-card,
+[data-theme="light"] .advisor-card,
+[data-theme="light"] .council-grid-cell {
+  background: var(--surface-panel);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---- Stage panels ---- */
+[data-theme="light"] .stage-container,
+[data-theme="light"] .stage-card,
+[data-theme="light"] .stage1-card,
+[data-theme="light"] .stage2-card,
+[data-theme="light"] .response-card,
+[data-theme="light"] .verdict-card {
+  background: var(--surface-panel);
+  border-color: var(--border-color);
+}
+
+/* ---- Modal overlays: lighter scrim ---- */
+[data-theme="light"] .settings-overlay,
+[data-theme="light"] .modal-overlay,
+[data-theme="light"] .council-setup__modal-overlay,
+[data-theme="light"] .advisor-setup__overlay {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+/* ---- Inputs / textareas everywhere ---- */
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="password"],
+[data-theme="light"] input[type="search"],
+[data-theme="light"] input[type="number"],
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: var(--surface-panel);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Light placeholder text */
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* ---- Borders that were white-on-dark ---- */
+[data-theme="light"] .sidebar-header,
+[data-theme="light"] .sidebar-actions {
+  border-color: var(--border-color);
+}
+
+/* ============================================================
+   Settings modal — light theme
+   ============================================================ */
+[data-theme="light"] .settings-modal,
+[data-theme="light"] .settings-header,
+[data-theme="light"] .settings-body,
+[data-theme="light"] .settings-sidebar,
+[data-theme="light"] .settings-main-panel,
+[data-theme="light"] .settings-footer {
+  background: var(--surface-panel);
+  border-color: var(--border-color);
+}
+
+[data-theme="light"] .settings-sidebar {
+  background: var(--surface-raised);
+}
+
+[data-theme="light"] .settings-overlay {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+/* Section sub-cards and inputs inside settings */
+[data-theme="light"] .api-key-section,
+[data-theme="light"] .hybrid-settings-card,
+[data-theme="light"] .full-content-section,
+[data-theme="light"] .council-member-row,
+[data-theme="light"] .debate-settings-group,
+[data-theme="light"] .debate-mode-list-card,
+[data-theme="light"] .convergence-card,
+[data-theme="light"] .version-row,
+[data-theme="light"] .cost-meter-container,
+[data-theme="light"] .premium-checkbox-label {
+  background: var(--surface-raised);
+  border-color: var(--border-color);
+}
+
+[data-theme="light"] .debate-mode-list-card:hover {
+  background: var(--surface-hover);
+}
+
+/* Segmented bars / meter tracks */
+[data-theme="light"] .rounds-segmented-bar,
+[data-theme="light"] .threshold-segmented-bar,
+[data-theme="light"] .cost-meter-track {
+  background: var(--surface-hover);
+}
+
+/* Settings inputs */
+[data-theme="light"] .settings-modal input[type="text"],
+[data-theme="light"] .settings-modal input[type="password"],
+[data-theme="light"] .settings-modal textarea,
+[data-theme="light"] .settings-modal select {
+  background: #ffffff;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .settings-modal input:focus,
+[data-theme="light"] .settings-modal textarea:focus,
+[data-theme="light"] .settings-modal select:focus {
+  background: #ffffff;
+  border-color: var(--accent-primary);
+}
+
+/* Provider option cards */
+[data-theme="light"] .provider-option-container {
+  background: var(--surface-panel);
+  border-color: var(--border-color);
+}
+[data-theme="light"] .provider-option-container:hover {
+  background: var(--surface-hover);
+}
+[data-theme="light"] .provider-option-container.selected {
+  background: var(--accent-primary-dim);
+  border-color: var(--accent-primary);
+}
+
+/* Sidebar nav items in settings */
+[data-theme="light"] .sidebar-nav-item:hover {
+  background: var(--surface-hover);
+}
+[data-theme="light"] .sidebar-nav-item.active {
+  background: var(--accent-primary-dim);
+  color: var(--accent-primary);
+}
+
+/* Tabs */
+[data-theme="light"] .prompt-tab.active {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+/* ============================================================
+   Chat input bar + debate config + mode toggle — light theme
+   ============================================================ */
+
+/* Floating input card */
+[data-theme="light"] .input-container {
+  background: #ffffff;
+  border-color: var(--border-color);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.1), 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .input-container:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(37, 99, 235, 0.25);
+}
+
+/* Debate config bar (Freeform · 1 round · Config) */
+[data-theme="light"] .debate-config-bar {
+  background: var(--surface-raised);
+  border-color: var(--border-color);
+}
+[data-theme="light"] .debate-config-bar__dot {
+  color: rgba(15, 23, 42, 0.2);
+}
+
+/* Execution mode toggle (chat / scale / Full Deliberation) */
+[data-theme="light"] .execution-mode-toggle {
+  background: var(--surface-raised);
+  border-color: var(--border-color);
+}
+[data-theme="light"] .execution-mode-toggle .mode-option,
+[data-theme="light"] .execution-mode-toggle button {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .execution-mode-toggle .mode-option:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  filter: none;
+}
+/* keep the active gradient button white text (it has a blue bg) */
+[data-theme="light"] .execution-mode-toggle .mode-option.active,
+[data-theme="light"] .execution-mode-toggle button.active {
+  color: #ffffff;
+}
+
+/* Send button stays accent-colored — ensure contrast */
+[data-theme="light"] .send-button {
+  color: #ffffff;
+}
+
+/* ============================================================
+   Council setup screen — light theme
+   ============================================================ */
+
+/* Secondary "Start a New Council Session" button */
+[data-theme="light"] .start-session-btn--secondary {
+  background: var(--surface-raised);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .start-session-btn--secondary:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-primary);
+}
+
+/* "Custom lineup", "New Council · Clear Current", "Save preset" controls */
+[data-theme="light"] .council-setup__preset-btn {
+  background: var(--surface-raised);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .council-setup__preset-btn:hover {
+  background: var(--surface-hover);
+}
+
+/* ---- Council member cards: Edit button + empty/add slots ---- */
+[data-theme="light"] .council-card__edit {
+  background: var(--surface-raised);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .council-card__edit:hover {
+  background: var(--accent-primary-dim);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+[data-theme="light"] .council-card--empty {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.18);
+}
+[data-theme="light"] .council-card--editable .model-name--placeholder {
+  color: var(--text-muted);
+}
+[data-theme="light"] .council-card-add-label {
+  color: var(--accent-primary);
+}
+
+/* ============================================================
+   Remaining opaque dark surfaces — light theme
+   ============================================================ */
+
+/* Popovers / dropdown menus / modals built on slate */
+[data-theme="light"] .council-setup__preset-popover,
+[data-theme="light"] .council-setup__modal,
+[data-theme="light"] .council-card__picker,
+[data-theme="light"] .search-context,
+[data-theme="light"] .dropdown-menu,
+[data-theme="light"] .popover {
+  background: #ffffff;
+  border-color: var(--border-color);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.15);
+}
+
+/* Modal backdrops -> lighter scrim */
+[data-theme="light"] .council-setup__modal-backdrop {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+/* Text inputs sitting on rgba(0,0,0) */
+[data-theme="light"] .council-setup__modal-label input[type="text"] {
+  background: #ffffff;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Sidebar search + conversation items (slate -> light) */
+[data-theme="light"] .search-input {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+[data-theme="light"] .conversation-item {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+[data-theme="light"] .conversation-item:hover {
+  background: var(--surface-raised);
+}
+
+/* Selected-row highlight inside popovers stays subtle on light */
+[data-theme="light"] .council-setup__preset-option:hover,
+[data-theme="light"] .council-setup__preset-option--selected {
+  background: var(--accent-primary-dim);
+}
+
+/* Sidebar header / actions borders */
+[data-theme="light"] .sidebar-header {
+  border-bottom-color: var(--border-color);
+}
+[data-theme="light"] .sidebar-actions {
+  border-bottom-color: var(--border-color);
+}
+
+/* ============================================================
+   Sage light theme — chat / stage / cost-report readability fix
+   Replace hardcoded dark rgba backgrounds and pale text colors
+   with palette-aligned alternatives so cards are actually
+   readable on cream surfaces.
+   ============================================================ */
+
+/* ---- Cost Report ---- */
+[data-theme="light"] .cost-report {
+  border-color: rgba(21, 128, 61, 0.30);
+  background:
+    linear-gradient(135deg, rgba(21, 128, 61, 0.06), rgba(154, 52, 18, 0.04)),
+    #FBFAF5;
+  box-shadow: 0 4px 16px rgba(54, 51, 34, 0.06);
+}
+[data-theme="light"] .cost-report__total {
+  color: #1F2A24;
+}
+[data-theme="light"] .cost-report__row {
+  background: rgba(31, 42, 36, 0.025);
+  border-top-color: rgba(31, 42, 36, 0.08);
+  color: #1F2A24;
+}
+[data-theme="light"] .cost-report__row--head {
+  background: rgba(31, 42, 36, 0.055);
+  color: #52525B;
+}
+[data-theme="light"] .cost-report__model {
+  color: #0F1218;
+}
+[data-theme="light"] .cost-report__tokens small {
+  color: #6B7280;
+}
+[data-theme="light"] .cost-report__source.free,
+[data-theme="light"] .cost-report__source.known {
+  color: #15803D;
+  background: rgba(21, 128, 61, 0.12);
+}
+[data-theme="light"] .cost-report__source.estimated {
+  color: #A16207;
+  background: rgba(161, 98, 7, 0.12);
+}
+[data-theme="light"] .cost-report__source.usage-only {
+  color: #B91C1C;
+  background: rgba(220, 38, 38, 0.10);
+}
+
+/* ---- Tab content (Stage 1/2 panels) ---- */
+[data-theme="light"] .tab-content,
+[data-theme="light"] .tab-content.glass-panel,
+[data-theme="light"] .stage-1 .tab-content,
+[data-theme="light"] .stage-2 .tab-content {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(54, 51, 34, 0.04);
+}
+
+/* ---- Tabs (avatar tabs row above tab-content) ---- */
+[data-theme="light"] .tab {
+  background: rgba(31, 42, 36, 0.04);
+  border: 1px solid var(--border-color);
+  color: #4B5163;
+}
+[data-theme="light"] .tab:hover {
+  background: rgba(31, 42, 36, 0.07);
+}
+[data-theme="light"] .tab.active {
+  background: #FBFAF5;
+  color: var(--text-primary);
+}
+[data-theme="light"] .tab .tab-icon {
+  background: rgba(31, 42, 36, 0.05) !important;
+}
+
+/* ---- Stage 1: model header / response area ---- */
+[data-theme="light"] .stage-1 .model-name-large,
+[data-theme="light"] .stage-2 .model-name-large {
+  color: var(--text-primary);
+}
+[data-theme="light"] .model-status.success {
+  color: #15803D;
+  background: rgba(21, 128, 61, 0.12);
+}
+[data-theme="light"] .model-status.error {
+  color: #B91C1C;
+  background: rgba(220, 38, 38, 0.10);
+}
+
+/* Copy button readability */
+[data-theme="light"] .copy-button {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .copy-button:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+[data-theme="light"] .copy-button.copied {
+  background: rgba(21, 128, 61, 0.12);
+  color: #15803D;
+  border-color: rgba(21, 128, 61, 0.35);
+}
+
+/* ---- Stage 2 specific dark rgba overrides ---- */
+[data-theme="light"] .stage-2 .ranking-content,
+[data-theme="light"] .stage-2 .parsed-ranking,
+[data-theme="light"] .stage-2 .aggregate-item {
+  background: transparent;
+  color: var(--text-primary);
+}
+[data-theme="light"] .stage-2 .info-tooltip {
+  background: #FBFAF5;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 24px rgba(54, 51, 34, 0.10);
+}
+
+/* ---- Council Grid cards (Stage 1 grid view) ---- */
+[data-theme="light"] .council-card {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(54, 51, 34, 0.05);
+}
+[data-theme="light"] .council-card .model-name,
+[data-theme="light"] .council-card .provider-label {
+  color: var(--text-primary);
+}
+[data-theme="light"] .council-card .provider-label {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .council-card .role-badge.chairman {
+  background: rgba(161, 98, 7, 0.15);
+  color: #9A3412;
+}
+[data-theme="light"] .council-card .role-badge.member {
+  background: rgba(21, 128, 61, 0.15);
+  color: #15803D;
+}
+
+/* ---- Stage headers / titles ---- */
+[data-theme="light"] .stage-container .stage-title {
+  color: var(--text-primary);
+}
+[data-theme="light"] .stage-container h3,
+[data-theme="light"] .stage-container h4 {
+  color: var(--text-primary);
+}
+[data-theme="light"] .stage-description {
+  color: var(--text-secondary);
+}
+
+/* ---- Stage 3 (Chairman's verdict) ---- */
+[data-theme="light"] .stage-3 .final-response,
+[data-theme="light"] .stage-3 .chairman-header {
+  background: #FBFAF5;
+  color: var(--text-primary);
+}
+[data-theme="light"] .stage-3 .chairman-role,
+[data-theme="light"] .stage-3 .chairman-model,
+[data-theme="light"] .stage-3 .chairman-provider-badge {
+  color: var(--text-primary);
+}
+
+/* ---- Messages container & message bubble ---- */
+[data-theme="light"] .messages-area,
+[data-theme="light"] .chat-container,
+[data-theme="light"] .chat-interface {
+  background: transparent;
+}
+[data-theme="light"] .message {
+  background: transparent;
+}
+[data-theme="light"] .message-role {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .message.user .message-content {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(54, 51, 34, 0.05);
+}
+[data-theme="light"] .message.assistant .message-content {
+  background: transparent;
+  color: var(--text-primary);
+}
+[data-theme="light"] .debate-mode-pill {
+  background: rgba(21, 128, 61, 0.10);
+  color: #15803D;
+  border: 1px solid rgba(21, 128, 61, 0.25);
+}
+
+/* ---- Input bar (floating command capsule) ---- */
+[data-theme="light"] .input-container {
+  background: #FBFAF5;
+  border-color: var(--border-color);
+}
+[data-theme="light"] .message-input {
+  color: var(--text-primary);
+  background: transparent;
+}
+[data-theme="light"] .message-input::placeholder {
+  color: var(--text-muted);
+}
+[data-theme="light"] .send-button {
+  background: linear-gradient(135deg, #15803D 0%, #166534 100%);
+}
+[data-theme="light"] .stop-button {
+  background: #B91C1C;
+}
+
+/* Search popover (floating dropdown above input) */
+[data-theme="light"] .search-popover {
+  background: #FBFAF5;
+  border-color: var(--border-color);
+  box-shadow: 0 12px 32px rgba(54, 51, 34, 0.12);
+}
+[data-theme="light"] .search-popover-option {
+  color: var(--text-primary);
+}
+[data-theme="light"] .search-popover-option:hover {
+  background: var(--surface-hover);
+}
+[data-theme="light"] .search-popover-option--selected {
+  background: rgba(21, 128, 61, 0.10);
+  color: #15803D;
+}
+
+/* Debate config bar above the input */
+[data-theme="light"] .debate-config-bar__pill {
+  background: rgba(21, 128, 61, 0.12);
+  color: #15803D;
+  border: 1px solid rgba(21, 128, 61, 0.25);
+}
+[data-theme="light"] .debate-config-bar__link {
+  color: #15803D;
+}
+[data-theme="light"] .debate-config-bar__converge {
+  color: #A16207;
+}
+
+/* Execution mode toggle */
+[data-theme="light"] .execution-mode-toggle .mode-option.active {
+  background: linear-gradient(135deg, #15803D 0%, #166534 100%);
+  color: #FFFFFF;
+}
+
+/* Search context accordion (above results) */
+[data-theme="light"] .search-context {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .search-accordion-header {
+  color: var(--text-primary);
+}
+[data-theme="light"] .search-sources {
+  background: rgba(31, 42, 36, 0.03);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .source-link {
+  color: #15803D;
+}
+
+/* Aborted indicator */
+[data-theme="light"] .aborted-indicator {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  color: #B91C1C;
+}
+
+/* Round navigator */
+[data-theme="light"] .round-navigator,
+[data-theme="light"] .round-navigator button {
+  background: #FBFAF5;
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+[data-theme="light"] .round-navigator button.active {
+  background: #15803D;
+  color: #FFFFFF;
+  border-color: #15803D;
+}
+
+/* ============================================================
+   Sage readability pass #2 — council card states + debate cards
+   These have higher specificity overrides with hardcoded dark
+   rgba values that ignore the theme variables.
+   ============================================================ */
+
+/* ---- Council card states (active/done/waiting) ---- */
+[data-theme="light"] .council-card.active {
+  background: #FBFAF5;
+  border: 1px solid rgba(21, 128, 61, 0.45);
+  box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.18), 0 4px 14px rgba(54, 51, 34, 0.08);
+}
+[data-theme="light"] .council-card.done {
+  background: #FBFAF5;
+  border: 1px solid rgba(21, 128, 61, 0.32);
+  box-shadow: 0 2px 8px rgba(54, 51, 34, 0.05);
+}
+[data-theme="light"] .council-card.waiting {
+  background: rgba(31, 42, 36, 0.025);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  opacity: 0.82;
+}
+[data-theme="light"] .council-card.ready {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(54, 51, 34, 0.04);
+}
+[data-theme="light"] .council-card .council-avatar {
+  background: rgba(31, 42, 36, 0.04) !important;
+}
+[data-theme="light"] .council-card.active .council-avatar {
+  background: rgba(21, 128, 61, 0.10) !important;
+}
+[data-theme="light"] .council-card .avatar-icon {
+  color: var(--text-secondary);
+}
+/* Done badge stays green — fine across both themes */
+
+/* Chairman card uses linear-gradient(bg-card, accent-chairman-dim) — already adapts via vars,
+   but explicitly clamp shadow + ensure border is copper not dark */
+[data-theme="light"] .council-card.chairman {
+  background: linear-gradient(145deg, #FBFAF5, rgba(154, 52, 18, 0.10));
+  border: 1px solid rgba(154, 52, 18, 0.35);
+  box-shadow: 0 4px 14px rgba(154, 52, 18, 0.08);
+}
+[data-theme="light"] .council-card.chairman.chairman-disabled {
+  background: linear-gradient(145deg, #FBFAF5, rgba(31, 42, 36, 0.04));
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+/* ---- Debate mode list cards (free-form / paragraph / claim) ---- */
+[data-theme="light"] .debate-mode-list-card {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(54, 51, 34, 0.04);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+[data-theme="light"] .debate-mode-list-card:hover {
+  background: #FFFFFF;
+  border-color: rgba(21, 128, 61, 0.30);
+  box-shadow: 0 4px 16px rgba(54, 51, 34, 0.08);
+}
+[data-theme="light"] .debate-mode-list-card.active {
+  background: linear-gradient(135deg, rgba(21, 128, 61, 0.06) 0%, #FBFAF5 100%);
+  border-color: #15803D;
+  box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.15), 0 4px 14px rgba(54, 51, 34, 0.06);
+}
+
+/* Headings + subtitles inside cards */
+[data-theme="light"] .debate-card-title-text h5 {
+  color: var(--text-primary);
+}
+[data-theme="light"] .debate-card-concept {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .debate-mode-list-card.active .debate-card-concept {
+  color: #15803D;
+}
+
+/* Icon wrapper */
+[data-theme="light"] .debate-card-icon-wrapper {
+  background: rgba(31, 42, 36, 0.05);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .debate-mode-list-card:hover .debate-card-icon-wrapper {
+  background: rgba(21, 128, 61, 0.10);
+  color: #15803D;
+}
+[data-theme="light"] .debate-mode-list-card.active .debate-card-icon-wrapper {
+  background: rgba(21, 128, 61, 0.14);
+  color: #15803D;
+  box-shadow: 0 0 8px rgba(21, 128, 61, 0.15);
+}
+
+/* Badges (fastest / balanced / rigorous) */
+[data-theme="light"] .debate-badge.fastest {
+  background: rgba(21, 128, 61, 0.12);
+  color: #15803D;
+  border: 1px solid rgba(21, 128, 61, 0.30);
+}
+[data-theme="light"] .debate-badge.balanced {
+  background: rgba(15, 118, 110, 0.12);
+  color: #0F766E;
+  border: 1px solid rgba(15, 118, 110, 0.30);
+}
+[data-theme="light"] .debate-badge.rigorous {
+  background: rgba(154, 52, 18, 0.12);
+  color: #9A3412;
+  border: 1px solid rgba(154, 52, 18, 0.30);
+}
+
+/* Card details list (the bulleted explanations) */
+[data-theme="light"] .debate-card-details {
+  border-top-color: var(--border-color);
+}
+[data-theme="light"] .debate-mode-list-card.active .debate-card-details {
+  border-top-color: rgba(21, 128, 61, 0.20);
+}
+[data-theme="light"] .debate-details-list li {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .debate-mode-list-card.active .debate-details-list li {
+  color: var(--text-primary);
+}
+[data-theme="light"] .bullet-label {
+  color: var(--text-primary);
+}
+[data-theme="light"] .debate-mode-list-card.active .bullet-label {
+  color: #15803D;
+}
+
+/* Debate section title icon + helper badge */
+[data-theme="light"] .debate-title-icon {
+  stroke: #15803D !important;
+}
+[data-theme="light"] .debate-helper-badge {
+  background: rgba(21, 128, 61, 0.10);
+  color: #15803D;
+  border: 1px solid rgba(21, 128, 61, 0.25);
+}
+
+/* Rounds segmented bar */
+[data-theme="light"] .rounds-segmented-bar {
+  background: rgba(31, 42, 36, 0.03);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .rounds-step-btn {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .rounds-step-btn:hover {
+  background: rgba(21, 128, 61, 0.06);
+  color: var(--text-primary);
+}
+[data-theme="light"] .rounds-step-btn.active {
+  background: #15803D;
+  color: #FFFFFF;
+}
+
+/* Cost meter */
+[data-theme="light"] .cost-meter-container {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .cost-meter-title {
+  color: var(--text-primary);
+}
+[data-theme="light"] .cost-meter-percentage {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .cost-meter-track {
+  background: rgba(31, 42, 36, 0.06);
+}
+[data-theme="light"] .cost-meter-description {
+  color: var(--text-secondary);
+}
+
+/* Threshold segmented bar */
+[data-theme="light"] .threshold-segmented-bar {
+  background: rgba(31, 42, 36, 0.03);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .threshold-btn {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .threshold-btn.active {
+  background: #15803D;
+  color: #FFFFFF;
+}
+
+/* Convergence card */
+[data-theme="light"] .convergence-card {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .convergence-toggle-text h5 {
+  color: var(--text-primary);
+}
+[data-theme="light"] .convergence-toggle-hint,
+[data-theme="light"] .convergence-threshold-label {
+  color: var(--text-secondary);
+}
+
+/* Warning banner */
+[data-theme="light"] .debate-warning-banner {
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.30);
+  color: #9A3412;
+}
+[data-theme="light"] .warning-banner-icon {
+  stroke: #9A3412 !important;
+}
+
+/* ============================================================
+   Sage readability pass #3 — Advisor surfaces
+   (AdvisorGrid, DebateView, AdvisorSetup)
+   ============================================================ */
+
+/* ---- Advisor Grid ---- */
+[data-theme="light"] .advisor-card {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(54, 51, 34, 0.05);
+}
+[data-theme="light"] .advisor-card--thinking {
+  background: #FBFAF5;
+  border-color: rgba(154, 52, 18, 0.40);
+  box-shadow: 0 0 0 2px rgba(154, 52, 18, 0.15);
+}
+[data-theme="light"] .advisor-card--waiting {
+  background: rgba(31, 42, 36, 0.025);
+  opacity: 0.82;
+}
+[data-theme="light"] .advisor-avatar {
+  background: rgba(31, 42, 36, 0.05) !important;
+}
+[data-theme="light"] .advisor-name,
+[data-theme="light"] .advisor-role {
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-role {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-model {
+  color: var(--text-muted);
+}
+[data-theme="light"] .advisor-round-indicator {
+  background: rgba(154, 52, 18, 0.10);
+  color: #9A3412;
+  border: 1px solid rgba(154, 52, 18, 0.25);
+}
+
+/* ---- DebateView ---- */
+[data-theme="light"] .debate-view__live-status {
+  background: rgba(154, 52, 18, 0.08);
+  border: 1px solid rgba(154, 52, 18, 0.25);
+  color: var(--text-primary);
+}
+[data-theme="light"] .debate-view__live-copy strong {
+  color: #7C2D12;
+}
+[data-theme="light"] .debate-view__live-copy span {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .debate-view__live-dot {
+  background: #9A3412;
+}
+[data-theme="light"] .debate-view__question {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .debate-view__question-label {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .debate-view__search-badge {
+  background: rgba(21, 128, 61, 0.10);
+  color: #15803D;
+  border: 1px solid rgba(21, 128, 61, 0.25);
+}
+[data-theme="light"] .debate-view__search-badge--searching {
+  background: rgba(154, 52, 18, 0.10);
+  color: #9A3412;
+  border-color: rgba(154, 52, 18, 0.25);
+}
+[data-theme="light"] .debate-view__starting {
+  background: rgba(31, 42, 36, 0.03);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .debate-view__round-label {
+  background: rgba(154, 52, 18, 0.10);
+  color: #9A3412;
+  border: 1px solid rgba(154, 52, 18, 0.30);
+}
+[data-theme="light"] .debate-view__round-divider {
+  background: var(--border-color);
+}
+[data-theme="light"] .debate-view__response-card {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(54, 51, 34, 0.04);
+}
+[data-theme="light"] .debate-view__response-name {
+  color: var(--text-primary);
+}
+[data-theme="light"] .debate-view__response-role,
+[data-theme="light"] .debate-view__response-model {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .debate-view__response-error-badge {
+  background: rgba(220, 38, 38, 0.12);
+  color: #B91C1C;
+  border: 1px solid rgba(220, 38, 38, 0.30);
+}
+[data-theme="light"] .debate-view__response-warning-badge {
+  background: rgba(217, 119, 6, 0.12);
+  color: #9A3412;
+  border: 1px solid rgba(217, 119, 6, 0.30);
+}
+[data-theme="light"] .debate-view__response-error {
+  background: rgba(220, 38, 38, 0.06);
+  color: #7F1D1D;
+}
+[data-theme="light"] .debate-view__response-warning {
+  background: rgba(217, 119, 6, 0.06);
+  color: #92400E;
+}
+[data-theme="light"] .debate-view__next-round-banner {
+  background: rgba(154, 52, 18, 0.08);
+  border: 1px solid rgba(154, 52, 18, 0.25);
+  color: #9A3412;
+}
+[data-theme="light"] .debate-view__next-round-dot {
+  background: #9A3412;
+}
+[data-theme="light"] .debate-view__consensus-banner {
+  background: rgba(21, 128, 61, 0.08);
+  border: 1px solid rgba(21, 128, 61, 0.25);
+  color: #15803D;
+}
+[data-theme="light"] .debate-view__error {
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.30);
+  color: #7F1D1D;
+}
+[data-theme="light"] .debate-view__tiebreaker {
+  background: #FBFAF5;
+  border: 1px solid rgba(217, 119, 6, 0.30);
+  color: var(--text-primary);
+}
+[data-theme="light"] .debate-view__tiebreaker-title {
+  color: #9A3412;
+}
+[data-theme="light"] .debate-view__verdict {
+  background: linear-gradient(145deg, #FBFAF5, rgba(21, 128, 61, 0.06));
+  border: 1px solid rgba(21, 128, 61, 0.35);
+  color: var(--text-primary);
+}
+[data-theme="light"] .debate-view__verdict-title {
+  color: #15803D;
+}
+[data-theme="light"] .debate-view__verdict-model,
+[data-theme="light"] .debate-view__tiebreaker-model {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .debate-view__copy-btn {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .debate-view__copy-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+[data-theme="light"] .debate-view__copy-btn--copied {
+  background: rgba(21, 128, 61, 0.12);
+  color: #15803D;
+  border-color: rgba(21, 128, 61, 0.35);
+}
+
+/* ---- AdvisorSetup ---- */
+[data-theme="light"] .advisor-setup__section {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(54, 51, 34, 0.04);
+}
+[data-theme="light"] .advisor-setup__question-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .advisor-setup__section-label {
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__question {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__question::placeholder {
+  color: var(--text-muted);
+}
+[data-theme="light"] .advisor-setup__question-hint {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__start-btn {
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .advisor-setup__start-btn--ready {
+  background: linear-gradient(135deg, #15803D 0%, #166534 100%);
+  color: #FFFFFF;
+  border-color: #15803D;
+}
+[data-theme="light"] .advisor-setup__config-label {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__stepper {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .advisor-setup__stepper-btn {
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__stepper-btn:hover:not(:disabled) {
+  background: rgba(21, 128, 61, 0.06);
+}
+[data-theme="light"] .advisor-setup__stepper-value {
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__search-btn {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__search-btn--active {
+  background: rgba(21, 128, 61, 0.08);
+  border-color: rgba(21, 128, 61, 0.35);
+  color: #15803D;
+}
+[data-theme="light"] .advisor-setup__search-popover,
+[data-theme="light"] .advisor-setup__preset-popover {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 24px rgba(54, 51, 34, 0.10);
+}
+[data-theme="light"] .advisor-setup__search-option,
+[data-theme="light"] .advisor-setup__preset-option {
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__search-option:hover,
+[data-theme="light"] .advisor-setup__preset-option:hover {
+  background: rgba(21, 128, 61, 0.06);
+}
+[data-theme="light"] .advisor-setup__search-option--selected,
+[data-theme="light"] .advisor-setup__preset-option--selected {
+  background: rgba(21, 128, 61, 0.10);
+  color: #15803D;
+}
+[data-theme="light"] .advisor-setup__preset-btn {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__preset-btn:hover {
+  background: rgba(21, 128, 61, 0.04);
+}
+[data-theme="light"] .advisor-setup__preset-save-link,
+[data-theme="light"] .advisor-setup__preset-footer-btn {
+  color: #15803D;
+}
+[data-theme="light"] .advisor-setup__mode-tabs {
+  background: rgba(31, 42, 36, 0.04);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .advisor-setup__mode-tab {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__mode-tab--active {
+  background: #15803D;
+  color: #FFFFFF;
+}
+[data-theme="light"] .advisor-setup__model-row,
+[data-theme="light"] .advisor-setup__model-simple {
+  background: rgba(31, 42, 36, 0.025);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .advisor-setup__model-label {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__model-row--verdict {
+  background: rgba(21, 128, 61, 0.06);
+  border-color: rgba(21, 128, 61, 0.30);
+}
+[data-theme="light"] .advisor-setup__count-badge {
+  background: rgba(31, 42, 36, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .advisor-setup__count-badge--valid {
+  background: rgba(21, 128, 61, 0.12);
+  color: #15803D;
+  border-color: rgba(21, 128, 61, 0.30);
+}
+[data-theme="light"] .advisor-setup__recommended-btn {
+  background: rgba(154, 52, 18, 0.06);
+  color: #9A3412;
+  border: 1px solid rgba(154, 52, 18, 0.30);
+}
+[data-theme="light"] .advisor-setup__recommended-btn:hover {
+  background: rgba(154, 52, 18, 0.12);
+}
+[data-theme="light"] .advisor-setup__recommended-hint {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__persona-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(54, 51, 34, 0.04);
+}
+[data-theme="light"] .advisor-setup__persona-card:hover {
+  border-color: rgba(21, 128, 61, 0.30);
+  box-shadow: 0 4px 12px rgba(54, 51, 34, 0.07);
+}
+[data-theme="light"] .advisor-setup__persona-card--selected {
+  background: linear-gradient(145deg, #FFFFFF, rgba(21, 128, 61, 0.06));
+  border-color: #15803D;
+  box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.15);
+}
+[data-theme="light"] .advisor-setup__persona-card--disabled {
+  opacity: 0.55;
+}
+[data-theme="light"] .advisor-setup__persona-name,
+[data-theme="light"] .advisor-setup__persona-role,
+[data-theme="light"] .advisor-setup__persona-desc {
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__persona-role {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__persona-desc {
+  color: var(--text-muted);
+}
+[data-theme="light"] .advisor-setup__persona-edit-btn {
+  background: rgba(31, 42, 36, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__persona-edit-btn:hover {
+  background: rgba(21, 128, 61, 0.08);
+  color: #15803D;
+}
+[data-theme="light"] .advisor-setup__persona-custom-badge {
+  background: rgba(154, 52, 18, 0.15);
+  color: #9A3412;
+}
+[data-theme="light"] .advisor-setup__personas-loading {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__edit-overlay {
+  background: rgba(31, 42, 36, 0.30);
+}
+[data-theme="light"] .advisor-setup__edit-modal {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 20px 50px rgba(54, 51, 34, 0.20);
+}
+[data-theme="light"] .advisor-setup__edit-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border-color);
+}
+[data-theme="light"] .advisor-setup__edit-title {
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__edit-label {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__edit-input,
+[data-theme="light"] .advisor-setup__edit-textarea {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__edit-btn--cancel {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .advisor-setup__edit-btn--save {
+  background: linear-gradient(135deg, #15803D 0%, #166534 100%);
+  color: #FFFFFF;
+}
+[data-theme="light"] .advisor-setup__edit-btn--reset {
+  background: rgba(217, 119, 6, 0.10);
+  color: #9A3412;
+  border: 1px solid rgba(217, 119, 6, 0.30);
+}
+[data-theme="light"] .advisor-setup__edit-close {
+  background: transparent;
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__edit-close:hover {
+  background: rgba(220, 38, 38, 0.10);
+  color: #B91C1C;
+}
+[data-theme="light"] .advisor-setup__preset-checkbox {
+  color: var(--text-primary);
+}
+[data-theme="light"] .advisor-setup__preset-dirty,
+[data-theme="light"] .advisor-setup__model-summary,
+[data-theme="light"] .advisor-setup__model-empty,
+[data-theme="light"] .advisor-setup__model-advanced-empty {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .advisor-setup__preset-empty {
+  color: var(--text-muted);
+}
+[data-theme="light"] .advisor-setup__chevron,
+[data-theme="light"] .advisor-setup__preset-chevron,
+[data-theme="light"] .advisor-setup__search-chevron {
+  color: var(--text-muted);
+}
+
+/* Claim cards (Stage 2 in claim mode) */
+[data-theme="light"] .claim-card,
+[data-theme="light"] .claim-card-detailed,
+[data-theme="light"] .claim-card-compact {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(54, 51, 34, 0.04);
+}
+[data-theme="light"] .claim-text {
+  color: var(--text-primary);
+}
+[data-theme="light"] .claim-id,
+[data-theme="light"] .claim-source,
+[data-theme="light"] .claim-source-tag {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .claim-summary-bar {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .claim-stat.strong {
+  color: #15803D;
+}
+[data-theme="light"] .claim-stat.contested {
+  color: #B91C1C;
+}
+[data-theme="light"] .claim-stat.total {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .claim-all-strong-banner {
+  background: rgba(21, 128, 61, 0.08);
+  border: 1px solid rgba(21, 128, 61, 0.30);
+  color: #15803D;
+}
+[data-theme="light"] .claim-section-label.contested-label {
+  color: #B91C1C;
+}
+[data-theme="light"] .claim-section-toggle {
+  background: rgba(31, 42, 36, 0.04);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .claim-section-hint {
+  color: var(--text-muted);
+}
+
+/* Ranking heatmap */
+[data-theme="light"] .ranking-heatmap {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .heatmap-title {
+  color: var(--text-primary);
+}
+[data-theme="light"] .heatmap-description {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .heatmap-corner,
+[data-theme="light"] .heatmap-col-header,
+[data-theme="light"] .heatmap-row-header {
+  background: rgba(31, 42, 36, 0.04);
+  color: var(--text-primary);
+}
+[data-theme="light"] .heatmap-cell {
+  color: var(--text-primary);
+}
+[data-theme="light"] .heatmap-self {
+  background: rgba(31, 42, 36, 0.04);
+  color: var(--text-muted);
+}
+[data-theme="light"] .heatmap-avg-row td {
+  background: rgba(21, 128, 61, 0.06);
+}
+
+/* Round Navigator (Council multi-round) */
+[data-theme="light"] .round-navigator {
+  background: #FBFAF5;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="light"] .round-dot {
+  background: rgba(31, 42, 36, 0.15);
+}
+[data-theme="light"] .round-dot.completed {
+  background: #15803D;
+}
+[data-theme="light"] .round-dot.active {
+  background: #9A3412;
+  box-shadow: 0 0 0 2px rgba(154, 52, 18, 0.20);
+}
+[data-theme="light"] .round-label {
+  color: var(--text-secondary);
+}

@@ -64,7 +64,7 @@
   opacity: 0.5;
 }
 
-/* Hero Section — staggered reveal */
+/* Hero Section - staggered reveal */
 .hero-container {
   position: absolute;
   top: 0;
@@ -271,8 +271,8 @@
   justify-content: space-between;
   padding: 6px 16px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--tint-border);
+  background: var(--tint-1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   font-size: 12px;
@@ -303,7 +303,7 @@
 }
 
 .debate-config-bar__dot {
-  color: rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
 }
 
 .debate-config-bar__value {
@@ -506,7 +506,7 @@
 }
 
 .search-popover-option:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--tint-3);
   color: var(--text-primary);
 }
 
@@ -816,7 +816,7 @@
     height: 40px;
   }
 }
-/* Advisor mode — full-height scrollable setup */
+/* Advisor mode - full-height scrollable setup */
 .chat-interface.advisor-mode {
   display: flex;
   flex-direction: column;
@@ -896,15 +896,15 @@
   padding: 10px 22px;
   font-size: 14px;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--tint-3);
+  border: 1px solid var(--tint-border);
+  color: var(--text-primary);
   box-shadow: none;
 }
 
 .start-session-btn--secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--tint-3);
+  border-color: var(--tint-border);
   box-shadow: none;
   transform: none;
 }

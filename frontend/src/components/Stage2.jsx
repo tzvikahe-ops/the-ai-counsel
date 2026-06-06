@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Skeleton from './common/Skeleton';
 import MarkdownContent from './MarkdownContent';
 import { getModelVisuals, getShortModelName } from '../utils/modelHelpers';
@@ -13,7 +14,6 @@ function deAnonymizeText(text, labelToModel) {
     if (!labelToModel) return text;
 
     let result = text;
-    // Replace each "Response X" with the actual model name
     Object.entries(labelToModel).forEach(([label, model]) => {
         const modelShortName = getShortModelName(model);
         result = result.replace(new RegExp(label, 'g'), `**${modelShortName}**`);
@@ -21,33 +21,36 @@ function deAnonymizeText(text, labelToModel) {
     return result;
 }
 
-// Helper to convert hex to rgb for CSS variable
 function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 255, 255';
 }
 
 export default function Stage2({ rankings, labelToModel, aggregateRankings, startTime, endTime, canonicalClaims, aggregateClaimVerdicts }) {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState(0);
-    const [viewMode, setViewMode] = useState('leaderboard'); // 'leaderboard' or 'heatmap'
+    const [viewMode, setViewMode] = useState('leaderboard');
 
-    // Reset activeTab if it becomes out of bounds (e.g., during streaming)
     useEffect(() => {
         if (rankings && rankings.length > 0 && activeTab >= rankings.length) {
             setActiveTab(rankings.length - 1);
         }
     }, [rankings, activeTab]);
 
+    const [isCopied, setIsCopied] = useState(false);
+
+    useEffect(() => {
+        setIsCopied(false);
+    }, [activeTab]);
+
     if (!rankings || rankings.length === 0) {
         return null;
     }
 
-    // Ensure activeTab is within bounds
     const safeActiveTab = Math.min(activeTab, rankings.length - 1);
     const currentRanking = rankings[safeActiveTab] || {};
     const hasError = currentRanking?.error || false;
 
-    // Get visuals for current tab
     const currentVisuals = getModelVisuals(currentRanking?.model);
     const knownLabels = labelToModel ? new Set(Object.keys(labelToModel)) : null;
     const parsedRanking = (currentRanking?.parsed_ranking || []).filter(
@@ -55,17 +58,9 @@ export default function Stage2({ rankings, labelToModel, aggregateRankings, star
     );
     const anonymizedLabelText = labelToModel
         ? Object.keys(labelToModel).join(', ')
-        : 'Response A, Response B, etc.';
+        : t('stage2.fallbackAnonLabels');
 
     const isClaimMode = !!(canonicalClaims && aggregateClaimVerdicts);
-
-    // Copy functionality
-    const [isCopied, setIsCopied] = useState(false);
-
-    // Reset copy state when tab changes
-    useEffect(() => {
-        setIsCopied(false);
-    }, [activeTab]);
 
     const handleCopy = async () => {
         const ranking = currentRanking?.ranking;
@@ -86,12 +81,11 @@ export default function Stage2({ rankings, labelToModel, aggregateRankings, star
             <div className="stage-header">
                 <div className="stage-title">
                     <span className="stage-icon">⚖️</span>
-                    Stage 2: Peer Rankings
+                    {t('stage2.title')}
                 </div>
-                <StageTimer startTime={startTime} endTime={endTime} label="Duration" />
+                <StageTimer startTime={startTime} endTime={endTime} label={t('stage2.duration')} />
             </div>
 
-            {/* Claim Mode: show ClaimCards as the primary view */}
             {isClaimMode && (
                 <ClaimCardWithVerdicts
                     claims={canonicalClaims}
@@ -104,7 +98,7 @@ export default function Stage2({ rankings, labelToModel, aggregateRankings, star
             {isClaimMode ? (
                 <details className="raw-evaluations-collapse">
                     <summary className="raw-evaluations-toggle">
-                        Show Raw Evaluations ({rankings?.length || 0} evaluators)
+                        {t('stage2.showRawEvaluations', { count: rankings?.length || 0 })}
                     </summary>
                     <div style={{ marginTop: '12px' }}>
                         <RawEvaluationTabs
@@ -125,10 +119,9 @@ export default function Stage2({ rankings, labelToModel, aggregateRankings, star
                 </details>
             ) : (
                 <>
-                    <h4>Raw Evaluations</h4>
+                    <h4>{t('stage2.rawEvaluations')}</h4>
                     <p className="stage-description">
-                        Each model evaluated all responses (anonymized as {anonymizedLabelText}) and provided rankings.
-                        Below, model names are shown in <strong>bold</strong> for readability, but the original evaluation used anonymous labels.
+                        {t('stage2.rawEvalDescription', { labels: anonymizedLabelText })}
                     </p>
                     <RawEvaluationTabs
                         rankings={rankings}
@@ -151,29 +144,29 @@ export default function Stage2({ rankings, labelToModel, aggregateRankings, star
                 <div className="aggregate-rankings">
                     <div className="aggregate-header-row">
                         <div className="aggregate-title-group">
-                            <h4>🏆 Stage 2 Results</h4>
+                            <h4>{t('stage2.stage2Results')}</h4>
                             <p className="stage-description">
                                 {viewMode === 'leaderboard' || aggregateRankings.length < 3
-                                    ? 'Combined results across all peer evaluations. Bar length corresponds to average rank value.'
-                                    : 'Detailed matrix of anonymous peer evaluations.'
+                                    ? t('stage2.leaderboardDescription')
+                                    : t('stage2.matrixDescription')
                                 }
                             </p>
                         </div>
                         {aggregateRankings.length >= 3 && (
                             <div className="view-mode-toggle">
-                                <button 
+                                <button
                                     className={`toggle-btn ${viewMode === 'leaderboard' ? 'active' : ''}`}
                                     onClick={() => setViewMode('leaderboard')}
-                                    title="Show Leaderboard List"
+                                    title={t('stage2.showLeaderboard')}
                                 >
-                                    🏆 Leaderboard
+                                    {t('stage2.leaderboardLabel')}
                                 </button>
-                                <button 
+                                <button
                                     className={`toggle-btn ${viewMode === 'heatmap' ? 'active' : ''}`}
                                     onClick={() => setViewMode('heatmap')}
-                                    title="Show Detailed Matrix"
+                                    title={t('stage2.showMatrix')}
                                 >
-                                    📊 Detail Matrix
+                                    {t('stage2.matrixLabel')}
                                 </button>
                             </div>
                         )}
@@ -184,15 +177,12 @@ export default function Stage2({ rankings, labelToModel, aggregateRankings, star
                             {aggregateRankings.map((agg, index) => {
                                 const visuals = getModelVisuals(agg.model);
                                 const shortName = getShortModelName(agg.model);
-
-                                // Calculate bar width proportional to the rank value
-                                // Higher rank = longer bar (matches the number visually)
                                 const maxRank = aggregateRankings.length;
                                 const scorePercent = Math.max(5, Math.min(100, (agg.average_rank / maxRank) * 100));
 
                                 return (
                                     <div key={index} className="aggregate-item">
-                                        <span className="rank-position">#{index + 1}</span>
+                                        <span className="rank-position ltr">#{index + 1}</span>
 
                                         <div className="rank-bar-container">
                                             <div
@@ -207,11 +197,11 @@ export default function Stage2({ rankings, labelToModel, aggregateRankings, star
                                                         <span className="mini-avatar" style={{ backgroundColor: visuals.color }}>
                                                             {visuals.icon}
                                                         </span>
-                                                        <span className="rank-model-name">{shortName}</span>
+                                                        <span className="rank-model-name ltr">{shortName}</span>
                                                     </div>
 
                                                     <div className="rank-stats">
-                                                        <span className="rank-score">
+                                                        <span className="rank-score ltr">
                                                             {agg.average_rank.toFixed(2)}
                                                         </span>
                                                         {index === 0 && <span className="trophy-icon">🏆</span>}
@@ -233,12 +223,13 @@ export default function Stage2({ rankings, labelToModel, aggregateRankings, star
 }
 
 export function Stage2Skeleton() {
+    const { t } = useTranslation();
     return (
         <div className="stage-container stage-2 skeleton-mode">
             <div className="stage-header">
                 <div className="stage-title">
                     <span className="stage-icon">⚖️</span>
-                    Stage 2: Peer Rankings
+                    {t('stage2.title')}
                 </div>
                 <div className="stage-timer-skeleton">
                     <Skeleton variant="text" width="60px" />
@@ -251,7 +242,6 @@ export function Stage2Skeleton() {
                 <Skeleton variant="text" width="80%" />
             </div>
 
-            {/* Tabs Skeleton */}
             <div className="tabs">
                 {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="tab skeleton-tab">
@@ -315,6 +305,7 @@ function RawEvaluationTabs({
     anonymizedLabelText,
     parsedRanking
 }) {
+    const { t } = useTranslation();
     return (
         <>
             {/* Avatar Tabs */}
@@ -334,7 +325,7 @@ function RawEvaluationTabs({
                             <span className="tab-icon" style={{ backgroundColor: safeActiveTab === index ? 'transparent' : 'rgba(255,255,255,0.1)' }}>
                                 {visuals.icon}
                             </span>
-                            <span className="tab-name">{shortName}</span>
+                            <span className="tab-name ltr">{shortName}</span>
                             {rank?.error && <span className="error-badge">!</span>}
                         </button>
                     );
@@ -348,8 +339,8 @@ function RawEvaluationTabs({
                             {currentVisuals.icon}
                         </span>
                         <div className="model-info">
-                            <span className="model-name-large">{currentRanking.model || 'Unknown Model'}</span>
-                            <span className="model-provider-badge" style={{ borderColor: currentVisuals.color, color: currentVisuals.color }}>
+                            <span className="model-name-large ltr">{currentRanking.model || t('stage1.unknownModel')}</span>
+                            <span className="model-provider-badge ltr" style={{ borderColor: currentVisuals.color, color: currentVisuals.color }}>
                                 {currentVisuals.name}
                             </span>
                         </div>
@@ -360,26 +351,26 @@ function RawEvaluationTabs({
                             <button
                                 className={`copy-button ${isCopied ? 'copied' : ''}`}
                                 onClick={handleCopy}
-                                title="Copy to clipboard"
+                                title={t('stage1.copyToClipboard')}
                             >
                                 {isCopied ? (
                                     <>
                                         <span className="icon">✓</span>
-                                        <span className="label">Copied</span>
+                                        <span className="label">{t('stage2.copied')}</span>
                                     </>
                                 ) : (
                                     <>
                                         <span className="icon">📋</span>
-                                        <span className="label">Copy</span>
+                                        <span className="label">{t('stage2.copy')}</span>
                                     </>
                                 )}
                             </button>
                         )}
 
                         {hasError ? (
-                            <span className="model-status error">Failed</span>
+                            <span className="model-status error">{t('stage2.failed')}</span>
                         ) : (
-                            <span className="model-status success">Completed</span>
+                            <span className="model-status success">{t('stage2.completed')}</span>
                         )}
                     </div>
                 </div>
@@ -388,8 +379,8 @@ function RawEvaluationTabs({
                     <div className="response-error">
                         <div className="error-icon">⚠️</div>
                         <div className="error-details">
-                            <div className="error-title">Model Failed to Respond</div>
-                            <div className="error-message">{currentRanking?.error_message || 'Unknown error'}</div>
+                            <div className="error-title">{t('stage2.modelFailed')}</div>
+                            <div className="error-message">{currentRanking?.error_message || t('stage1.unknownError')}</div>
                         </div>
                     </div>
                 ) : (
@@ -404,13 +395,11 @@ function RawEvaluationTabs({
 
                         {parsedRanking.length > 0 && (
                             <div className="parsed-ranking">
-                                <strong>Extracted Ranking:</strong>
+                                <strong>{t('stage2.extractedRanking')}</strong>
                                 <span className="info-tooltip-container">
                                     <span className="info-icon">?</span>
                                     <span className="info-tooltip">
-                                        This is the ranking parsed from the model's text response.
-                                        It's used to calculate the aggregate rankings below.
-                                        Compare with the text above to verify the system correctly understood the model's ranking.
+                                        {t('stage2.extractedRankingTooltip')}
                                     </span>
                                 </span>
                                 <ol>

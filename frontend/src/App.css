@@ -26,7 +26,7 @@
   display: none;
   position: fixed;
   top: 16px;
-  left: 16px;
+  inset-inline-start: 16px;
   z-index: 100;
   width: 44px;
   height: 44px;
@@ -62,7 +62,7 @@
   height: 2px;
   background: var(--text-primary);
   border-radius: 2px;
-  left: 0;
+  inset-inline-start: 0;
 }
 
 .hamburger-icon::before {
@@ -86,7 +86,7 @@
 }
 
 .settings-modal {
-  background: #0f172a; /* Dark solid background for settings to avoid visual chaos */
+  background: var(--surface-panel); /* Dark solid background for settings to avoid visual chaos */
   border: 1px solid var(--border-glass);
   color: var(--text-primary);
   box-shadow: 0 20px 50px rgba(0,0,0,0.5);
@@ -94,7 +94,7 @@
 
 /* Adjust Settings Styles for Dark Mode Compatibility */
 .settings-header {
-  background: #0f172a;
+  background: var(--surface-panel);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -110,12 +110,12 @@
 }
 
 .settings-body {
-  background: #0f172a;
+  background: var(--surface-panel);
 }
 
 .settings-sidebar {
   background: rgba(15, 23, 42, 0.5);
-  border-right: 1px solid var(--border-color);
+  border-inline-end: 1px solid var(--border-color);
 }
 
 .sidebar-nav-item {
@@ -131,7 +131,7 @@
 }
 
 .settings-main-panel {
-  background: #0f172a;
+  background: var(--surface-panel);
 }
 
 .settings-section h3 {
@@ -148,7 +148,7 @@
 .settings-modal input[type="password"],
 .settings-modal textarea,
 .settings-modal select {
-  background: #1e293b;
+  background: var(--surface-raised);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
 }
@@ -157,7 +157,7 @@
 .settings-modal textarea:focus,
 .settings-modal select:focus {
   border-color: var(--accent-primary);
-  background: #1e293b;
+  background: var(--surface-raised);
 }
 
 /* Cards in Settings */
@@ -181,7 +181,7 @@
 }
 
 .council-member-row {
-  background: #1e293b;
+  background: var(--surface-raised);
   border-color: var(--border-color);
 }
 .member-label {
@@ -189,7 +189,7 @@
 }
 
 .api-key-section, .hybrid-settings-card, .full-content-section {
-  background: #1e293b; /* Card bg in settings */
+  background: var(--surface-raised); /* Card bg in settings */
   border-color: var(--border-color);
 }
 
@@ -198,7 +198,7 @@
 }
 
 .settings-footer {
-  background: #0f172a;
+  background: var(--surface-panel);
   border-top-color: var(--border-color);
 }
 

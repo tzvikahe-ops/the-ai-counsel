@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
-export default function StageTimer({ startTime, endTime, label = "Elapsed" }) {
+export default function StageTimer({ startTime, endTime, label }) {
+    const { t } = useTranslation();
     const [elapsed, setElapsed] = useState(0);
+    const effectiveLabel = label ?? t('stageTimer.elapsed');
 
     useEffect(() => {
         if (!startTime) return;
 
         if (endTime) {
-            // Final duration
             setElapsed(endTime - startTime);
             return;
         }
 
-        // Active timer
         const interval = setInterval(() => {
             setElapsed(Date.now() - startTime);
-        }, 100); // Update every 100ms for smoothness
+        }, 100);
 
         return () => clearInterval(interval);
     }, [startTime, endTime]);
@@ -29,12 +30,12 @@ export default function StageTimer({ startTime, endTime, label = "Elapsed" }) {
 
     return (
         <span className="stage-timer" style={{
-            marginLeft: '10px',
+            marginInlineStart: '10px',
             fontSize: '12px',
             color: '#666',
             fontFamily: 'monospace'
         }}>
-            {label}: {formatTime(elapsed)}
+            {effectiveLabel}: <span className="ltr">{formatTime(elapsed)}</span>
         </span>
     );
 }

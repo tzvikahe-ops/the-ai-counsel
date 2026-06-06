@@ -27,15 +27,15 @@
   gap: 8px;
   padding: 8px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--tint-border);
+  background: var(--tint-1);
   color: var(--text-primary, #e2e8f0);
   cursor: pointer;
   font-size: 0.875rem;
 }
 
 .council-setup__preset-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--tint-3);
 }
 
 .council-setup__preset-popover {
@@ -48,7 +48,7 @@
   max-height: 320px;
   overflow-y: auto;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--tint-border);
   background: rgba(15, 23, 42, 0.98);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(12px);
@@ -86,15 +86,15 @@
 .council-setup__preset-action-btn {
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 6px;
 }
 
 .council-setup__preset-action-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .council-setup__preset-action-btn--delete:hover {
@@ -190,7 +190,7 @@
   padding: 24px;
   border-radius: 16px;
   background: rgba(15, 23, 42, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--tint-border);
 }
 
 .council-setup__modal h3 {
@@ -209,7 +209,7 @@
 .council-setup__modal-label input[type="text"] {
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--tint-border);
   background: rgba(0, 0, 0, 0.25);
   color: inherit;
 }
@@ -251,7 +251,7 @@
 }
 
 .council-setup__modal-cancel {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--tint-3);
   color: inherit;
 }
 

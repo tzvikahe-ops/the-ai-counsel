@@ -47,8 +47,8 @@
 .cost-report__metrics span {
   padding: 4px 8px;
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--tint-2);
+  border: 1px solid var(--tint-border);
 }
 
 .cost-report__status.known {
@@ -86,7 +86,7 @@
   margin-top: 10px;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--tint-border);
 }
 
 .cost-report__row {

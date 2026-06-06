@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Skeleton from './common/Skeleton';
 import { getModelVisuals, getShortModelName } from '../utils/modelHelpers';
 import { copyToClipboard } from '../utils/clipboard';
@@ -7,9 +8,9 @@ import StageTimer from './StageTimer';
 import './Stage1.css';
 
 export default function Stage1({ responses, startTime, endTime }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
 
-  // Reset activeTab if it becomes out of bounds
   useEffect(() => {
     if (responses && responses.length > 0 && activeTab >= responses.length) {
       setActiveTab(responses.length - 1);
@@ -26,13 +27,10 @@ export default function Stage1({ responses, startTime, endTime }) {
 
   const gridColumns = Math.min(responses.length, 4);
 
-  // Get visuals for current tab
   const currentVisuals = getModelVisuals(currentResponse?.model);
 
-  // Copy functionality
   const [isCopied, setIsCopied] = useState(false);
 
-  // Reset copy state when tab changes
   useEffect(() => {
     setIsCopied(false);
   }, [activeTab]);
@@ -56,9 +54,9 @@ export default function Stage1({ responses, startTime, endTime }) {
       <div className="stage-header">
         <div className="stage-title">
           <span className="stage-icon">💬</span>
-          Stage 1: Individual Perspectives
+          {t('stage1.title')}
         </div>
-        <StageTimer startTime={startTime} endTime={endTime} label="Duration" />
+        <StageTimer startTime={startTime} endTime={endTime} label={t('stage1.duration')} />
       </div>
 
       {/* Avatar Tabs */}
@@ -81,7 +79,7 @@ export default function Stage1({ responses, startTime, endTime }) {
               <span className="tab-icon" style={{ backgroundColor: safeActiveTab === index ? 'transparent' : 'rgba(255,255,255,0.1)' }}>
                 {visuals.icon}
               </span>
-              <span className="tab-name">{shortName}</span>
+              <span className="tab-name ltr">{shortName}</span>
               {resp?.error && <span className="error-badge">!</span>}
             </button>
           );
@@ -95,8 +93,8 @@ export default function Stage1({ responses, startTime, endTime }) {
               {currentVisuals.icon}
             </span>
             <div className="model-info">
-              <span className="model-name-large">{currentResponse.model || 'Unknown Model'}</span>
-              <span className="model-provider-badge" style={{ borderColor: currentVisuals.color, color: currentVisuals.color }}>
+              <span className="model-name-large ltr">{currentResponse.model || t('stage1.unknownModel')}</span>
+              <span className="model-provider-badge ltr" style={{ borderColor: currentVisuals.color, color: currentVisuals.color }}>
                 {currentVisuals.name}
               </span>
             </div>
@@ -107,26 +105,26 @@ export default function Stage1({ responses, startTime, endTime }) {
               <button
                 className={`copy-button ${isCopied ? 'copied' : ''}`}
                 onClick={handleCopy}
-                title="Copy to clipboard"
+                title={t('stage1.copyToClipboard')}
               >
                 {isCopied ? (
                   <>
                     <span className="icon">✓</span>
-                    <span className="label">Copied</span>
+                    <span className="label">{t('stage1.copied')}</span>
                   </>
                 ) : (
                   <>
                     <span className="icon">📋</span>
-                    <span className="label">Copy</span>
+                    <span className="label">{t('stage1.copy')}</span>
                   </>
                 )}
               </button>
             )}
 
             {hasError ? (
-              <span className="model-status error">Failed</span>
+              <span className="model-status error">{t('stage1.failed')}</span>
             ) : (
-              <span className="model-status success">Completed</span>
+              <span className="model-status success">{t('stage1.completed')}</span>
             )}
           </div>
         </div>
@@ -135,8 +133,8 @@ export default function Stage1({ responses, startTime, endTime }) {
           <div className="response-error">
             <div className="error-icon">⚠️</div>
             <div className="error-details">
-              <div className="error-title">Model Failed to Respond</div>
-              <div className="error-message">{currentResponse?.error_message || 'Unknown error'}</div>
+              <div className="error-title">{t('stage1.modelFailed')}</div>
+              <div className="error-message">{currentResponse?.error_message || t('stage1.unknownError')}</div>
             </div>
           </div>
         ) : (
@@ -145,7 +143,7 @@ export default function Stage1({ responses, startTime, endTime }) {
               content={
                 typeof currentResponse.response === 'string'
                   ? currentResponse.response
-                  : String(currentResponse.response || 'No response')
+                  : String(currentResponse.response || t('stage1.noResponse'))
               }
             />
           </div>
@@ -156,12 +154,13 @@ export default function Stage1({ responses, startTime, endTime }) {
 }
 
 export function Stage1Skeleton() {
+  const { t } = useTranslation();
   return (
     <div className="stage-container stage-1 skeleton-mode">
       <div className="stage-header">
         <div className="stage-title">
           <span className="stage-icon">💬</span>
-          Stage 1: Individual Perspectives
+          {t('stage1.title')}
         </div>
         <div className="stage-timer-skeleton">
           <Skeleton variant="text" width="60px" />

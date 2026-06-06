@@ -157,15 +157,15 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: 2px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--tint-2);
   padding: 2px 6px;
   border-radius: 4px;
   align-self: flex-start;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tint-border);
 }
 
 .final-text {
-  color: #dce6f2;
+  color: var(--text-primary);
   line-height: 1.68;
   font-size: 16px;
   font-family: var(--font-content);

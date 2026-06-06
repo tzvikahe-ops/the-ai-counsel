@@ -61,7 +61,7 @@
   background: rgba(15, 23, 42, 0.6);
   padding: 3px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--tint-border);
 }
 
 .view-mode-toggle .toggle-btn {
@@ -82,7 +82,7 @@
 
 .view-mode-toggle .toggle-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--tint-1);
 }
 
 .view-mode-toggle .toggle-btn.active {
@@ -120,7 +120,7 @@
   padding: 10px;
   background: rgba(30, 41, 59, 0.4);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tint-border);
   transition: all 0.2s;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .tab {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--tint-1);
   border: 1px solid var(--border-glass);
   color: var(--text-secondary);
   padding: 10px 16px;
@@ -198,7 +198,7 @@
 }
 
 .tab:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--tint-3);
   transform: translateY(-2px);
 }
 
@@ -301,7 +301,7 @@
 }
 
 .ranking-content {
-  color: #dce6f2;
+  color: var(--text-primary);
   line-height: 1.68;
   font-size: 16px;
   font-family: var(--font-content);

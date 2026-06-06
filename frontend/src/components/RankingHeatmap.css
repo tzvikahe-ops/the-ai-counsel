@@ -79,7 +79,7 @@
   font-size: 11px;
   font-weight: 500;
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--tint-border);
   white-space: nowrap;
   text-align: left;
 }
@@ -92,7 +92,7 @@
   font-weight: 500;
   font-size: 13px;
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--tint-border);
   text-align: center;
   white-space: nowrap;
   transition: background 0.2s;
@@ -109,7 +109,7 @@
   font-weight: 500;
   font-size: 13px;
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--tint-border);
   white-space: nowrap;
   text-align: left;
   transition: background 0.2s;
@@ -118,7 +118,7 @@
 .heatmap-cell {
   text-align: center;
   padding: 10px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--tint-border);
   font-weight: 600;
   font-size: 13px;
   min-width: 150px;
@@ -127,11 +127,11 @@
 }
 
 .heatmap-row:hover .heatmap-row-header {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--tint-1);
 }
 
 .heatmap-row:hover .heatmap-cell {
-  background-color: rgba(255, 255, 255, 0.01);
+  background-color: var(--tint-1);
 }
 
 /* Header contents styling */
@@ -180,7 +180,7 @@
   border: 1px solid transparent;
 }
 
-/* 1st place — gorgeous premium emerald */
+/* 1st place - gorgeous premium emerald */
 .heatmap-pos-1 .rank-badge {
   background: rgba(16, 185, 129, 0.15);
   color: #34d399;
@@ -188,7 +188,7 @@
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
 }
 
-/* 2nd place — sleek soft amber */
+/* 2nd place - sleek soft amber */
 .heatmap-pos-2 .rank-badge {
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
@@ -196,14 +196,14 @@
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.1);
 }
 
-/* 3rd place — rich modern crimson */
+/* 3rd place - rich modern crimson */
 .heatmap-pos-3 .rank-badge {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-/* 4th+ place — deep violet/ruby */
+/* 4th+ place - deep violet/ruby */
 .heatmap-pos-4 .rank-badge,
 .heatmap-pos-5 .rank-badge,
 .heatmap-pos-6 .rank-badge {
@@ -214,7 +214,7 @@
 
 /* Self-ranking cell styling */
 .heatmap-self {
-  color: rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
   font-weight: 400;
   font-family: var(--font-code);
   background: rgba(0, 0, 0, 0.25) !important;
@@ -222,7 +222,7 @@
 
 /* Unknown rankings fallback */
 .heatmap-unknown {
-  color: rgba(255, 255, 255, 0.25);
+  color: var(--text-muted);
   font-weight: 400;
 }
 

@@ -2,10 +2,10 @@
     display: flex;
     gap: 4px;
     padding: 4px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--tint-2);
     backdrop-filter: blur(10px);
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--tint-border);
 }
 
 .mode-option {
@@ -18,7 +18,7 @@
     background: transparent;
     border: none;
     border-radius: 6px;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-secondary);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -27,8 +27,8 @@
 }
 
 .mode-option:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.8);
+    background: var(--tint-3);
+    color: var(--text-primary);
     filter: brightness(1.1);
 }
 

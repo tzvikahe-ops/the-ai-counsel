@@ -1,5 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { getShortModelName } from '../utils/modelHelpers';
+import { localizePersona } from '../utils/personaHelpers';
 import './AdvisorGrid.css';
 
 export default function AdvisorGrid({
@@ -9,15 +11,17 @@ export default function AdvisorGrid({
   maxRounds = 3,
   isRunning = false,
 }) {
+  const { t } = useTranslation();
   if (!personas || personas.length === 0) return null;
+  const displayPersonas = personas.map((p) => localizePersona(p, t));
 
   return (
     <div className="advisor-grid-wrapper">
       <div className="advisor-round-indicator">
-        Round {round} of {maxRounds}
+        {t('advisorGrid.roundOfMax', { current: round, max: maxRounds })}
       </div>
       <div className="advisor-grid">
-        {personas.map((persona) => {
+        {displayPersonas.map((persona) => {
           const isActive = persona.id === activePersonaId;
 
           let cardState = 'idle';
@@ -54,7 +58,7 @@ export default function AdvisorGrid({
                 <span className="advisor-name">{persona.name}</span>
                 <span className="advisor-role">{persona.role}</span>
                 {persona.model && (
-                  <span className="advisor-model">{getShortModelName(persona.model)}</span>
+                  <span className="advisor-model ltr">{getShortModelName(persona.model)}</span>
                 )}
               </div>
             </div>

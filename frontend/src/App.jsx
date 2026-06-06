@@ -129,6 +129,11 @@ function App() {
   const [dateFormat, setDateFormat] = useState('auto');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appMode, setAppMode] = useState(null); // null shows landing page
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'dark';
+    const saved = window.localStorage.getItem('theme');
+    return saved === 'light' || saved === 'dark' ? saved : 'dark';
+  });
   const abortControllerRef = useRef(null);
   const advisorAbortControllerRef = useRef(null);
   const progressPollRef = useRef(null);
@@ -161,6 +166,24 @@ function App() {
   useEffect(() => {
     setCouncilConfigured(computeCouncilConfigured(councilModels));
   }, [councilModels, computeCouncilConfigured]);
+
+  // Apply theme to document root and persist the choice.
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    try {
+      window.localStorage.setItem('theme', theme);
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
 
   useEffect(() => {
     if (executionMode === 'full' && (!chairmanModel || !chairmanModel.trim())) {
@@ -349,7 +372,7 @@ function App() {
         skipLoadForIdRef.current = null;
         return;
       }
-      // Capture the current version — if an optimistic update bumps it
+      // Capture the current version - if an optimistic update bumps it
       // before the fetch resolves, the stale response is discarded.
       // This is StrictMode-safe: double-invocation just fires two loads,
       // both of which will be stale if a debate was started.
@@ -521,7 +544,7 @@ function App() {
         }
       }, 3000);
     } catch {
-      // Progress endpoint unavailable — no-op
+      // Progress endpoint unavailable - no-op
     }
   };
 
@@ -1572,6 +1595,8 @@ function App() {
         onClose={() => setSidebarOpen(false)}
         onGoHome={() => resetAppState(null)}
         dateFormat={dateFormat}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <div className="main-area">

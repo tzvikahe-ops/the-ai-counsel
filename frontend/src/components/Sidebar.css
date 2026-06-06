@@ -1,4 +1,4 @@
-/* Sidebar — Council Chamber */
+/* Sidebar - Council Chamber */
 
 .sidebar {
   width: 280px;
@@ -6,13 +6,17 @@
   background: var(--bg-sidebar);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid var(--border-glass);
+  border-inline-end: 1px solid var(--border-glass);
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease;
   z-index: 20;
   flex-shrink: 0;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+}
+
+[dir="rtl"] .sidebar {
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2);
 }
 
 /* Header Area */
@@ -22,6 +26,13 @@
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .sidebar-title-wrapper {
@@ -42,7 +53,7 @@
   font-family: var(--font-ui);
   font-size: 11px;
   font-weight: 400;
-  color: #ffffff;
+  color: var(--text-secondary);
   opacity: 0.9;
 }
 
@@ -125,20 +136,20 @@
   cursor: not-allowed;
 }
 
-/* Home — full-width neutral */
+/* Home - full-width neutral */
 .sidebar-action-btn--home {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--tint-1);
+  border-color: var(--tint-border);
   color: var(--text-secondary);
 }
 
 .sidebar-action-btn--home:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--tint-3);
+  border-color: var(--tint-border);
   color: var(--text-primary);
 }
 
-/* New Council — blue */
+/* New Council - blue */
 .sidebar-action-btn--council {
   background: rgba(59, 130, 246, 0.08);
   border-color: rgba(59, 130, 246, 0.25);
@@ -152,7 +163,7 @@
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
 }
 
-/* New Advisors — purple */
+/* New Advisors - purple */
 .sidebar-action-btn--advisors {
   background: rgba(139, 92, 246, 0.08);
   border-color: rgba(139, 92, 246, 0.25);
@@ -206,7 +217,7 @@
 
 .search-clear {
   position: absolute;
-  right: 24px;
+  inset-inline-end: 24px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -222,7 +233,7 @@
 
 .search-clear:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--tint-3);
 }
 
 /* Conversation List */
@@ -251,6 +262,10 @@
   transform: translateX(4px);
 }
 
+[dir="rtl"] .conversation-item:hover {
+  transform: translateX(-4px);
+}
+
 .conversation-item.active {
   background: var(--accent-primary-dim);
   border-color: rgba(59, 130, 246, 0.45);
@@ -277,7 +292,7 @@
 .conversation-title {
   font-size: 13px;
   font-weight: 500;
-  color: #e2e8f0;
+  color: var(--text-primary);
   margin-bottom: 4px;
   display: flex;
   align-items: center;
@@ -457,10 +472,10 @@
   display: none;
   position: absolute;
   top: 16px;
-  right: 16px;
+  inset-inline-end: 16px;
   width: 36px;
   height: 36px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--tint-3);
   border: 1px solid var(--border-glass);
   border-radius: 8px;
   color: var(--text-primary);
@@ -495,7 +510,7 @@
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
-    left: 0;
+    inset-inline-start: 0;
     top: 0;
     bottom: 0;
     transform: translateX(-100%);
@@ -505,7 +520,12 @@
     transition: transform 0.3s ease;
   }
 
-  .sidebar.open {
+  [dir="rtl"] .sidebar {
+    transform: translateX(100%);
+  }
+
+  .sidebar.open,
+  [dir="rtl"] .sidebar.open {
     transform: translateX(0);
   }
 
@@ -518,6 +538,138 @@
   }
 
   .sidebar-header {
-    padding-right: 60px; /* Make room for close button */
+    padding-inline-end: 60px; /* Make room for close button */
   }
+}
+
+/* --- Light theme surface overrides --- */
+[data-theme="light"] .sidebar {
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="light"] .search-input {
+  background: var(--surface-raised);
+}
+
+[data-theme="light"] .conversation-item {
+  background: var(--surface-panel);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .conversation-item:hover {
+  background: var(--surface-raised);
+}
+
+[data-theme="light"] .sidebar-header,
+[data-theme="light"] .sidebar-actions {
+  border-bottom-color: var(--border-color);
+}
+
+[data-theme="light"] .sidebar-action-btn--home {
+  background: var(--surface-hover);
+  border-color: var(--border-color);
+}
+[data-theme="light"] .sidebar-action-btn--home:hover {
+  background: var(--surface-raised);
+}
+
+/* ============================================================
+   Sage light theme - sidebar accent overrides
+   Forest-green primary, copper for advisors. Warm cream surfaces,
+   low-saturation accents that don't fight long reading sessions.
+   ============================================================ */
+
+/* Brand mark gradient: forest → plum */
+[data-theme="light"] .title-plus {
+  background: linear-gradient(135deg, #15803D 0%, #86198F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Settings/gear icon button */
+[data-theme="light"] .icon-button {
+  background: rgba(21, 128, 61, 0.06);
+  border: 1px solid rgba(21, 128, 61, 0.22);
+  color: #15803D;
+}
+[data-theme="light"] .icon-button:hover {
+  background: rgba(21, 128, 61, 0.12);
+  border-color: #15803D;
+  color: #15803D;
+  box-shadow: 0 0 10px rgba(21, 128, 61, 0.18);
+}
+
+/* New Council action button (forest) */
+[data-theme="light"] .sidebar-action-btn--council {
+  background: rgba(21, 128, 61, 0.06);
+  border-color: rgba(21, 128, 61, 0.22);
+  color: #15803D;
+}
+[data-theme="light"] .sidebar-action-btn--council:hover:not(:disabled) {
+  background: rgba(21, 128, 61, 0.12);
+  border-color: rgba(21, 128, 61, 0.40);
+  color: #15803D;
+  box-shadow: 0 0 10px rgba(21, 128, 61, 0.15);
+}
+
+/* New Advisors action button (copper/rust) */
+[data-theme="light"] .sidebar-action-btn--advisors {
+  background: rgba(154, 52, 18, 0.06);
+  border-color: rgba(154, 52, 18, 0.22);
+  color: #9A3412;
+}
+[data-theme="light"] .sidebar-action-btn--advisors:hover:not(:disabled) {
+  background: rgba(154, 52, 18, 0.12);
+  border-color: rgba(154, 52, 18, 0.40);
+  color: #9A3412;
+  box-shadow: 0 0 10px rgba(154, 52, 18, 0.15);
+}
+
+/* Search input focus ring */
+[data-theme="light"] .search-input:focus {
+  border-color: #15803D;
+  box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.12);
+}
+
+/* Conversation cards */
+[data-theme="light"] .conversation-item:hover {
+  border-color: rgba(21, 128, 61, 0.25);
+}
+[data-theme="light"] .conversation-item.active {
+  border-color: rgba(21, 128, 61, 0.42);
+  box-shadow: 0 0 18px rgba(21, 128, 61, 0.10);
+}
+[data-theme="light"] .conversation-item--advisors:hover {
+  border-color: rgba(154, 52, 18, 0.30);
+}
+[data-theme="light"] .conversation-item--advisors.active {
+  background: rgba(154, 52, 18, 0.08);
+  border-color: rgba(154, 52, 18, 0.44);
+  box-shadow: 0 0 18px rgba(154, 52, 18, 0.10);
+}
+
+/* Mode tags */
+[data-theme="light"] .conv-mode-tag--council {
+  background: rgba(21, 128, 61, 0.10);
+  color: #15803D;
+  border-color: rgba(21, 128, 61, 0.22);
+}
+[data-theme="light"] .conv-mode-tag--advisors {
+  background: rgba(154, 52, 18, 0.10);
+  color: #9A3412;
+  border-color: rgba(154, 52, 18, 0.22);
+}
+
+/* Version line: copper to read as a subtle annotation */
+[data-theme="light"] .sidebar-version {
+  color: #9A3412;
+}
+
+/* Cost pill: dark-theme gold (#fbbf24) is invisible on cream Sage bg.
+   Use deep copper text on a saturated copper tint with a real border. */
+[data-theme="light"] .conversation-cost-pill {
+  color: #7C2D12;
+  background: rgba(154, 52, 18, 0.14);
+  border-color: rgba(154, 52, 18, 0.45);
 }

@@ -1,18 +1,19 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { getProviderInfo, getModelDisplayName, getCouncilLayoutClass, PROVIDER_CONFIG } from '../utils/councilGridUtils';
 import './CouncilGrid.css';
 
 export default function CouncilGrid({
     models = [],
     chairman = null,
-    status = 'idle', // 'idle', 'thinking', 'complete'
-    progress = {},    // { currentModel: 'id', completed: ['id1', 'id2'] }
+    status = 'idle',
+    progress = {},
     showChairman = true,
     chairmanDisabled = false,
     usePlaceholders = true,
 }) {
-    // Filter out empty/null model IDs; optional decorative placeholders when empty
+    const { t } = useTranslation();
     const validModels = models.filter(m => m && m.trim() !== '');
     const displayModels = validModels.length > 0
         ? validModels
@@ -48,10 +49,9 @@ export default function CouncilGrid({
 
     return (
         <div className={gridClass}>
-            {/* Tooltip Portal */}
             {tooltip.visible && createPortal(
                 <div
-                    className="custom-tooltip"
+                    className="custom-tooltip ltr"
                     style={{ left: tooltip.x, top: tooltip.y }}
                 >
                     {tooltip.content}
@@ -65,7 +65,6 @@ export default function CouncilGrid({
                 const info = isPlaceholder ? PROVIDER_CONFIG.default : getProviderInfo(modelId);
                 const displayName = getModelDisplayName(modelId);
 
-                // Determine state
                 let cardState = 'idle';
                 if (status === 'thinking') {
                     if (progress.completed?.includes(modelId)) {
@@ -90,7 +89,7 @@ export default function CouncilGrid({
                         onMouseMove={handleMouseMove}
                         onMouseLeave={handleMouseLeave}
                     >
-                        <div className="role-badge member">Member #{index + 1}</div>
+                        <div className="role-badge member">{t('councilGrid.memberN', { n: index + 1 })}</div>
                         <div className="council-avatar">
                             {info.logo ? (
                                 <img src={info.logo} alt={info.label} className="provider-logo" />
@@ -102,15 +101,15 @@ export default function CouncilGrid({
                                 <div className="done-badge">✓</div>
                             ) : (
                                 status === 'thinking' && !isPlaceholder && cardState !== 'active' && (
-                                    <div className="working-badge" title="Still working...">⏳</div>
+                                    <div className="working-badge" title={t('councilGrid.stillWorking')}>⏳</div>
                                 )
                             )}
                         </div>
                         <div className="council-info">
-                            <span className="model-name">
+                            <span className="model-name ltr">
                                 {displayName}
                             </span>
-                            <span className="provider-label">{info.label}</span>
+                            <span className="provider-label ltr">{info.label}</span>
                         </div>
                     </div>
                 );
@@ -121,11 +120,11 @@ export default function CouncilGrid({
                 <div
                     className={`council-card chairman ${status === 'thinking' ? 'waiting' : 'ready'} ${chairmanDisabled ? 'chairman-disabled' : ''}`}
                     style={{ '--provider-color': (chairman && !chairmanDisabled) ? getProviderInfo(chairman).color : '#94a3b8' }}
-                    onMouseEnter={(e) => status !== 'thinking' && !chairmanDisabled && handleMouseEnter(e, chairman || 'Chairman')}
+                    onMouseEnter={(e) => status !== 'thinking' && !chairmanDisabled && handleMouseEnter(e, chairman || t('councilGrid.chairman'))}
                     onMouseMove={handleMouseMove}
                     onMouseLeave={handleMouseLeave}
                 >
-                    <div className="role-badge chairman">Chairman</div>
+                    <div className="role-badge chairman">{t('councilGrid.chairman')}</div>
                     <div className="council-avatar">
                         {chairmanInfo && chairmanInfo.logo && !chairmanDisabled ? (
                             <img
@@ -138,15 +137,15 @@ export default function CouncilGrid({
                         )}
                         {status === 'thinking' && <div className="thinking-ring"></div>}
                         {status === 'thinking' && (
-                            <div className="working-badge" title="Verdict pending...">⏳</div>
+                            <div className="working-badge" title={t('councilGrid.verdictPending')}>⏳</div>
                         )}
                     </div>
                     <div className="council-info">
-                        <span className="model-name">
-                            {chairmanDisabled ? 'Not Active' : (chairman ? getModelDisplayName(chairman) : 'Model')}
+                        <span className="model-name ltr">
+                            {chairmanDisabled ? t('councilGrid.notActive') : (chairman ? getModelDisplayName(chairman) : t('councilGrid.model'))}
                         </span>
                         <span className="provider-label">
-                            {status === 'thinking' ? 'Verdict Pending...' : chairmanDisabled ? 'Full Deliberation only' : 'Final Verdict'}
+                            {status === 'thinking' ? t('councilGrid.verdictPendingProvider') : chairmanDisabled ? t('councilGrid.fullDeliberationOnly') : t('councilGrid.finalVerdict')}
                         </span>
                     </div>
                 </div>

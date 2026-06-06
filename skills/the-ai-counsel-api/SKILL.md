@@ -1,21 +1,21 @@
 ---
 name: the-ai-counsel-api
-version: 0.9.0
-description: The AI Counsel — MCP-first (10 action-based tools) when The AI Counsel MCP server is connected; REST/curl fallback when MCP is unavailable, for cron scripts, or raw SSE. Triggers on "ask the council", "run a debate", "configure models", "run a deliberation", "check council health", etc.
+version: 0.9.0-he.1
+description: The AI Counsel - MCP-first (10 action-based tools) when The AI Counsel MCP server is connected; REST/curl fallback when MCP is unavailable, for cron scripts, or raw SSE. Triggers on "ask the council", "run a debate", "configure models", "run a deliberation", "check council health", etc.
 ---
 
-# The AI Counsel — API & MCP Skill
+# The AI Counsel - API & MCP Skill
 
 ## Overview
 
 The AI Counsel has two operating modes:
 
-- **Council mode** — 3-stage multi-LLM deliberation: individual responses → anonymous peer ranking → chairman synthesis
-- **Advisor mode** — Named personas debate a question across configurable rounds, reaching consensus or delivering a structured verdict
+- **Council mode** - 3-stage multi-LLM deliberation: individual responses → anonymous peer ranking → chairman synthesis
+- **Advisor mode** - Named personas debate a question across configurable rounds, reaching consensus or delivering a structured verdict
 
 Use **Council** for direct answers, creative prompts, factual questions, and "give me the best response" synthesis. Use **Advisor** only when the user wants named personas to debate a decision, tradeoff, risk review, prioritization, strategy, ethics, or genuine disagreement. Simple prompts can drift off-topic in Advisor mode because advisor prompts intentionally force positions, rebuttals, consensus scoring, and verdicts.
 
-**Transport rule (read first):** If The AI Counsel **MCP tools are available** in your session, **call them** — do **not** shell out to `curl` for the same operation. This skill’s REST sections are the **fallback reference** when MCP is missing, the SSE session is stale, or you need raw SSE/admin export.
+**Transport rule (read first):** If The AI Counsel **MCP tools are available** in your session, **call them** - do **not** shell out to `curl` for the same operation. This skill’s REST sections are the **fallback reference** when MCP is missing, the SSE session is stale, or you need raw SSE/admin export.
 
 **MCP server (v0.9.0):** Built-in SSE at `http://localhost:8001/mcp/sse` (stdio: `python -m the_ai_counsel_mcp`). Exposes **10 action-based tools** (not 25). Verify via `GET /api/health` → `"mcp": {"tools": 10, "sse_url": "..."}`.
 
@@ -61,8 +61,8 @@ Use MCP when your tool list includes any of these **10 tools** (server may appea
 |------|-----------------|
 | `council_deliberate` | `stage1`, `stage2`, `stage3`, `full` |
 | `model_chat` | `quick`, `multi_turn` |
-| `advisor_debate` | Direct params: `question`, `persona_ids` (2–4), optional `max_rounds`, models |
-| `run_iterative_debate` | Direct params: `query`, optional `debate_rounds` (1–5), `critique_mode` (`freeform`/`paragraph`/`claim`), `auto_converge` (bool), `convergence_threshold` (1–3), `web_search`, `models` |
+| `advisor_debate` | Direct params: `question`, `persona_ids` (2-4), optional `max_rounds`, models |
+| `run_iterative_debate` | Direct params: `query`, optional `debate_rounds` (1-5), `critique_mode` (`freeform`/`paragraph`/`claim`), `auto_converge` (bool), `convergence_threshold` (1-3), `web_search`, `models` |
 | `council_settings` | `get`, `update` (members/chairman/temps/mode/prompts/provider toggles/**debate config**), `list_presets`, `save_preset`, `delete_preset`, `set_default_preset` |
 | `advisor_settings` | Same preset actions + `get`, `update` |
 | `personas` | `list`, `get`, `update`, `reset` |
@@ -85,7 +85,7 @@ In Claude Code, tools appear as `mcp__the-ai-counsel__<name>` (server identifier
 | **Cron / CI / non-MCP scripts** | No MCP transport |
 | **MCP errors** (connection refused, stale SSE, tool not found) | Fallback per this skill |
 | **Raw SSE event parsing** (custom UIs) | MCP deliberation tools return consolidated results, not per-event SSE |
-| **Admin export with bearer token** | `GET /api/settings/export` — manual admin action |
+| **Admin export with bearer token** | `GET /api/settings/export` - manual admin action |
 
 See [`docs/mcp/TOOLS.md`](../../docs/mcp/TOOLS.md) for MCP parameters and [`docs/mcp/EXAMPLES.md`](../../docs/mcp/EXAMPLES.md) for walkthroughs.
 
@@ -149,10 +149,10 @@ opencode-go:kimi-k2.5                  → Direct OpenCode Go (chat/completions 
 
 **Key principles:**
 - Never mutate global config for ad-hoc queries. Use per-request `models` / `council_models` / `chairman_model` overrides instead.
-- Use conversation endpoints when you need follow-up questions — models automatically receive prior turns as context.
-- `/api/ask` is stateless — no memory between calls.
-- Advisor debates always require a conversation — create one first, then stream the debate to it.
-- Use `GET /api/conversations/{id}/progress` to check on an active run started by another client (MCP, UI, or another script) — returns `{active: false}` when no run is in progress.
+- Use conversation endpoints when you need follow-up questions - models automatically receive prior turns as context.
+- `/api/ask` is stateless - no memory between calls.
+- Advisor debates always require a conversation - create one first, then stream the debate to it.
+- Use `GET /api/conversations/{id}/progress` to check on an active run started by another client (MCP, UI, or another script) - returns `{active: false}` when no run is in progress.
 
 ---
 
@@ -160,7 +160,7 @@ opencode-go:kimi-k2.5                  → Direct OpenCode Go (chat/completions 
 
 **Provider toggles are global:**
 
-`enabled_providers` and `direct_provider_toggles` (Settings → Council Config) control which providers appear in **all** model pickers — Council Setup, Advisor Setup, and Settings temperature controls. A provider must be both **configured** (API key set / Ollama connected) and **enabled** (toggle on) for its models to appear. By default, providers are enabled when first configured.
+`enabled_providers` and `direct_provider_toggles` (Settings → Council Config) control which providers appear in **all** model pickers - Council Setup, Advisor Setup, and Settings temperature controls. A provider must be both **configured** (API key set / Ollama connected) and **enabled** (toggle on) for its models to appear. By default, providers are enabled when first configured.
 
 REST/MCP agents listing models should call the model list endpoints directly (`/api/models`, `/api/models/direct`, `/api/ollama/tags`, `/api/custom-endpoint/models`). Availability depends on credentials, not UI toggles.
 
@@ -197,7 +197,7 @@ Environment overrides:
 | `LLM_COUNCIL_LITELLM_PRICING_URL` | `https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json` |
 | `LLM_COUNCIL_PRICING_CACHE_TTL_SECONDS` | `86400` |
 
-Custom endpoint note: custom OpenAI-compatible endpoints do not have a universal billing API. OpenCode Zen and OpenCode Go are first-class direct providers (`opencode-zen:` and `opencode-go:` prefixes) with their own pricing table in `costs.py` — see "OpenCode note" above. Other custom endpoints use catalog estimates only when the upstream model ID can be matched, otherwise cost is unknown.
+Custom endpoint note: custom OpenAI-compatible endpoints do not have a universal billing API. OpenCode Zen and OpenCode Go are first-class direct providers (`opencode-zen:` and `opencode-go:` prefixes) with their own pricing table in `costs.py` - see "OpenCode note" above. Other custom endpoints use catalog estimates only when the upstream model ID can be matched, otherwise cost is unknown.
 
 ---
 
@@ -239,7 +239,7 @@ async def ask(query, model, web_search=False, base_url="http://localhost:8001"):
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `content` | string | Yes | — | The question/prompt |
+| `content` | string | Yes | - | The question/prompt |
 | `models` | array of strings | No | Global council config | 1+ model IDs to query |
 | `chairman_model` | string | No | Global chairman config | Override chairman for `full` mode |
 | `web_search` | boolean | No | `false` | Enable web search context |
@@ -290,7 +290,7 @@ No conversation management. No config mutation. One call.
 
 ---
 
-### 4. Streaming with Per-Request Overrides (REST-only — live SSE progress)
+### 4. Streaming with Per-Request Overrides (REST-only - live SSE progress)
 
 When you need SSE events for real-time progress (stage1_progress, stage2_progress, etc.), use the streaming endpoint with per-request model overrides:
 
@@ -303,7 +303,7 @@ async def stream_deliberation(query, models, chairman=None, web_search=False, ba
         conv = (await client.post(f"{base_url}/api/conversations", json={})).json()
         conv_id = conv["id"]
 
-        # Stream with per-request overrides — global config untouched
+        # Stream with per-request overrides - global config untouched
         payload = {
             "content": query,
             "web_search": web_search,
@@ -357,7 +357,7 @@ async def multi_turn_chat(base_url="http://localhost:8001"):
         })
         print("A1:", r1.json()["stage1"][0]["response"])
 
-        # Follow-up — the model remembers the previous exchange
+        # Follow-up - the model remembers the previous exchange
         r2 = await client.post(f"{base_url}/api/conversations/{conv_id}/message", json={
             "content": "Can you give me a concrete example in Python?",
             "execution_mode": "chat_only",
@@ -365,7 +365,7 @@ async def multi_turn_chat(base_url="http://localhost:8001"):
         })
         print("A2:", r2.json()["stage1"][0]["response"])
 
-        # Third turn — full context of turns 1+2 is available
+        # Third turn - full context of turns 1+2 is available
         r3 = await client.post(f"{base_url}/api/conversations/{conv_id}/message", json={
             "content": "How does this compare to Rust's Result type?",
             "execution_mode": "chat_only",
@@ -377,8 +377,8 @@ async def multi_turn_chat(base_url="http://localhost:8001"):
 **How context works:**
 - Each message sent to a conversation endpoint includes all prior user/assistant turns as chat history
 - For assistant context, the system uses the chairman synthesis (stage3) when available, otherwise the first successful model response from stage1
-- `/api/ask` is stateless — no multi-turn memory (use conversations for that)
-- You can reuse the same `conversation_id` across sessions — history is persisted to disk
+- `/api/ask` is stateless - no multi-turn memory (use conversations for that)
+- You can reuse the same `conversation_id` across sessions - history is persisted to disk
 
 **When to use multi-turn vs one-shot:**
 
@@ -438,20 +438,20 @@ curl http://localhost:8001/api/settings | python3 -m json.tool
 ```
 
 Key fields returned:
-- `council_models` — list of model IDs in the council
-- `chairman_model` — model that synthesizes the final answer
-- `execution_mode` — `"full"` / `"chat_ranking"` / `"chat_only"` (persisted; omitted from some GET responses — use export for full blob)
-- `search_provider` — active search provider
-- `enabled_providers` — global provider toggles (`openrouter`, `ollama`, `groq`, `direct`, `custom`) — apply to all model pickers (Council, Advisors, Settings)
-- `direct_provider_toggles` — per-direct-provider toggles (also global)
-- `date_format` — display date format (`"auto"`, `"MM/DD/YYYY"`, `"DD/MM/YYYY"`, `"YYYY-MM-DD"`)
-- `response_language` — language for council/advisor model responses (default `"English"`)
-- `valid_response_languages` — read-only list of allowed `response_language` values (canonical source: `VALID_RESPONSE_LANGUAGES` in `backend/prompts.py`)
-- `response_language_default` — default language string (`"English"`)
-- `advisor_presets` — saved advisor lineups (see §18)
-- `council_presets` — saved council lineups (members + chairman; see §18b)
-- `*_api_key_set` — boolean flags (never returns actual keys)
-- `custom_endpoint_name` / `custom_endpoint_url` — custom provider details
+- `council_models` - list of model IDs in the council
+- `chairman_model` - model that synthesizes the final answer
+- `execution_mode` - `"full"` / `"chat_ranking"` / `"chat_only"` (persisted; omitted from some GET responses - use export for full blob)
+- `search_provider` - active search provider
+- `enabled_providers` - global provider toggles (`openrouter`, `ollama`, `groq`, `direct`, `custom`) - apply to all model pickers (Council, Advisors, Settings)
+- `direct_provider_toggles` - per-direct-provider toggles (also global)
+- `date_format` - display date format (`"auto"`, `"MM/DD/YYYY"`, `"DD/MM/YYYY"`, `"YYYY-MM-DD"`)
+- `response_language` - language for council/advisor model responses (default `"English"`)
+- `valid_response_languages` - read-only list of allowed `response_language` values (canonical source: `VALID_RESPONSE_LANGUAGES` in `backend/prompts.py`)
+- `response_language_default` - default language string (`"English"`)
+- `advisor_presets` - saved advisor lineups (see §18)
+- `council_presets` - saved council lineups (members + chairman; see §18b)
+- `*_api_key_set` - boolean flags (never returns actual keys)
+- `custom_endpoint_name` / `custom_endpoint_url` - custom provider details
 
 ---
 
@@ -467,12 +467,12 @@ curl -X PUT http://localhost:8001/api/settings \
   }'
 ```
 
-All fields are optional — only provided fields are updated. Requires minimum 1 model.
+All fields are optional - only provided fields are updated. Requires minimum 1 model.
 
 **Valid `execution_mode` values:**
-- `"full"` — all 3 stages (individual → peer review → chairman synthesis)
-- `"chat_ranking"` — stages 1+2 (no chairman synthesis)
-- `"chat_only"` — stage 1 only (fastest, individual responses)
+- `"full"` - all 3 stages (individual → peer review → chairman synthesis)
+- `"chat_ranking"` - stages 1+2 (no chairman synthesis)
+- `"chat_only"` - stage 1 only (fastest, individual responses)
 
 **Temperature fields:**
 
@@ -515,13 +515,13 @@ curl -X PUT http://localhost:8001/api/settings \
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `search_result_count` | `8` | Number of web search results to retrieve (5–15) |
+| `search_result_count` | `8` | Number of web search results to retrieve (5-15) |
 | `search_hybrid_mode` | `true` | DuckDuckGo: combine web + news results for better current-events coverage |
 | `full_content_results` | `3` | How many top results to fetch full article text via Jina Reader (0 = disabled) |
 
 **`enabled_providers` keys:** `openrouter`, `ollama`, `groq`, `direct` (master toggle for all direct), `custom`
 
-**Note:** These toggles are **global** — they filter model lists in all pickers (Council Setup, Advisor Setup, and Settings).
+**Note:** These toggles are **global** - they filter model lists in all pickers (Council Setup, Advisor Setup, and Settings).
 
 **`direct_provider_toggles` keys:** `openai`, `anthropic`, `google`, `mistral`, `deepseek`, `groq`, `nvidia`, `opencode-zen`, `opencode-go`
 
@@ -551,7 +551,7 @@ curl -X PUT http://localhost:8001/api/settings \
 | Brave | `brave_api_key` |
 | Serper | `serper_api_key` |
 
-Note: `GET /api/settings` returns `*_api_key_set` booleans for security — it never returns plaintext keys. `GET /api/settings/export` does return plaintext keys but is admin-gated: it only accepts requests from loopback, or from callers presenting `Authorization: Bearer $LLM_COUNCIL_ADMIN_TOKEN` when that env var is set. Do not invoke `/api/settings/export` automatically on behalf of a user; treat it as a manual administrative action.
+Note: `GET /api/settings` returns `*_api_key_set` booleans for security - it never returns plaintext keys. `GET /api/settings/export` does return plaintext keys but is admin-gated: it only accepts requests from loopback, or from callers presenting `Authorization: Bearer $LLM_COUNCIL_ADMIN_TOKEN` when that env var is set. Do not invoke `/api/settings/export` automatically on behalf of a user; treat it as a manual administrative action.
 
 Security/admin environment variables:
 
@@ -583,7 +583,7 @@ async def list_all_models(base_url="http://localhost:8001"):
 
 models = asyncio.run(list_all_models())
 for m in models[:10]:
-    print(m.get("id"), "—", m.get("name"))
+    print(m.get("id"), "-", m.get("name"))
 ```
 
 ---
@@ -608,8 +608,8 @@ for m in models[:10]:
 ]
 ```
 
-- `run_summary` is optional — present only after the conversation has a real title (not `"New Conversation"`) and the latest assistant message has derivable metadata.
-- `total_cost`, `cost_status` (`known` | `estimated` | `partial` | `free`), and `total_calls` are optional — cumulative across all assistant messages with `metadata.cost_report`.
+- `run_summary` is optional - present only after the conversation has a real title (not `"New Conversation"`) and the latest assistant message has derivable metadata.
+- `total_cost`, `cost_status` (`known` | `estimated` | `partial` | `free`), and `total_calls` are optional - cumulative across all assistant messages with `metadata.cost_report`.
 - Existing conversations backfill on next save or after `rebuild_index()`.
 
 ---
@@ -677,7 +677,7 @@ async def poll_progress(conv_id: str, base_url="http://localhost:8001"):
                 print("Run complete or no active run.")
                 break
             s1 = data["progress"]["stage1"]
-            print(f"Stage: {data['stage']} — {s1['count']}/{s1['total']} models done")
+            print(f"Stage: {data['stage']} - {s1['count']}/{s1['total']} models done")
             await asyncio.sleep(2)
 ```
 
@@ -794,13 +794,13 @@ print("Verdict:", result["verdict"]["content"])
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `question` | string | Yes | — | The topic to debate |
-| `persona_ids` | array | Yes | — | 2–4 persona IDs |
+| `question` | string | Yes | - | The topic to debate |
+| `persona_ids` | array | Yes | - | 2-4 persona IDs |
 | `default_model` | string | No | `advisor_default_model` setting | Model for all advisors |
-| `model_assignments` | object | No | — | Per-persona overrides: `{"skeptic": "openai:gpt-4.1"}` |
-| `max_rounds` | integer | No | `advisor_default_rounds` setting | Number of rounds (3–10) |
+| `model_assignments` | object | No | - | Per-persona overrides: `{"skeptic": "openai:gpt-4.1"}` |
+| `max_rounds` | integer | No | `advisor_default_rounds` setting | Number of rounds (3-10) |
 | `web_search` | boolean | No | `false` | Enable web search context |
-| `search_provider` | string | No | — | `duckduckgo`, `tavily`, `brave`, `serper`, `tinyfish` |
+| `search_provider` | string | No | - | `duckduckgo`, `tavily`, `brave`, `serper`, `tinyfish` |
 
 Advisor response rows include `word_count`, `word_limit`, `word_limit_exceeded`, and optional `warning`. Exceeding the word limit is treated as guidance failure, not a model failure: the response is kept and surfaced with a warning.
 
@@ -903,7 +903,7 @@ curl -X PUT http://localhost:8001/api/settings \
 | `advisor_default_model` | `""` | Model for all advisors when no per-persona assignment given |
 | `advisor_tiebreaker_model` | `""` | Model for tiebreaker + verdict synthesis (falls back to `advisor_default_model`) |
 | `advisor_temperature` | `0.7` | LLM temperature for advisor calls |
-| `advisor_default_rounds` | `3` | Default number of debate rounds (3–10) |
+| `advisor_default_rounds` | `3` | Default number of debate rounds (3-10) |
 | `advisor_presets` | `[]` | Saved advisor setups (personas, model mode, models, optional rounds/search). Max 20 presets. Each preset: `{ id, name, persona_ids, mode, default_model, tiebreaker_model, model_assignments, max_rounds, search_provider, is_default, last_used_at }` |
 
 **Advisor prompt customization fields** (all reset-to-default via `POST /api/settings/reset`):
@@ -946,7 +946,7 @@ MCP: `advisor_settings` action `get` returns `advisor_presets`. Preset CRUD: `ad
 
 ### 18b. Council Presets (`council_presets`)
 
-Saved from welcome-screen **Council Setup** — council members + chairman only (not execution mode). Max 20 presets; one `is_default` auto-loads on open.
+Saved from welcome-screen **Council Setup** - council members + chairman only (not execution mode). Max 20 presets; one `is_default` auto-loads on open.
 
 | Field | Default | Description |
 |-------|---------|-------------|
@@ -970,7 +970,7 @@ curl -X PUT http://localhost:8001/api/settings \
 
 MCP: `council_settings` action `get` returns `council_presets`. Preset CRUD: `council_settings` actions `list_presets`, `save_preset`, `delete_preset`, `set_default_preset`.
 
-**UI behavior:** Main-screen editor (Council Setup) is the **only** place to pick council members and chairman — auto-saves on each change. Lineup is read-only in a conversation after the first message. Settings provides provider toggles (global) and temperature controls only; model selection was removed from Settings to avoid duplication.
+**UI behavior:** Main-screen editor (Council Setup) is the **only** place to pick council members and chairman - auto-saves on each change. Lineup is read-only in a conversation after the first message. Settings provides provider toggles (global) and temperature controls only; model selection was removed from Settings to avoid duplication.
 
 ---
 
@@ -1101,18 +1101,18 @@ curl -X POST http://localhost:8001/api/ask \
 
 ### 22. Multi-Round Council Debate
 
-The Council Debate Config adds iterative refinement loops: models answer, peer-review each other, rewrite — then the Chairman synthesizes. See [`docs/COUNCIL-DEBATE-CONFIG.md`](../docs/COUNCIL-DEBATE-CONFIG.md) for the full guide.
+The Council Debate Config adds iterative refinement loops: models answer, peer-review each other, rewrite - then the Chairman synthesizes. See [`docs/COUNCIL-DEBATE-CONFIG.md`](../docs/COUNCIL-DEBATE-CONFIG.md) for the full guide.
 
 **Quick decision guide:**
 
 | Use case | `critique_mode` | `debate_rounds` |
 |----------|----------------|----------------|
 | Most questions | `freeform` | 2 |
-| Structured essays, technical comparisons | `paragraph` | 2–3 |
+| Structured essays, technical comparisons | `paragraph` | 2-3 |
 | Fact-checking, claim accuracy | `claim` | 2 |
-| Research / maximum depth | `freeform` or `claim` | 3–5 |
+| Research / maximum depth | `freeform` or `claim` | 3-5 |
 
-#### MCP — preferred
+#### MCP - preferred
 
 ```python
 # Simplest: 2-round freeform, auto-converge on (default)
@@ -1140,7 +1140,7 @@ result = await run_iterative_debate(
     convergence_threshold=1,   # stop after first stable round
 )
 
-# Force all rounds — no early stop
+# Force all rounds - no early stop
 result = await run_iterative_debate(
     query="Compare PostgreSQL vs MongoDB for a social network",
     debate_rounds=5,
@@ -1161,7 +1161,7 @@ await council_settings(
 )
 ```
 
-#### REST fallback — run_iterative_debate equivalent
+#### REST fallback - run_iterative_debate equivalent
 
 There is no single REST endpoint for multi-round debate. Use the SSE stream endpoint with `debate_rounds` in the payload:
 
@@ -1227,9 +1227,9 @@ print(result["stage4"]["response"])
 | Field | Type | Valid values | Default | Description |
 |-------|------|-------------|---------|-------------|
 | `critique_mode` | string | `freeform`, `paragraph`, `claim` | `freeform` | How models give feedback between rounds |
-| `debate_rounds` | integer | 1–5 | `1` | Number of Stage 1→2→3 cycles before Stage 4 |
-| `auto_converge` | boolean | — | `true` | Stop early when rankings stabilize |
-| `convergence_threshold` | integer | 1–3 | `2` | Consecutive stable rounds needed to trigger early stop |
+| `debate_rounds` | integer | 1-5 | `1` | Number of Stage 1→2→3 cycles before Stage 4 |
+| `auto_converge` | boolean | - | `true` | Stop early when rankings stabilize |
+| `convergence_threshold` | integer | 1-3 | `2` | Consecutive stable rounds needed to trigger early stop |
 
 ---
 
@@ -1279,8 +1279,8 @@ curl -X PUT http://localhost:8001/api/settings \
 | Value | Behaviour |
 |-------|-----------|
 | `"direct"` | Send the exact user query to the search engine (default, recommended) |
-| `"yake"` | Extract key terms with YAKE before searching — useful for very long prompts |
-| `"llm"` | Use the Chairman model to reformulate the query into an optimal search term — slower but can improve results for complex questions |
+| `"yake"` | Extract key terms with YAKE before searching - useful for very long prompts |
+| `"llm"` | Use the Chairman model to reformulate the query into an optimal search term - slower but can improve results for complex questions |
 
 > **DuckDuckGo note:** DDG applies its own built-in query optimisation internally. `"direct"` is recommended when using DuckDuckGo; `"llm"` is skipped for DDG even if selected.
 
@@ -1301,7 +1301,7 @@ curl -X PUT http://localhost:8001/api/settings \
 | `stage2_progress` | Each model ranks | `data`: `{model, ranking, parsed_ranking, usage, cost}`, `count`, `total` |
 | `stage2_complete` | After peer review | `metadata`: `{label_to_model, aggregate_rankings}` |
 | `stage3_complete` | After chairman synthesis | `data`: `{model, response, error, usage, cost}` |
-| `stage4_start` | Stage 4 corrected draft begins | — |
+| `stage4_start` | Stage 4 corrected draft begins | - |
 | `stage4_complete` | Stage 4 corrected draft done | `data`: `{model, response, error, usage, cost}` |
 | `round_start` | Each debate round begins | `round`, `total_rounds` |
 | `round_complete` | Each debate round finishes | `round` |
@@ -1315,15 +1315,15 @@ curl -X PUT http://localhost:8001/api/settings \
 
 | Event | When | Contains |
 |-------|------|----------|
-| `advisor_search_start` | Web search begins | — |
+| `advisor_search_start` | Web search begins | - |
 | `advisor_search_complete` | After web search | `data`: `{search_query}` |
 | `advisor_debate_start` | Debate initialized | `data`: `{personas, max_rounds, question, web_search}` |
 | `advisor_round_start` | Each round begins | `data`: `{round_number, order, is_parallel}` |
 | `advisor_response` | Each persona responds | `data`: `{persona_id, persona_name, model, content, error, warning, consensus, consensus_score, word_count, word_limit, word_limit_exceeded, usage, cost}`, `round`, `count`, `total` |
 | `advisor_round_complete` | Round finishes | `data`: `{round_number, responses, consensus_votes, consensus_reached}` |
-| `advisor_tiebreaker_start` | Tiebreaker triggered (2 personas, no consensus) | — |
+| `advisor_tiebreaker_start` | Tiebreaker triggered (2 personas, no consensus) | - |
 | `advisor_tiebreaker` | Tiebreaker result | `data`: `{model, content, error, usage, cost}` |
-| `advisor_verdict_start` | Verdict generation begins | — |
+| `advisor_verdict_start` | Verdict generation begins | - |
 | `advisor_verdict` | Verdict result | `data`: `{model, content, error, usage, cost}` |
 | `advisor_complete` | **Authoritative final event** | `data`: `{rounds, consensus_reached, verdict, tiebreaker, personas, cost_report}` |
 | `advisor_error` | Debate failed | `message` |
@@ -1335,18 +1335,18 @@ curl -X PUT http://localhost:8001/api/settings \
 
 ## Error Handling
 
-Model errors appear inside stage results — not as top-level failures:
+Model errors appear inside stage results - not as top-level failures:
 
 ```python
 for model_result in stage1:
     if model_result.get("error"):
         msg = model_result.get("error_message", "unknown error")
         if "429" in msg:
-            print(f"{model_result['model']}: rate limited — retryable")
+            print(f"{model_result['model']}: rate limited - retryable")
         elif "401" in msg or "403" in msg:
-            print(f"{model_result['model']}: auth error — check API key")
+            print(f"{model_result['model']}: auth error - check API key")
         else:
-            print(f"{model_result['model']}: failed — {msg}")
+            print(f"{model_result['model']}: failed - {msg}")
     else:
         print(f"{model_result['model']}: responded")
 ```
@@ -1365,21 +1365,21 @@ The council continues with successful models even if some fail.
 - Docker: run `docker ps` to confirm container is up and healthy
 
 **Council models not updating**
-- PUT to `/api/settings` returns the full settings object — check `council_models` in the response
+- PUT to `/api/settings` returns the full settings object - check `council_models` in the response
 - Model IDs must include provider prefix (e.g., `custom:z-ai/glm-5.1`, not `z-ai/glm-5.1`)
 
 **SSE stream hangs or times out**
 - Use `timeout=300` on the httpx client for full deliberations (can take 60-120 seconds)
 - Check backend logs for provider-side errors
-- Consider using `POST /api/ask` instead — no streaming complexity
+- Consider using `POST /api/ask` instead - no streaming complexity
 
 **Model returns error in Stage 1**
-- Check `*_api_key_set` flags in `/api/settings` — key may be missing
+- Check `*_api_key_set` flags in `/api/settings` - key may be missing
 - Test a specific provider: `POST /api/settings/test-provider` with `{"provider_id": "openai", "api_key": "sk-..."}`
 - Custom endpoint models need `custom_endpoint_url` and `custom_endpoint_api_key` configured
 
 **Settings not persisting after restart**
-- Settings are stored in `data/settings.json` — if using Docker, confirm the `./data` volume is mounted
+- Settings are stored in `data/settings.json` - if using Docker, confirm the `./data` volume is mounted
 
 ---
 

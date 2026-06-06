@@ -1,6 +1,16 @@
-# The AI Counsel
+# The AI Counsel - Hebrew (RTL) Edition
 
-> **Collective AI Intelligence** — Convene a council of AI models that deliberate, peer-review, and synthesize the best answer — or assemble a panel of named advisor personas that debate your question and deliver a structured verdict.
+> **מועצת בינה מלאכותית קולקטיבית** - כנס מועצה של מודלי AI שמתדיינים, סוקרים זה את זה, ומסכמים את התשובה הטובה ביותר - או הרכב פאנל יועצים בעלי פרסונות שדנים בשאלתך ומגישים פסיקה מובנית.
+>
+> **Collective AI Intelligence** - Convene a council of AI models that deliberate, peer-review, and synthesize the best answer - or assemble a panel of named advisor personas that debate your question and deliver a structured verdict.
+
+> 🇮🇱 **גרסת עברית** - Fork של [the-ai-counsel](https://github.com/jacob-bd/the-ai-counsel) מאת [Jacob Ben-David](https://github.com/jacob-bd) עם:
+> - ממשק עברית מלא עם תמיכת RTL
+> - ערכת נושא בהירה "Sage" (ירוק יער + נחושת) בנוסף לערכת הדארק המקורית
+> - שמות פרסונות, תפקידים ותיאורים בעברית
+> - פרומפטים עבריים מותאמים ליועצים (פסיקה, סבבים, הפרכות) כך שהמודלים מייצרים פלט בעברית מובנית
+>
+> כל ההוראות לבק‑אנד נשארות באנגלית - אנחנו מתאימים את שפת **הפלט**, לא את שפת ה‑system prompts.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://reactjs.org/)
@@ -15,12 +25,12 @@
 
 ## What is The AI Counsel?
 
-The AI Counsel is a **dual-mode multi-model AI deliberation system**. Instead of relying on a single LLM for answers, it orchestrates multiple models working together — either through anonymous peer review or persona-driven debate.
+The AI Counsel is a **dual-mode multi-model AI deliberation system**. Instead of relying on a single LLM for answers, it orchestrates multiple models working together - either through anonymous peer review or persona-driven debate.
 
 **Choose your experience:**
 
-- **🏛️ LLM Council** — Multiple AI models independently answer your question, anonymously peer-review each other's responses, and a chairman model synthesizes the collective wisdom into a final answer.
-- **🎭 LLM Advisors** — Named advisor personas (The Skeptic, The Strategist, The Ethicist, etc.) debate your question across configurable rounds, reaching consensus or voting to deliver a structured verdict with an action plan.
+- **🏛️ LLM Council** - Multiple AI models independently answer your question, anonymously peer-review each other's responses, and a chairman model synthesizes the collective wisdom into a final answer.
+- **🎭 LLM Advisors** - Named advisor personas (The Skeptic, The Strategist, The Ethicist, etc.) debate your question across configurable rounds, reaching consensus or voting to deliver a structured verdict with an action plan.
 
 **Choosing the right mode:** use **Council** for direct answers, creative prompts, factual questions, and "give me the best response" synthesis. Use **Advisors** when the question has real tradeoffs, disagreement, risk, strategy, ethics, prioritization, or a decision to make. Simple prompts such as "give me one amazing animal fact" are usually Council prompts; advisor personas will naturally turn them into a debate over criteria.
 
@@ -31,8 +41,8 @@ The AI Counsel is a **dual-mode multi-model AI deliberation system**. Instead of
 ## Installation
 
 ```bash
-# Clone and install
-git clone https://github.com/jacob-bd/the-ai-counsel.git
+# Clone and install (Hebrew edition)
+git clone https://github.com/tzvikahe-ops/the-ai-counsel.git
 cd the-ai-counsel
 uv sync                        # Backend dependencies
 npm install --prefix frontend  # Frontend dependencies
@@ -41,15 +51,28 @@ npm install --prefix frontend  # Frontend dependencies
 ./start.sh
 ```
 
+> Want the original English-only edition? Clone [jacob-bd/the-ai-counsel](https://github.com/jacob-bd/the-ai-counsel) instead.
+
 Then open **http://localhost:5173** and configure your API keys in Settings.
 
 > **Prerequisites:** Python 3.10+, Node.js 18+, [uv](https://docs.astral.sh/uv/)
+
+### 🇮🇱 הפעלה בעברית
+
+הממשק נטען אוטומטית בעברית עם RTL. שני דברים נוספים שאתה צריך לעשות אחרי שהמערכת רצה:
+
+1. **מפתחות API** - היכנס ל‑⚙️ Settings → "מפתחות API של LLM" והזן את המפתחות שלך (OpenRouter / Anthropic / Google / וכו'). כל מפתח נשמר אוטומטית אחרי בדיקה מוצלחת.
+2. **שפת תגובות המודלים** - היכנס ל‑Settings → "כללי" → "שפת תגובות מודלים" → בחר **Hebrew**. זה גורם למודלי המועצה והיועצים להגיב בעברית. (ברירת המחדל בבק‑אנד היא English.)
+
+יש גם החלפה בין מצב **בהיר** ⚪ (Sage) ל**כהה** ⚫ (Midnight Glass) - אייקון השמש/הירח בראש הסיידבר.
+
+> **Quick switch back to English:** Settings → "שפת הממשק" → English.
 
 ---
 
 ## Two Modes of Deliberation
 
-### 🏛️ LLM Council — Multi-Model Deliberation
+### 🏛️ LLM Council - Multi-Model Deliberation
 
 The original three-stage pipeline where raw model diversity produces vetted answers:
 
@@ -86,7 +109,7 @@ YOUR QUESTION (+ optional web search)
 
 #### Multi-Round Iterative Debate (v0.7.0)
 
-Council mode also supports **multi-round iterative debate** — models refine their answers across multiple rounds based on peer critiques, with convergence detection and early stopping:
+Council mode also supports **multi-round iterative debate** - models refine their answers across multiple rounds based on peer critiques, with convergence detection and early stopping:
 
 ```
   ┌─────────────────────────────────┐
@@ -95,7 +118,7 @@ Council mode also supports **multi-round iterative debate** — models refine th
   └──────────────┬──────────────────┘
                  ▼
   ┌─────────────────────────────────┐
-  │   ROUNDS 2–5: Refinement        │
+  │   ROUNDS 2-5: Refinement        │
   │   Cross-pollination of top      │
   │   claims + targeted critique    │
   │   (auto-stops on convergence)   │
@@ -116,9 +139,9 @@ Council mode also supports **multi-round iterative debate** — models refine th
 | **Paragraph-level** | Structured per-paragraph evaluation with stable `[Para N]` markers |
 | **Claim-level** | Chairman extracts falsifiable claims; peers verdict each claim (strong/weak/flawed) |
 
-Configure rounds (1–5), critique mode, and convergence threshold in **Settings > Council Debate**, or via the `run_iterative_debate` MCP tool. See [docs/COUNCIL-DEBATE-CONFIG.md](docs/COUNCIL-DEBATE-CONFIG.md) for a full walkthrough.
+Configure rounds (1-5), critique mode, and convergence threshold in **Settings > Council Debate**, or via the `run_iterative_debate` MCP tool. See [docs/COUNCIL-DEBATE-CONFIG.md](docs/COUNCIL-DEBATE-CONFIG.md) for a full walkthrough.
 
-### 🎭 LLM Advisors — Persona-Driven Debate
+### 🎭 LLM Advisors - Persona-Driven Debate
 
 A fundamentally different approach: named personas with distinct thinking styles argue your question in structured rounds.
 
@@ -134,7 +157,7 @@ YOUR QUESTION (+ optional web search)
   └──────────────┬──────────────────┘
                  ▼
   ┌─────────────────────────────────┐
-  │   ROUND 2–N: DEBATE             │
+  │   ROUND 2-N: DEBATE             │
   │   Rotating order, respond to    │
   │   each other by name            │
   │   (auto-stops on consensus)     │
@@ -165,7 +188,7 @@ YOUR QUESTION (+ optional web search)
 | 🎤 **The Comedian** | Humorist Critic | Uses wit to expose absurdity and weak framing |
 | 📈 **The Economist** | Incentives Analyst | Analyzes incentives, scarcity, and unintended consequences |
 
-All personas are **fully customizable** — edit name, role, description, system prompt, and emoji. Changes persist across sessions with per-persona reset to defaults.
+All personas are **fully customizable** - edit name, role, description, system prompt, and emoji. Changes persist across sessions with per-persona reset to defaults.
 
 ---
 
@@ -202,7 +225,7 @@ Ground your council's or advisors' responses in real-time information:
 | **Tavily** | API Key | Purpose-built for LLMs, rich content |
 | **Brave Search** | API Key | Privacy-focused, 2,000 free queries/month |
 
-**Full Article Fetching**: Uses [Jina Reader](https://jina.ai/reader) to extract full article content from top search results (configurable 0–10 results).
+**Full Article Fetching**: Uses [Jina Reader](https://jina.ai/reader) to extract full article content from top search results (configurable 0-10 results).
 
 ### Temperature Controls
 
@@ -216,20 +239,20 @@ Some provider/model combinations only accept their default temperature. The app 
 
 ### Additional Features
 
-- **Live Progress Tracking** — See each model or advisor respond in real-time with streaming; reconnect to active runs via `GET /api/conversations/{id}/progress`
-- **Multi-turn Conversations** — Follow-up questions carry full context automatically
-- **Council Sizing** — Adjust council from 1 to 8 models; advisors from 2 to 4 personas (select from 12)
-- **Advisor Presets** — Save and load named advisor lineups (personas, model mode, optional rounds/web search) from Advisor Setup
-- **Abort Anytime** — Cancel in-progress requests
-- **Conversation History** — All conversations saved locally with search; sidebar cards show stacked date/time, compact run summaries (rounds, critique mode, personas, search), and cumulative cost per thread
-- **Customizable System Prompts** — Edit Stage 1, 2, and 3 prompts for Council mode
-- **Run Cost Reporting** — See total cost, input/output token split, call count, pricing confidence, and per-model breakdowns for council and advisor runs
-- **Rate Limit Warnings** — Alerts when your config may hit API limits
-- **"I'm Feeling Lucky"** — Randomize your council composition
-- **Import & Export** — Backup and share your settings, API keys, and prompts
-- **Per-request Model Overrides** — Use different models for individual requests without changing global config
-- **One-shot API** — `POST /api/ask` for scripts and MCP agents (no conversation state)
-- **Docker Deployment** — Single-container production deployment via `docker compose`
+- **Live Progress Tracking** - See each model or advisor respond in real-time with streaming; reconnect to active runs via `GET /api/conversations/{id}/progress`
+- **Multi-turn Conversations** - Follow-up questions carry full context automatically
+- **Council Sizing** - Adjust council from 1 to 8 models; advisors from 2 to 4 personas (select from 12)
+- **Advisor Presets** - Save and load named advisor lineups (personas, model mode, optional rounds/web search) from Advisor Setup
+- **Abort Anytime** - Cancel in-progress requests
+- **Conversation History** - All conversations saved locally with search; sidebar cards show stacked date/time, compact run summaries (rounds, critique mode, personas, search), and cumulative cost per thread
+- **Customizable System Prompts** - Edit Stage 1, 2, and 3 prompts for Council mode
+- **Run Cost Reporting** - See total cost, input/output token split, call count, pricing confidence, and per-model breakdowns for council and advisor runs
+- **Rate Limit Warnings** - Alerts when your config may hit API limits
+- **"I'm Feeling Lucky"** - Randomize your council composition
+- **Import & Export** - Backup and share your settings, API keys, and prompts
+- **Per-request Model Overrides** - Use different models for individual requests without changing global config
+- **One-shot API** - `POST /api/ask` for scripts and MCP agents (no conversation state)
+- **Docker Deployment** - Single-container production deployment via `docker compose`
 
 ---
 
@@ -301,12 +324,12 @@ Remote admin endpoints (`/api/settings/export`, `/api/settings/import`, `/api/se
 
 On first launch, configure at least one LLM provider in Settings:
 
-1. **LLM API Keys** — Enter API keys for your chosen providers (and Ollama URL / custom endpoint if used)
-2. **Council Config** (Settings) or **welcome-screen Council Setup** — add members and chairman; both edit the same saved lineup (auto-saves)
+1. **LLM API Keys** - Enter API keys for your chosen providers (and Ollama URL / custom endpoint if used)
+2. **Council Config** (Settings) or **welcome-screen Council Setup** - add members and chairman; both edit the same saved lineup (auto-saves)
 
 Settings changes save automatically (~1 second after you stop editing). API keys **auto-save** when you click "Test" and the connection succeeds.
 
-**Provider toggles are global:** Settings → Council Config **provider toggles** control which sources appear in **all** model pickers — Council Setup and Advisor Setup alike. A provider must be both configured (API key) and enabled (toggle on) to show its models.
+**Provider toggles are global:** Settings → Council Config **provider toggles** control which sources appear in **all** model pickers - Council Setup and Advisor Setup alike. A provider must be both configured (API key) and enabled (toggle on) to show its models.
 
 **Advisor presets:** In Advisor Setup, save named lineups (personas, models, optional rounds/web search) from the Model Assignment section. Presets persist in `settings.json` as `advisor_presets` (max 20; one default).
 
@@ -375,7 +398,7 @@ See **[docs/mcp/](docs/mcp/)** for full setup guides, including stdio/SSE transp
 
 ## Claude Code Skill (REST fallback)
 
-When MCP isn't available or you need preset CRUD / raw SSE, install the **`the-ai-counsel-api` skill**. When **both** skill and MCP are present, agents should **use MCP tools first** — the skill documents REST as fallback.
+When MCP isn't available or you need preset CRUD / raw SSE, install the **`the-ai-counsel-api` skill**. When **both** skill and MCP are present, agents should **use MCP tools first** - the skill documents REST as fallback.
 
 ```bash
 # Symlink from your cloned repo
@@ -385,7 +408,7 @@ ln -s "$(pwd)/skills/the-ai-counsel-api" ~/.claude/skills/the-ai-counsel-api
 
 The skill covers all API endpoints, SSE stream parsing, advisor endpoints, and troubleshooting. See [`skills/the-ai-counsel-api/SKILL.md`](skills/the-ai-counsel-api/SKILL.md) for the full reference.
 
-Contributors: keep REST API, MCP tools, skill, and user docs in sync — see [`docs/DOC-SYNC.md`](docs/DOC-SYNC.md).
+Contributors: keep REST API, MCP tools, skill, and user docs in sync - see [`docs/DOC-SYNC.md`](docs/DOC-SYNC.md).
 
 ---
 
@@ -429,10 +452,10 @@ data/
 ## Troubleshooting
 
 **"Failed to load conversations"**
-- Backend might still be starting up — the app retries automatically
+- Backend might still be starting up - the app retries automatically
 
 **Models not appearing in dropdown**
-- Ensure the provider toggle is enabled in **Settings → Council Config** (toggles are global — apply to both Council and Advisor pickers)
+- Ensure the provider toggle is enabled in **Settings → Council Config** (toggles are global - apply to both Council and Advisor pickers)
 - Check that the API key is configured and tested successfully
 - For Ollama, verify connection is active
 
@@ -458,23 +481,35 @@ data/
 
 ## Credits & Acknowledgements
 
-This project builds upon the original **[llm-council](https://github.com/karpathy/llm-council)** by **[Andrej Karpathy](https://github.com/karpathy)**.
+This is a Hebrew (RTL) localization fork of **[the-ai-counsel](https://github.com/jacob-bd/the-ai-counsel)** by **[Jacob Ben-David](https://github.com/jacob-bd)**, which itself builds upon the original **[llm-council](https://github.com/karpathy/llm-council)** by **[Andrej Karpathy](https://github.com/karpathy)**.
 
-**The AI Counsel** extends that foundation with dual-mode deliberation (Council + Advisors), 12 provider integrations (including NVIDIA NIM and OpenCode Zen/Go), web search, persona-driven debates, customizable prompts, an MCP server, Docker deployment, and much more.
+**The AI Counsel** (Jacob Ben-David) extends Karpathy's original with dual-mode deliberation (Council + Advisors), 12 provider integrations (including NVIDIA NIM and OpenCode Zen/Go), web search, persona-driven debates, customizable prompts, an MCP server, Docker deployment, and much more.
 
-We gratefully acknowledge Andrej Karpathy for the original inspiration and codebase.
+**This fork** adds:
+- Full Hebrew (he) UI localization with RTL layout
+- "Sage" calm-modern light theme (forest green + copper) alongside the existing Midnight Glass dark theme
+- Localized advisor personas (names, roles, descriptions) and Hebrew variants of all advisor prompts (round 1, follow-up, cross-pollination extract, tiebreaker, verdict)
+- Hebrew persona names in the debate transcript so models address each other in the same language they're replying in
+
+We gratefully acknowledge Andrej Karpathy for the original inspiration and codebase, and Jacob Ben-David for building the dual-mode deliberation system that made this localization possible.
+
+Hebrew localization & Sage light theme by **Zvika Hershkovitz** ([@tzvikahe-ops](https://github.com/tzvikahe-ops)).
 
 ---
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! This project embraces the spirit of "vibe coding" — feel free to fork and make it your own.
+Contributions are welcome! This project embraces the spirit of "vibe coding" - feel free to fork and make it your own.
+
+If you want to add another language (Arabic, French, Spanish, etc.), the i18n infrastructure is ready: drop a new `XX.json` in [frontend/src/i18n/locales/](frontend/src/i18n/locales/), register it in [frontend/src/i18n/index.js](frontend/src/i18n/index.js), and add it to the UI language picker in [Settings -> General](frontend/src/components/settings/GeneralSettings.jsx). For full prompt-level localization (like the Hebrew advisor prompts), follow the same pattern as `ADVISOR_*_PROMPT_HEBREW` in [backend/advisor_prompts.py](backend/advisor_prompts.py) and wire the language switch in [backend/advisors.py](backend/advisors.py) via `_pick_advisor_prompt()`.
+
+Issues, PRs, and "I tried it, here is what broke" reports are all useful. No formal process, no style guide gatekeeping.
 
 ---
 

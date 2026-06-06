@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api, buildAvailableSearchProviders } from '../api';
 import SearchableModelSelect from './SearchableModelSelect';
 import { getShortModelName } from '../utils/modelHelpers';
+import { localizePersona } from '../utils/personaHelpers';
 import './AdvisorSetup.css';
 
 const RECOMMENDED_PERSONA_IDS = ['skeptic', 'pragmatist', 'innovator'];
@@ -120,6 +122,7 @@ export default function AdvisorSetup({
   onStartDebate,
   isLoading = false,
 }) {
+  const { t } = useTranslation();
   const [personas, setPersonas] = useState([]);
   const [personasLoading, setPersonasLoading] = useState(true);
   const [models, setModels] = useState([]);
@@ -560,11 +563,11 @@ export default function AdvisorSetup({
     question.trim().length > 0;
 
   const getHint = () => {
-    if (canStart) return '↵ Enter to start · Shift+Enter for new line';
-    if (question.trim().length === 0) return 'Fill in the form below, then start your debate';
-    if (selectedPersonaIds.length < 2) return '⚠ Select at least 2 advisors below';
-    if (modelMode === 'simple' && !chosenModel) return '⚠ Choose a model below';
-    return '⚠ Assign a model to each advisor';
+    if (canStart) return t('advisorSetup.enterPrompt');
+    if (question.trim().length === 0) return t('advisorSetup.fillForm');
+    if (selectedPersonaIds.length < 2) return t('advisorSetup.needTwoAdvisors');
+    if (modelMode === 'simple' && !chosenModel) return t('advisorSetup.needModel');
+    return t('advisorSetup.needModel');
   };
 
   const handleSubmit = () => {
@@ -584,18 +587,25 @@ export default function AdvisorSetup({
   // ── Render ───────────────────────────────────────────────────────────────
 
   const selectedCount = selectedPersonaIds.length;
+  // Localize persona display names/roles/descriptions at render time.
+  // Backend storage stays English; UI language overrides the visible text
+  // (but only for non-customized personas - see localizePersona).
+  const displayPersonas = useMemo(
+    () => personas.map((p) => localizePersona(p, t)),
+    [personas, t]
+  );
 
   return (
     <div className="advisor-setup">
-      {/* Question Textarea + Start Debate — primary input card */}
+      {/* Question Textarea + Start Debate - primary input card */}
       <div className="advisor-setup__section advisor-setup__question-card">
         <label className="advisor-setup__section-label" htmlFor="advisor-question">
-          Debate Question
+          {t('advisorSetup.debateQuestion')}
         </label>
         <textarea
           id="advisor-question"
           className="advisor-setup__question"
-          placeholder="What should your advisors debate? (Shift+Enter for new line)"
+          placeholder={t('advisorSetup.questionPlaceholder')}
           rows={4}
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
@@ -617,36 +627,36 @@ export default function AdvisorSetup({
             disabled={!canStart || isLoading}
           >
             {isLoading ? (
-              <><span className="advisor-setup__spinner" aria-hidden="true" /> Starting…</>
+              <><span className="advisor-setup__spinner" aria-hidden="true" /> {t('advisorSetup.starting')}</>
             ) : (
-              'Start Debate ➤'
+              t('advisorSetup.startDebate')
             )}
           </button>
         </div>
       </div>
 
-      {/* Rounds + Web Search — compact config directly below question */}
+      {/* Rounds + Web Search - compact config directly below question */}
       <div className="advisor-setup__section">
         <div className="advisor-setup__config-row">
           <div className="advisor-setup__rounds">
-            <span className="advisor-setup__config-label">Rounds</span>
+            <span className="advisor-setup__config-label">{t('advisorSetup.rounds')}</span>
             <div className="advisor-setup__stepper">
               <button
                 type="button"
                 className="advisor-setup__stepper-btn"
                 onClick={() => handleRoundsStep(-1)}
                 disabled={rounds <= 3}
-                aria-label="Decrease rounds"
+                aria-label={t('advisorSetup.decreaseRounds')}
               >
                 −
               </button>
-              <span className="advisor-setup__stepper-value">{rounds}</span>
+              <span className="advisor-setup__stepper-value ltr">{rounds}</span>
               <button
                 type="button"
                 className="advisor-setup__stepper-btn"
                 onClick={() => handleRoundsStep(1)}
                 disabled={rounds >= 10}
-                aria-label="Increase rounds"
+                aria-label={t('advisorSetup.increaseRounds')}
               >
                 +
               </button>
@@ -654,7 +664,7 @@ export default function AdvisorSetup({
           </div>
 
           <div className="advisor-setup__websearch-picker" ref={searchPopoverRef}>
-            <span className="advisor-setup__config-label">Web Search</span>
+            <span className="advisor-setup__config-label">{t('advisorSetup.webSearch')}</span>
             <button
               type="button"
               className={`advisor-setup__search-btn ${searchProvider ? 'advisor-setup__search-btn--active' : ''}`}
@@ -663,7 +673,7 @@ export default function AdvisorSetup({
               aria-expanded={searchPopoverOpen}
             >
               <span>🌐</span>
-              <span>{searchProvider ? (availableSearchProviders.find(p => p.id === searchProvider)?.name || searchProvider) : 'Off'}</span>
+              <span>{searchProvider ? (availableSearchProviders.find(p => p.id === searchProvider)?.name || searchProvider) : t('chat.off')}</span>
               <span className="advisor-setup__search-chevron">›</span>
             </button>
             {searchPopoverOpen && (
@@ -673,7 +683,7 @@ export default function AdvisorSetup({
                   className={`advisor-setup__search-option ${!searchProvider ? 'advisor-setup__search-option--selected' : ''}`}
                   onClick={() => { setSearchProvider(null); setSearchPopoverOpen(false); }}
                 >
-                  <span>✕</span> Off
+                  <span>✕</span> {t('chat.off')}
                 </button>
                 {availableSearchProviders.map((p) => (
                   <button
@@ -682,7 +692,7 @@ export default function AdvisorSetup({
                     className={`advisor-setup__search-option ${searchProvider === p.id ? 'advisor-setup__search-option--selected' : ''}`}
                     onClick={() => { setSearchProvider(p.id); setSearchPopoverOpen(false); }}
                   >
-                    <span>🌐</span> {p.name}
+                    <span>🌐</span> <span className="ltr">{p.name}</span>
                   </button>
                 ))}
               </div>
@@ -694,21 +704,21 @@ export default function AdvisorSetup({
       {/* Model Assignment */}
       <div className="advisor-setup__section">
         <div className="advisor-setup__section-header">
-          <span className="advisor-setup__section-label">Model Assignment</span>
+          <span className="advisor-setup__section-label">{t('advisorSetup.modelAssignment')}</span>
           <div className="advisor-setup__mode-tabs">
             <button
               type="button"
               className={`advisor-setup__mode-tab ${modelMode === 'simple' ? 'advisor-setup__mode-tab--active' : ''}`}
               onClick={() => setModelMode('simple')}
             >
-              Simple
+              {t('advisorSetup.modelModeSimple')}
             </button>
             <button
               type="button"
               className={`advisor-setup__mode-tab ${modelMode === 'advanced' ? 'advisor-setup__mode-tab--active' : ''}`}
               onClick={() => setModelMode('advanced')}
             >
-              Advanced
+              {t('advisorSetup.modelModeAdvanced')}
             </button>
           </div>
         </div>
@@ -724,7 +734,7 @@ export default function AdvisorSetup({
             >
               <span className="advisor-setup__preset-btn-icon" aria-hidden="true">📁</span>
               <span className="advisor-setup__preset-btn-label">
-                {activePreset ? activePreset.name : 'Custom setup'}
+                {activePreset ? activePreset.name : t('advisorSetup.customLineup')}
               </span>
               <span className="advisor-setup__preset-chevron">›</span>
             </button>
@@ -735,10 +745,10 @@ export default function AdvisorSetup({
                   className={`advisor-setup__preset-option ${!activePresetId ? 'advisor-setup__preset-option--selected' : ''}`}
                   onClick={handleSelectCustomSetup}
                 >
-                  Custom setup
+                  {t('advisorSetup.customLineup')}
                 </button>
                 {presets.length === 0 ? (
-                  <div className="advisor-setup__preset-empty">No saved presets yet</div>
+                  <div className="advisor-setup__preset-empty">{t('advisorSetup.noSavedPresets')}</div>
                 ) : (
                   presets.map((preset) => (
                     <div key={preset.id} className="advisor-setup__preset-option-row">
@@ -755,8 +765,8 @@ export default function AdvisorSetup({
                           <button
                             type="button"
                             className="advisor-setup__preset-action-btn"
-                            title="Set as default"
-                            aria-label={`Set ${preset.name} as default`}
+                            title={t('advisorSetup.setAsDefault')}
+                            aria-label={t('councilSetup.setAsDefaultAria', { name: preset.name })}
                             onClick={() => handleSetDefaultPreset(preset.id)}
                           >
                             ☆
@@ -765,8 +775,8 @@ export default function AdvisorSetup({
                         <button
                           type="button"
                           className="advisor-setup__preset-action-btn advisor-setup__preset-action-btn--delete"
-                          title="Delete preset"
-                          aria-label={`Delete ${preset.name}`}
+                          title={t('advisorSetup.deletePreset')}
+                          aria-label={t('councilSetup.deletePresetAria', { name: preset.name })}
                           onClick={() => handleDeletePreset(preset.id)}
                         >
                           ✕
@@ -781,7 +791,7 @@ export default function AdvisorSetup({
                     className="advisor-setup__preset-footer-btn"
                     onClick={openSavePresetModal}
                   >
-                    Save current as…
+                    {t('advisorSetup.saveCurrentAs')}
                   </button>
                 </div>
               </div>
@@ -793,14 +803,14 @@ export default function AdvisorSetup({
               className="advisor-setup__preset-save-link"
               onClick={openSavePresetModal}
             >
-              Save preset…
+              {t('councilSetup.savePresetEllipsis')}
             </button>
           )}
         </div>
 
         {!modelsLoading && models.length === 0 && (
           <p className="advisor-setup__model-empty">
-            No models available. Add and test API keys in Settings → LLM API Keys (Ollama URL, NVIDIA, OpenRouter, etc.).
+            {t('councilSetup.noModelsAvailable')} {t('councilSetup.configureApiKeys')}.
           </p>
         )}
 
@@ -808,19 +818,19 @@ export default function AdvisorSetup({
           <p className="advisor-setup__model-summary">{modelSummaryLine}</p>
         )}
         {isPresetDirty && (
-          <p className="advisor-setup__preset-dirty">Unsaved changes from preset</p>
+          <p className="advisor-setup__preset-dirty">{t('advisorSetup.unsavedChangesPreset')}</p>
         )}
 
         {modelMode === 'simple' ? (
           <div className="advisor-setup__model-simple">
             <label className="advisor-setup__model-label">
-              All advisors and the verdict/tiebreaker use the same model
+              {t('advisorSetup.verdictModel')}
             </label>
             <SearchableModelSelect
               models={models}
               value={chosenModel}
               onChange={handleSimpleModelChange}
-              placeholder={modelsLoading ? 'Loading models…' : `Search ${models.length} models…`}
+              placeholder={modelsLoading ? t('editableCouncil.loadingModels') : t('editableCouncil.searchModels')}
               isLoading={modelsLoading}
               isDisabled={modelsLoading}
             />
@@ -829,11 +839,11 @@ export default function AdvisorSetup({
           <div className="advisor-setup__model-advanced">
             {selectedPersonaIds.length === 0 ? (
               <p className="advisor-setup__model-advanced-empty">
-                Select at least one advisor above to assign models.
+                {t('advisorSetup.needTwoAdvisors')}
               </p>
             ) : (
               selectedPersonaIds.map((id) => {
-                const persona = personas.find((p) => p.id === id);
+                const persona = displayPersonas.find((p) => p.id === id);
                 if (!persona) return null;
                 return (
                   <div key={id} className="advisor-setup__model-row">
@@ -845,7 +855,7 @@ export default function AdvisorSetup({
                       models={models}
                       value={modelAssignments[id] || ''}
                       onChange={(modelId) => handleModelAssignment(id, modelId)}
-                      placeholder={modelsLoading ? 'Loading…' : 'Search models…'}
+                      placeholder={modelsLoading ? t('editableCouncil.loadingModels') : t('editableCouncil.searchModels')}
                       isLoading={modelsLoading}
                       isDisabled={modelsLoading}
                     />
@@ -856,13 +866,13 @@ export default function AdvisorSetup({
             <div className="advisor-setup__model-row advisor-setup__model-row--verdict">
               <span className="advisor-setup__model-row-persona">
                 <span>⚖️</span>
-                <span>Verdict / Tiebreaker</span>
+                <span>{t('advisorSetup.verdictTiebreaker')}</span>
               </span>
               <SearchableModelSelect
                 models={models}
                 value={tiebreakerModel || ''}
                 onChange={handleTiebreakerModelChange}
-                placeholder={modelsLoading ? 'Loading…' : 'Search models…'}
+                placeholder={modelsLoading ? t('editableCouncil.loadingModels') : t('editableCouncil.searchModels')}
                 isLoading={modelsLoading}
                 isDisabled={modelsLoading}
               />
@@ -879,10 +889,10 @@ export default function AdvisorSetup({
           onClick={() => setPersonasExpanded((v) => !v)}
           aria-expanded={personasExpanded}
         >
-          <span className="advisor-setup__section-label">Choose Advisors</span>
+          <span className="advisor-setup__section-label">{t('advisorSetup.chooseAdvisors')}</span>
           <div className="advisor-setup__section-header-right">
             <span className={`advisor-setup__count-badge ${selectedCount >= 2 ? 'advisor-setup__count-badge--valid' : ''}`}>
-              {selectedCount} / 4 selected
+              <span className="ltr">{selectedCount} / 4</span>
             </span>
             <span className={`advisor-setup__chevron ${personasExpanded ? '' : 'advisor-setup__chevron--collapsed'}`}>
               ›
@@ -900,16 +910,16 @@ export default function AdvisorSetup({
                 type="button"
               >
                 <span className="advisor-setup__recommended-icon">⚡</span>
-                Use Recommended Panel
-                <span className="advisor-setup__recommended-hint">Skeptic · Pragmatist · Innovator</span>
+                {t('advisorSetup.useRecommended')}
+                <span className="advisor-setup__recommended-hint">{t('advisorSetup.recommendedHint')}</span>
               </button>
             </div>
 
             {personasLoading ? (
-              <div className="advisor-setup__personas-loading">Loading advisors...</div>
+              <div className="advisor-setup__personas-loading">{t('advisorSetup.loadingAdvisors')}</div>
             ) : (
               <div className="advisor-setup__persona-gallery">
-                {personas.map((persona) => {
+                {displayPersonas.map((persona) => {
                   const selected = selectedPersonaIds.includes(persona.id);
                   return (
                     <div
@@ -926,8 +936,8 @@ export default function AdvisorSetup({
                         type="button"
                         className="advisor-setup__persona-edit-btn"
                         onClick={(e) => openEditModal(e, persona)}
-                        title="Edit persona"
-                        aria-label={`Edit ${persona.name}`}
+                        title={t('advisorSetup.editPersona')}
+                        aria-label={t('advisorSetup.editPersona')}
                         tabIndex={0}
                       >
                         ✏️
@@ -937,7 +947,7 @@ export default function AdvisorSetup({
                       <span className="advisor-setup__persona-role">{persona.role}</span>
                       <span className="advisor-setup__persona-desc">{persona.description}</span>
                       {persona.is_customized && (
-                        <span className="advisor-setup__persona-custom-badge" title="Customized">✦</span>
+                        <span className="advisor-setup__persona-custom-badge" title={t('advisorSetup.customized')}>✦</span>
                       )}
                       {selected && (
                         <span className="advisor-setup__persona-check" style={{ backgroundColor: persona.color }}>
@@ -959,19 +969,19 @@ export default function AdvisorSetup({
           <div className="advisor-setup__edit-modal advisor-setup__edit-modal--compact" onClick={(e) => e.stopPropagation()}>
             <div className="advisor-setup__edit-header">
               <span className="advisor-setup__edit-emoji">📁</span>
-              <span className="advisor-setup__edit-title">Save Preset</span>
-              <button type="button" className="advisor-setup__edit-close" onClick={closeSavePresetModal} aria-label="Close">✕</button>
+              <span className="advisor-setup__edit-title">{t('advisorSetup.savePreset')}</span>
+              <button type="button" className="advisor-setup__edit-close" onClick={closeSavePresetModal} aria-label={t('advisorSetup.close')}>✕</button>
             </div>
 
             <div className="advisor-setup__edit-body">
               <label className="advisor-setup__edit-field">
-                <span className="advisor-setup__edit-label">Preset Name</span>
+                <span className="advisor-setup__edit-label">{t('advisorSetup.presetName')}</span>
                 <input
                   type="text"
                   className="advisor-setup__edit-input"
                   value={saveForm.name}
                   onChange={(e) => setSaveForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g. Startup GTM Debate"
+                  placeholder={t('advisorSetup.presetNamePlaceholder')}
                   maxLength={80}
                   autoFocus
                 />
@@ -984,7 +994,7 @@ export default function AdvisorSetup({
                     checked={saveForm.updateExisting}
                     onChange={(e) => setSaveForm((f) => ({ ...f, updateExisting: e.target.checked }))}
                   />
-                  <span>Update existing preset</span>
+                  <span>{t('advisorSetup.updateExisting')}</span>
                 </label>
               )}
 
@@ -994,7 +1004,7 @@ export default function AdvisorSetup({
                   checked={saveForm.isDefault}
                   onChange={(e) => setSaveForm((f) => ({ ...f, isDefault: e.target.checked }))}
                 />
-                <span>Set as default preset</span>
+                <span>{t('advisorSetup.setAsDefaultPreset')}</span>
               </label>
 
               <label className="advisor-setup__preset-checkbox">
@@ -1003,7 +1013,7 @@ export default function AdvisorSetup({
                   checked={saveForm.includeConfig}
                   onChange={(e) => setSaveForm((f) => ({ ...f, includeConfig: e.target.checked }))}
                 />
-                <span>Include rounds + web search settings</span>
+                <span>{t('advisorSetup.includeRoundsWebSearch')}</span>
               </label>
             </div>
 
@@ -1015,7 +1025,7 @@ export default function AdvisorSetup({
                   onClick={closeSavePresetModal}
                   disabled={presetSaving}
                 >
-                  Cancel
+                  {t('advisorSetup.cancel')}
                 </button>
                 <button
                   type="button"
@@ -1023,7 +1033,7 @@ export default function AdvisorSetup({
                   onClick={handleSavePreset}
                   disabled={presetSaving || !saveForm.name.trim()}
                 >
-                  {presetSaving ? 'Saving…' : 'Save Preset'}
+                  {presetSaving ? t('councilSetup.saving') : t('advisorSetup.savePreset')}
                 </button>
               </div>
             </div>
@@ -1037,20 +1047,20 @@ export default function AdvisorSetup({
           <div className="advisor-setup__edit-modal" onClick={(e) => e.stopPropagation()}>
             <div className="advisor-setup__edit-header">
               <span className="advisor-setup__edit-emoji">{editingPersona.avatar_emoji}</span>
-              <span className="advisor-setup__edit-title">Edit Persona</span>
-              <button type="button" className="advisor-setup__edit-close" onClick={closeEditModal} aria-label="Close">✕</button>
+              <span className="advisor-setup__edit-title">{t('advisorSetup.editPersonaTitle')}</span>
+              <button type="button" className="advisor-setup__edit-close" onClick={closeEditModal} aria-label={t('advisorSetup.close')}>✕</button>
             </div>
 
             <div className="advisor-setup__edit-body">
               <div className="advisor-setup__edit-emoji-row">
                 <label className="advisor-setup__edit-field advisor-setup__edit-field--emoji">
-                  <span className="advisor-setup__edit-label">Emoji / Icon</span>
+                  <span className="advisor-setup__edit-label">{t('advisorSetup.emojiIcon')}</span>
                   <input
                     type="text"
                     className="advisor-setup__edit-input advisor-setup__edit-emoji-input"
                     value={editForm.avatar_emoji}
                     onChange={(e) => setEditForm((f) => ({ ...f, avatar_emoji: e.target.value }))}
-                    placeholder="e.g. 🔍"
+                    placeholder={t('advisorSetup.emojiPlaceholder')}
                     maxLength={4}
                   />
                 </label>
@@ -1060,7 +1070,7 @@ export default function AdvisorSetup({
               </div>
 
               <label className="advisor-setup__edit-field">
-                <span className="advisor-setup__edit-label">Name</span>
+                <span className="advisor-setup__edit-label">{t('advisorSetup.name')}</span>
                 <input
                   type="text"
                   className="advisor-setup__edit-input"
@@ -1070,7 +1080,7 @@ export default function AdvisorSetup({
               </label>
 
               <label className="advisor-setup__edit-field">
-                <span className="advisor-setup__edit-label">Role</span>
+                <span className="advisor-setup__edit-label">{t('advisorSetup.role')}</span>
                 <input
                   type="text"
                   className="advisor-setup__edit-input"
@@ -1080,7 +1090,7 @@ export default function AdvisorSetup({
               </label>
 
               <label className="advisor-setup__edit-field">
-                <span className="advisor-setup__edit-label">Description</span>
+                <span className="advisor-setup__edit-label">{t('advisorSetup.description')}</span>
                 <textarea
                   className="advisor-setup__edit-textarea advisor-setup__edit-textarea--short"
                   rows={2}
@@ -1090,9 +1100,10 @@ export default function AdvisorSetup({
               </label>
 
               <label className="advisor-setup__edit-field">
-                <span className="advisor-setup__edit-label">System Prompt</span>
+                <span className="advisor-setup__edit-label">{t('advisorSetup.systemPrompt')}</span>
                 <textarea
-                  className="advisor-setup__edit-textarea"
+                  className="advisor-setup__edit-textarea ltr"
+                  dir="ltr"
                   rows={7}
                   value={editForm.system_prompt}
                   onChange={(e) => setEditForm((f) => ({ ...f, system_prompt: e.target.value }))}
@@ -1108,7 +1119,7 @@ export default function AdvisorSetup({
                   onClick={handleEditReset}
                   disabled={editSaving}
                 >
-                  Reset to Default
+                  {t('advisorSetup.reset')}
                 </button>
               )}
               <div className="advisor-setup__edit-footer-right">
@@ -1118,7 +1129,7 @@ export default function AdvisorSetup({
                   onClick={closeEditModal}
                   disabled={editSaving}
                 >
-                  Cancel
+                  {t('advisorSetup.cancel')}
                 </button>
                 <button
                   type="button"
@@ -1126,7 +1137,7 @@ export default function AdvisorSetup({
                   onClick={handleEditSave}
                   disabled={editSaving}
                 >
-                  {editSaving ? 'Saving…' : 'Save'}
+                  {editSaving ? t('councilSetup.saving') : t('advisorSetup.save')}
                 </button>
               </div>
             </div>
