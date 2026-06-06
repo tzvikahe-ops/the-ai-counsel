@@ -255,21 +255,21 @@ npm install --prefix frontend  # Frontend dependencies
     <tr>
       <td>📊 <strong>מנתח הנתונים</strong></td>
       <td>מעריך ראיות</td>
-      <td>מביא דקדוק כמותי וראיות מדידות</td>
+      <td>מביא משמעת כמותית וראיות מדידות</td>
     </tr>
     <tr>
-      <td>🎭 <strong>המנוגד</strong></td>
+      <td>🎭 <strong>הלעומתי</strong></td>
       <td>פרקליט השטן</td>
       <td>מתווכח בכוונה על העמדה הנגדית</td>
     </tr>
     <tr>
       <td>♟️ <strong>האסטרטג</strong></td>
-      <td>חושב תמונה גדולה</td>
+      <td>בעל ראייה מערכתית</td>
       <td>חושב לטווח ארוך על מיקום ומנופים</td>
     </tr>
     <tr>
       <td>🤝 <strong>ההומניסט</strong></td>
-      <td>סנגור האנשים</td>
+      <td>סנגור האדם</td>
       <td>ממקד את החוויה האנושית ואת הרווחה</td>
     </tr>
     <tr>

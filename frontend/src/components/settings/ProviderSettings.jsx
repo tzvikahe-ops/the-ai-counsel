@@ -11,6 +11,7 @@ import deepseekIcon from '../../assets/icons/deepseek.svg';
 import nvidiaIcon from '../../assets/icons/nvidia.svg';
 import customEndpointIcon from '../../assets/icons/openai-compatible.svg';
 import opencodeIcon from '../../assets/icons/opencode.svg';
+import { getLocalTestMessage } from '../../utils/testMessageHelper';
 
 const PROVIDER_ICONS = {
     openai: openaiIcon,
@@ -155,7 +156,7 @@ export default function ProviderSettings({
                 )}
                 {openrouterTestResult && (
                     <div className={`test-result ${openrouterTestResult.success ? 'success' : 'error'}`}>
-                        {openrouterTestResult.message}
+                        {getLocalTestMessage(openrouterTestResult.message, t)}
                     </div>
                 )}
                 <p className="api-key-hint">
@@ -195,7 +196,7 @@ export default function ProviderSettings({
                 )}
                 {groqTestResult && (
                     <div className={`test-result ${groqTestResult.success ? 'success' : 'error'}`}>
-                        {groqTestResult.message}
+                        {getLocalTestMessage(groqTestResult.message, t)}
                     </div>
                 )}
                 <p className="api-key-hint">
@@ -229,7 +230,7 @@ export default function ProviderSettings({
                 </div>
                 {ollamaTestResult && (
                     <div className={`test-result ${ollamaTestResult.success ? 'success' : 'error'}`}>
-                        {ollamaTestResult.message}
+                        {getLocalTestMessage(ollamaTestResult.message, t)}
                     </div>
                 )}
                 {ollamaStatus && ollamaStatus.connected && (
@@ -293,7 +294,7 @@ export default function ProviderSettings({
                         )}
                         {keyValidationStatus[dp.id] && (
                             <div className={`test-result ${keyValidationStatus[dp.id].success ? 'success' : 'error'}`}>
-                                {keyValidationStatus[dp.id].message}
+                                {getLocalTestMessage(keyValidationStatus[dp.id].message, t)}
                             </div>
                         )}
                     </form>
@@ -335,7 +336,7 @@ export default function ProviderSettings({
                     )}
                     {opencodeTestResult && (
                         <div className={`test-result ${opencodeTestResult.success ? 'success' : 'error'}`}>
-                            {opencodeTestResult.message}
+                            {getLocalTestMessage(opencodeTestResult.message, t)}
                         </div>
                     )}
                     <p className="api-key-hint">
@@ -415,7 +416,7 @@ export default function ProviderSettings({
                     )}
                     {customEndpointTestResult && (
                         <div className={`test-result ${customEndpointTestResult.success ? 'success' : 'error'}`}>
-                            {customEndpointTestResult.message}
+                            {getLocalTestMessage(customEndpointTestResult.message, t)}
                         </div>
                     )}
                 </form>

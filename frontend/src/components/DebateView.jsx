@@ -10,6 +10,27 @@ import './DebateView.css';
 
 const toStr = (v) => (typeof v === 'string' ? v : String(v || ''));
 
+function getLocalAdvisorError(err, t) {
+  if (!err) return '';
+  const errStr = typeof err === 'string' ? err : String(err);
+  if (errStr === 'No advisor model configured. Set a default model in Settings.') {
+    return t('debateView.errors.noModelConfigured');
+  }
+  if (errStr === 'Rounds must be between 3 and 10.') {
+    return t('debateView.errors.roundsRange');
+  }
+  if (errStr === 'At least 2 valid advisors required.') {
+    return t('debateView.errors.minAdvisors');
+  }
+  if (errStr.startsWith('Cross-pollination extract failed after Round')) {
+    const match = errStr.match(/Round (\d+): (.*)/);
+    if (match) {
+      return t('debateView.errors.crossPollinationFailed', { round: match[1], error: match[2] });
+    }
+  }
+  return errStr;
+}
+
 function findPersona(personas, id) {
   return personas.find((p) => p.id === id) || null;
 }
@@ -71,7 +92,7 @@ function RoundSection({ roundIndex, roundData, personas, isLast, isRunning }) {
                   <div className="debate-view__response-error">
                     <span>⚠️</span>
                     <div className="debate-view__response-error-detail">
-                      <span>{resp.error || t('debateView.responseFailed')}</span>
+                      <span>{getLocalAdvisorError(resp.error, t) || t('debateView.responseFailed')}</span>
                       {resp.model && (
                         <span className="debate-view__response-error-model">{t('debateView.model')} <span className="ltr">{resp.model}</span></span>
                       )}
@@ -219,7 +240,7 @@ export default function DebateView({
           <span className="debate-view__error-icon">⚠️</span>
           <div className="debate-view__error-content">
             <strong>{t('debateView.debateFailed')}</strong>
-            <p>{error}</p>
+            <p>{getLocalAdvisorError(error, t)}</p>
           </div>
         </div>
       )}

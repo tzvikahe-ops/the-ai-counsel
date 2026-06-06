@@ -2,7 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { getShortModelName, getModelVisuals } from '../utils/modelHelpers';
 import './RankingHeatmap.css';
 
-function ordinal(n) {
+function ordinal(n, isHebrew) {
+  if (isHebrew) {
+    return `מקום ${n}`;
+  }
   if (n === 1) return '1st';
   if (n === 2) return '2nd';
   if (n === 3) return '3rd';
@@ -18,7 +21,7 @@ function ordinal(n) {
  *   labelToModel  - Map of "Response A" -> full model id
  */
 export default function RankingHeatmap({ rankings, labelToModel }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (!rankings || !labelToModel || rankings.length === 0) return null;
 
   // Filter out any models that failed to rank (failed peer review runs)
@@ -122,7 +125,7 @@ export default function RankingHeatmap({ rankings, labelToModel }) {
                         key={rankee}
                         className={`heatmap-cell heatmap-pos-${pos}`}
                       >
-                        <span className="rank-badge">{ordinal(pos)}</span>
+                        <span className="rank-badge">{ordinal(pos, i18n.language === 'he')}</span>
                       </td>
                     );
                   })}

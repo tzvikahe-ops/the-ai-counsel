@@ -277,7 +277,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         setTimeout(() => setSuccess(false), 2000);
       } catch (err) {
         console.error('Failed to auto-save settings:', err);
-        setError('Failed to save settings');
+        setError(t('settingsShell.errors.failedToSave'));
       } finally {
         setIsSaving(false);
       }
@@ -520,7 +520,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
 
     } catch (err) {
       console.error("Error loading settings:", err);
-      setError('Failed to load settings');
+      setError(t('settingsShell.errors.failedToLoad'));
     }
   };
 
@@ -628,8 +628,8 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       await loadSettings();
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      setError('Failed to disconnect custom endpoint');
+    } catch {
+      setError(t('settingsShell.errors.failedToDisconnectCustom'));
     }
   };
 
@@ -661,7 +661,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       }
-    } catch (err) {
+    } catch {
       setSerperTestResult({ success: false, message: 'Test failed' });
     } finally {
       setIsTestingSerper(false);
@@ -696,7 +696,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       }
-    } catch (err) {
+    } catch {
       setTavilyTestResult({ success: false, message: 'Test failed' });
     } finally {
       setIsTestingTavily(false);
@@ -731,7 +731,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       }
-    } catch (err) {
+    } catch {
       setBraveTestResult({ success: false, message: 'Test failed' });
     } finally {
       setIsTestingBrave(false);
@@ -761,7 +761,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       }
-    } catch (err) {
+    } catch {
       setTinyfishTestResult({ success: false, message: 'Test failed' });
     } finally {
       setIsTestingTinyfish(false);
@@ -792,7 +792,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       }
-    } catch (err) {
+    } catch {
       setOpenrouterTestResult({ success: false, message: 'Test failed' });
     } finally {
       setIsTestingOpenRouter(false);
@@ -824,7 +824,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       }
-    } catch (err) {
+    } catch {
       setGroqTestResult({ success: false, message: 'Test failed' });
     } finally {
       setIsTestingGroq(false);
@@ -853,7 +853,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       }
-    } catch (err) {
+    } catch {
       setOllamaTestResult({ success: false, message: 'Connection failed' });
 
       // Refresh parent status on exception too
@@ -885,7 +885,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       }
     } catch (err) {
       console.error("Failed to fetch default prompt", err);
-      setError("Failed to reset prompt");
+      setError(t('settingsShell.errors.failedToResetPrompt'));
     }
   };
 
@@ -1000,8 +1000,8 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       setActiveSection('council');
 
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      setError('Failed to reset settings');
+    } catch {
+      setError(t('settingsShell.errors.failedToReset'));
     }
   };
 
@@ -1224,14 +1224,14 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         );
 
         if (missingModels.length > 0) {
-          setError(`Imported with warnings: Models not found: ${missingModels.join(', ')}`);
+          setError(t('settingsShell.errors.importWarning', { models: missingModels.join(', ') }));
         } else {
           setSuccess(true);
           setTimeout(() => setSuccess(false), 3000);
         }
 
       } catch (err) {
-        setError(`Import failed: ${err.message}`);
+        setError(t('settingsShell.errors.importFailed', { message: err.message }));
       }
     };
     reader.readAsText(file);

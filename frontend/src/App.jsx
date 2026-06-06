@@ -1577,7 +1577,7 @@ function App() {
       <button
         className="mobile-menu-btn"
         onClick={() => setSidebarOpen(true)}
-        aria-label="Open menu"
+        aria-label={t('sidebar.openMenu')}
       >
         <span className="hamburger-icon"></span>
       </button>

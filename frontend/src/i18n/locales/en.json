@@ -43,6 +43,7 @@
     }
   },
   "sidebar": {
+    "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "settings": "Settings",
     "home": "Home",
@@ -295,6 +296,28 @@
       "confirmSafe": "✓ API keys will be PRESERVED",
       "confirmCancel": "Cancel",
       "confirmReset": "Confirm Reset"
+    },
+    "errors": {
+      "failedToSave": "Failed to save settings",
+      "failedToLoad": "Failed to load settings",
+      "failedToReset": "Failed to reset settings",
+      "failedToResetPrompt": "Failed to reset prompt",
+      "failedToDisconnectCustom": "Failed to disconnect custom endpoint",
+      "enterApiKeyFirst": "Please enter an API key first",
+      "enterNameUrl": "Please enter a name and URL",
+      "testFailed": "Test failed",
+      "connectionFailed": "Connection failed",
+      "importFailed": "Import failed: {{message}}",
+      "importSuccess": "Configuration imported successfully!",
+      "importWarning": "Imported with warnings: Models not found: {{models}}",
+      "noOpenCodeResponse": "No response from OpenCode",
+      "apiKeyValid": "API key is valid",
+      "invalidApiKey": "Invalid API key",
+      "apiError": "API error: {{code}}",
+      "requestTimedOut": "Request timed out",
+      "ollamaConnected": "Successfully connected to Ollama",
+      "ollamaApiError": "Ollama API error: {{code}}",
+      "ollamaConnectError": "Could not connect to Ollama. Is it running at this URL?"
     }
   },
   "generalExtra": {
@@ -532,7 +555,13 @@
     "wordGuidance": "Word guidance exceeded; response kept.",
     "wordsRatio": "{{count}} / {{limit}} words",
     "responseFailed": "This advisor failed to respond.",
-    "model": "Model:"
+    "model": "Model:",
+    "errors": {
+      "noModelConfigured": "No advisor model configured. Set a default model in Settings.",
+      "roundsRange": "Rounds must be between 3 and 10.",
+      "minAdvisors": "At least 2 valid advisors required.",
+      "crossPollinationFailed": "Cross-pollination extract failed after Round {{round}}: {{error}}"
+    }
   },
   "advisorSetup": {
     "debateQuestion": "Debate Question",

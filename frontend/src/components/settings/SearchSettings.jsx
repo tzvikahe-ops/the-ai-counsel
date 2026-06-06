@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { getLocalTestMessage } from '../../utils/testMessageHelper';
 
 export const SEARCH_PROVIDERS = [
     { id: 'duckduckgo', name: 'DuckDuckGo', requiresKey: false, keyType: null },
@@ -109,7 +110,7 @@ export default function SearchSettings({
                                 )}
                                 {serperTestResult && (
                                     <div className={`test-result ${serperTestResult.success ? 'success' : 'error'}`}>
-                                        {serperTestResult.success ? '✓' : '✗'} {serperTestResult.message}
+                                        {serperTestResult.success ? '✓' : '✗'} {getLocalTestMessage(serperTestResult.message, t)}
                                     </div>
                                 )}
                                 <a 
@@ -152,7 +153,7 @@ export default function SearchSettings({
                                 )}
                                 {tavilyTestResult && (
                                     <div className={`test-result ${tavilyTestResult.success ? 'success' : 'error'}`}>
-                                        {tavilyTestResult.success ? '✓' : '✗'} {tavilyTestResult.message}
+                                        {tavilyTestResult.success ? '✓' : '✗'} {getLocalTestMessage(tavilyTestResult.message, t)}
                                     </div>
                                 )}
                             </div>
@@ -186,7 +187,7 @@ export default function SearchSettings({
                                 )}
                                 {braveTestResult && (
                                     <div className={`test-result ${braveTestResult.success ? 'success' : 'error'}`}>
-                                        {braveTestResult.success ? '✓' : '✗'} {braveTestResult.message}
+                                        {braveTestResult.success ? '✓' : '✗'} {getLocalTestMessage(braveTestResult.message, t)}
                                     </div>
                                 )}
                             </div>
@@ -220,7 +221,7 @@ export default function SearchSettings({
                                 )}
                                 {tinyfishTestResult && (
                                     <div className={`test-result ${tinyfishTestResult.success ? 'success' : 'error'}`}>
-                                        {tinyfishTestResult.success ? '✓' : '✗'} {tinyfishTestResult.message}
+                                        {tinyfishTestResult.success ? '✓' : '✗'} {getLocalTestMessage(tinyfishTestResult.message, t)}
                                     </div>
                                 )}
                                 <div className="rate-limit-notice" style={{ marginTop: '8px', fontSize: '12px', color: '#94a3b8' }}>
