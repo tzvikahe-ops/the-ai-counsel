@@ -12,7 +12,13 @@
     "settings": "Settings",
     "home": "Home",
     "version": "Version",
-    "newConversation": "New Conversation"
+    "newConversation": "New Conversation",
+    "loading": "Loading...",
+    "failedToLoad": "Failed to load. Please refresh the page.",
+    "switchToDarkMode": "Switch to dark mode",
+    "switchToLightMode": "Switch to light mode",
+    "reasoning": "Reasoning",
+    "noResponse": "No response"
   },
   "landing": {
     "eyebrow": "Multi-model AI deliberation",
@@ -606,5 +612,15 @@
     "getApiKeyAt": "Get API key at",
     "getFreeApiKeyAt": "Get free API key at",
     "enterKey": "Enter API key"
+  },
+  "modelSelect": {
+    "placeholder": "Search and select a model...",
+    "openRouterCloud": "OpenRouter (Cloud)",
+    "localOllama": "Local (Ollama)",
+    "directSuffix": "Direct",
+    "directFallback": "Direct",
+    "filtered": "(filtered)",
+    "noModelsFound": "No models found",
+    "loadingModels": "Loading models..."
   }
 }

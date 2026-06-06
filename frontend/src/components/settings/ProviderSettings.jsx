@@ -116,7 +116,6 @@ export default function ProviderSettings({
                 <div className="api-key-input-row">
                     <input
                         type="password"
-                        className="ltr"
                         placeholder={settings?.openrouter_api_key_set ? '••••••••••••••••' : t('providers.enterApiKey')}
                         value={openrouterApiKey}
                         onChange={(e) => {
@@ -138,7 +137,7 @@ export default function ProviderSettings({
                             // I'll stick to the raw setters for now but I'll add `setOpenrouterTestResult` to the props list to be safe, OR just ignore clearing it (minor UX regression).
                             // BETTER: I'll define `handleOpenrouterChange` locally if I have the setters.
                         }}
-                        className={settings?.openrouter_api_key_set && !openrouterApiKey ? 'key-configured' : ''}
+                        className={`ltr ${settings?.openrouter_api_key_set && !openrouterApiKey ? 'key-configured' : ''}`}
                     />
                     <button
                         className="test-button"
@@ -173,13 +172,12 @@ export default function ProviderSettings({
                 <div className="api-key-input-row">
                     <input
                         type="password"
-                        className="ltr"
                         placeholder={settings?.groq_api_key_set ? '••••••••••••••••' : t('providers.enterApiKey')}
                         value={groqApiKey}
                         onChange={(e) => {
                             setGroqApiKey(e.target.value);
                         }}
-                        className={settings?.groq_api_key_set && !groqApiKey ? 'key-configured ltr' : 'ltr'}
+                        className={`ltr ${settings?.groq_api_key_set && !groqApiKey ? 'key-configured' : ''}`}
                     />
                     <button
                         className="test-button"

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import Select from 'react-select';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Searchable model selector using react-select.
@@ -9,12 +10,15 @@ export default function SearchableModelSelect({
   models,
   value,
   onChange,
-  placeholder = "Search and select a model...",
+  placeholder,
   isDisabled = false,
   isLoading = false,
   allModels = null, // Optional: all models to find current value if filtered out
   autoOpen = false,
 }) {
+  const { t } = useTranslation();
+  const displayPlaceholder = placeholder || t('modelSelect.placeholder');
+
   // Convert models to react-select format with grouping
   const groupedOptions = models.reduce((acc, model) => {
     // Determine group label
@@ -59,10 +63,22 @@ export default function SearchableModelSelect({
       if (indexB !== -1) return 1;
       return a.localeCompare(b);
     })
-    .map(group => ({
-      label: group,
-      options: groupedOptions[group],
-    }));
+    .map(group => {
+      let label = group;
+      if (group === 'OpenRouter (Cloud)') {
+        label = t('modelSelect.openRouterCloud');
+      } else if (group === 'Local (Ollama)') {
+        label = t('modelSelect.localOllama');
+      } else if (group.endsWith(' (Direct)')) {
+        const providerName = group.replace(' (Direct)', '');
+        const directName = providerName === 'Direct' ? t('modelSelect.directFallback') : providerName;
+        label = `${directName} (${t('modelSelect.directSuffix')})`;
+      }
+      return {
+        label,
+        options: groupedOptions[group],
+      };
+    });
 
   // Find current value in options
   let selectedOption = options
@@ -76,7 +92,7 @@ export default function SearchableModelSelect({
     if (currentModel) {
       selectedOption = {
         value: currentModel.id,
-        label: `${currentModel.name} (filtered)`,
+        label: `${currentModel.name} ${t('modelSelect.filtered')}`,
         model: currentModel,
       };
     }
@@ -192,7 +208,7 @@ export default function SearchableModelSelect({
       options={options}
       value={selectedOption}
       onChange={(option) => onChange(option ? option.value : '')}
-      placeholder={placeholder}
+      placeholder={displayPlaceholder}
       isDisabled={isDisabled}
       isLoading={isLoading}
       isClearable
@@ -202,8 +218,8 @@ export default function SearchableModelSelect({
       styles={customStyles}
       menuPortalTarget={document.body}
       classNamePrefix="model-select"
-      noOptionsMessage={() => "No models found"}
-      loadingMessage={() => "Loading models..."}
+      noOptionsMessage={() => t('modelSelect.noModelsFound')}
+      loadingMessage={() => t('modelSelect.loadingModels')}
       filterOption={(option, inputValue) => {
         if (!inputValue) return true;
         // Normalize dashes/underscores to spaces so "kimi k2" matches "kimi-k2"

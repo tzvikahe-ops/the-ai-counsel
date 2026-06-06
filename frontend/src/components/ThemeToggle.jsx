@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import './ThemeToggle.css';
 
 /**
@@ -5,8 +6,9 @@ import './ThemeToggle.css';
  * Controlled component: parent owns the `theme` state and persistence.
  */
 export default function ThemeToggle({ theme, onToggle }) {
+  const { t } = useTranslation();
   const isLight = theme === 'light';
-  const nextLabel = isLight ? 'dark' : 'light';
+  const label = isLight ? t('common.switchToDarkMode') : t('common.switchToLightMode');
 
   return (
     <button
@@ -15,8 +17,8 @@ export default function ThemeToggle({ theme, onToggle }) {
       onClick={onToggle}
       role="switch"
       aria-checked={isLight}
-      aria-label={`Switch to ${nextLabel} mode`}
-      title={`Switch to ${nextLabel} mode`}
+      aria-label={label}
+      title={label}
     >
       <span className="theme-toggle__track">
         <span className="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">☀</span>

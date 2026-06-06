@@ -207,7 +207,7 @@ export default function ChatInterface({
         return (
             <div className="chat-interface">
                 <div className="empty-state">
-                    <h1 lang="en" dir="ltr">Welcome to The AI <span className="plus-text">Counsel</span></h1>
+                    <h1>{t('chat.welcomeTitle')}</h1>
                     <p className="hero-message">
                         {t('chat.welcomeMessage')}
                     </p>
@@ -246,7 +246,7 @@ export default function ChatInterface({
                 ) : (conversation.messages.length === 0) ? (
                     <div className="hero-container">
                         <div className="hero-content">
-                            <h1 lang="en" dir="ltr">Welcome to The AI <span className="text-gradient">Counsel</span></h1>
+                            <h1>{t('chat.welcomeTitle')}</h1>
                             <p className="hero-subtitle">
                                 {t('chat.welcomeMessageShort')}
                             </p>

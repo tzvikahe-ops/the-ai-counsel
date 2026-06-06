@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MarkdownRenderer } from './MarkdownContent';
 import './ThinkBlockRenderer.css';
 
 // Collapsible think block component
 function ThinkBlock({ content }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className={`think-block ${isExpanded ? 'expanded' : 'collapsed'}`}>
@@ -13,7 +15,7 @@ function ThinkBlock({ content }) {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <span className="think-icon">💭</span>
-        <span className="think-label">Reasoning</span>
+        <span className="think-label">{t('common.reasoning')}</span>
         <span className="think-chevron">{isExpanded ? '▼' : '▶'}</span>
       </button>
       {isExpanded && (
@@ -27,8 +29,10 @@ function ThinkBlock({ content }) {
 
 // Helper to parse and render content with <think> tags styled differently
 export default function ThinkBlockRenderer({ content }) {
+  const { t } = useTranslation();
+
   if (!content || typeof content !== 'string') {
-    return <MarkdownRenderer>{String(content || 'No response')}</MarkdownRenderer>;
+    return <MarkdownRenderer>{String(content || t('common.noResponse'))}</MarkdownRenderer>;
   }
 
   // Regex to match <think>...</think> blocks (handles multiline)

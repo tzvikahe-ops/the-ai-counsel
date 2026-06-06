@@ -1,4 +1,5 @@
 import { Suspense, lazy, useState, useEffect, useRef, useCallback, Component } from 'react';
+import i18n from './i18n';
 import Sidebar from './components/Sidebar';
 import { api, DEFAULT_EXECUTION_MODE, buildAvailableSearchProviders } from './api';
 import './App.css';
@@ -31,7 +32,7 @@ const IDLE_LOADING = {
 function AppLoadingFallback() {
   return (
     <div className="app-loading" role="status" aria-live="polite">
-      Loading...
+      {i18n.t('common.loading')}
     </div>
   );
 }
@@ -50,7 +51,7 @@ class AppErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div className="app-loading" role="alert">
-          Failed to load. Please refresh the page.
+          {i18n.t('common.failedToLoad')}
         </div>
       );
     }
