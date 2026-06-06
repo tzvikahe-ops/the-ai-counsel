@@ -101,7 +101,7 @@ npm install --prefix frontend  # Frontend dependencies
 
 **מצבי הרצה** שולטים בעומק הדיון:
 
-<table dir="rtl" align="right">
+<table dir="rtl" width="100%">
   <thead>
     <tr>
       <th>מצב</th>
@@ -158,7 +158,7 @@ npm install --prefix frontend  # Frontend dependencies
 
 **שלושה מצבי ביקורת** שולטים באופן שבו מודלים מעריכים זה את זה:
 
-<table dir="rtl" align="right">
+<table dir="rtl" width="100%">
   <thead>
     <tr>
       <th>מצב</th>
@@ -218,7 +218,7 @@ npm install --prefix frontend  # Frontend dependencies
 
 **12 פרסונות יועצים מובנות:**
 
-<table dir="rtl" align="right">
+<table dir="rtl" width="100%">
   <thead>
     <tr>
       <th>פרסונה</th>
@@ -300,7 +300,7 @@ npm install --prefix frontend  # Frontend dependencies
 
 ערבב והתאם מודלים מ-12 סוגי ספקים שונים:
 
-<table dir="rtl" align="right">
+<table dir="rtl" width="100%">
   <thead>
     <tr>
       <th>ספק</th>
@@ -376,7 +376,7 @@ npm install --prefix frontend  # Frontend dependencies
 
 בסס את תגובות המועצה או היועצים שלך במידע בזמן אמת:
 
-<table dir="rtl" align="right">
+<table dir="rtl" width="100%">
   <thead>
     <tr>
       <th>ספק</th>
@@ -543,7 +543,7 @@ cd frontend && npm run dev -- --host
 
 ### מפתחות API של LLM
 
-<table dir="rtl" align="right">
+<table dir="rtl" width="100%">
   <thead>
     <tr>
       <th>ספק</th>
@@ -666,7 +666,7 @@ ln -s "$(pwd)/skills/the-ai-counsel-api" ~/.claude/skills/the-ai-counsel-api
 
 ## ערימת טכנולוגיות
 
-<table dir="rtl" align="right">
+<table dir="rtl" width="100%">
   <thead>
     <tr>
       <th>רכיב</th>
