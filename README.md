@@ -513,10 +513,12 @@ data/
 - Free models: 20 requests/min, 50/day
 - Consider using Groq (14,400/day) or Ollama (unlimited)
 
-**Binary compatibility errors (node_modules)**
-- When syncing between Intel/Apple Silicon Macs:
+**Binary compatibility / rollup errors (node_modules)**
+- Symptom: `vite` fails to start with `Error: Cannot find module @rollup/rollup-<platform>` (an npm optional-dependencies bug, see npm/cli#4828). Common after iCloud sync, switching between Intel/Apple Silicon Macs, or an interrupted install.
+- Fix - delete the lockfile too, otherwise `npm install` rebuilds the same broken tree:
   ```bash
-  rm -rf frontend/node_modules && npm install --prefix frontend
+  rm -rf frontend/node_modules frontend/package-lock.json
+  npm install --prefix frontend
   ```
 
 **Logs:**

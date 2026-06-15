@@ -746,12 +746,14 @@ data/
 - מודלים חינמיים: 20 בקשות לדקה, 50 ליום
 - שקול שימוש ב-Groq (14,400 ליום) או Ollama (ללא הגבלה)
 
-**שגיאות תאימות בינארית (node_modules)**
-- בעת סנכרון בין Macs Intel/Apple Silicon:
+**שגיאות תאימות בינארית / rollup (node_modules)**
+- תסמין: `vite` לא עולה עם השגיאה `Error: Cannot find module @rollup/rollup-<platform>` (באג ב-npm סביב תלויות אופציונליות, ראה npm/cli#4828). נפוץ אחרי סנכרון iCloud, מעבר בין Macs Intel/Apple Silicon, או התקנה שנקטעה.
+- פתרון - חובה למחוק גם את ה-lockfile, אחרת `npm install` יבנה מחדש את אותו עץ פגום:
 </div>
 
   ```bash
-  rm -rf frontend/node_modules && npm install --prefix frontend
+  rm -rf frontend/node_modules frontend/package-lock.json
+  npm install --prefix frontend
   ```
 
 <div dir="rtl">

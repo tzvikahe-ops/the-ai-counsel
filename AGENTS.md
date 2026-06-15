@@ -56,11 +56,11 @@ uv sync
 npm install --prefix frontend
 ```
 
-**Important**: If switching between Intel/Apple Silicon Macs with iCloud sync:
+**Important**: If `vite` fails to start with `Error: Cannot find module @rollup/rollup-<platform>` (npm optional-dependencies bug, npm/cli#4828) - common after iCloud sync, switching between Intel/Apple Silicon Macs, or an interrupted install:
 ```bash
-rm -rf frontend/node_modules && npm install --prefix frontend
+rm -rf frontend/node_modules frontend/package-lock.json && npm install --prefix frontend
 ```
-This fixes binary incompatibilities (e.g., `@rollup/rollup-darwin-*` variants).
+Deleting the lockfile too is required - otherwise `npm install` rebuilds the same broken tree. This fixes binary incompatibilities (e.g., `@rollup/rollup-darwin-*` / `@rollup/rollup-linux-*` variants).
 
 ## Architecture Overview
 

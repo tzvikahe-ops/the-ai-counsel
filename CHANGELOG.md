@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Docs: rollup/node_modules startup failure**: Clarified the Troubleshooting note in `README.md`, `README.he.md`, and `AGENTS.md` for the `vite` startup error `Cannot find module @rollup/rollup-<platform>` (npm optional-dependencies bug, npm/cli#4828). The fix now also deletes `frontend/package-lock.json` alongside `node_modules` - without removing the lockfile, `npm install` rebuilds the same broken dependency tree. Broadened the trigger description beyond Intel/Apple Silicon Mac switching to include iCloud sync and interrupted installs.
+
 ## [0.9.0-he.1] - 2026-06-06
 
 > Hebrew (RTL) edition - fork of upstream v0.9.0 with localization and a new light theme. No upstream features were removed; English mode is preserved as a togglable UI language.
