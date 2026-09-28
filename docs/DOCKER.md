@@ -6,15 +6,34 @@ This guide covers running The AI Counsel as a single Docker container — suitab
 
 ## Quick Start
 
+Pull the prebuilt image from GitHub Container Registry — no build step, no clone required:
+
+```bash
+mkdir -p data
+docker run -d --restart unless-stopped --name the-ai-counsel \
+  -p 8001:8001 -v ./data:/app/data \
+  ghcr.io/tzvikahe-ops/the-ai-counsel:latest
+```
+
+Then open **http://localhost:8001** and configure your API keys in Settings.
+
+Every push to `main` that passes the test suite publishes a fresh `:latest` image. When a matching release tag such as `v0.12.0` is pushed, the workflow also publishes `ghcr.io/tzvikahe-ops/the-ai-counsel:0.12.0`, so you can pin to, or roll back to, a specific release instead of always tracking `latest`. Manually starting the workflow runs the tests for the selected ref but does not publish an image.
+
+> **One-time setup for maintainers:** GHCR creates a package as **private** the first time a workflow pushes to it. Until someone makes it public, the `docker pull`/`docker run` command above fails for anyone else with `denied: requested access to the resource is denied`. After the `docker-publish.yml` workflow's first successful run, go to the package on GitHub (your profile or org → **Packages** → `the-ai-counsel`) → **Package settings** → and either set visibility to **Public**, or link the package to this repository so its collaborators inherit access. This is a one-time step; it does not need to be repeated on later pushes.
+
+### Build from source instead
+
+If you're modifying the code, want to build for an architecture without a published image, or just prefer building locally:
+
 ```bash
 git clone https://github.com/jacob-bd/the-ai-counsel.git
 cd the-ai-counsel
 docker compose up -d --build
 ```
 
-Then open **http://localhost:8001** and configure your API keys in Settings.
-
 The first build takes a few minutes (Python deps + frontend compile). Subsequent builds reuse the cache and are much faster.
+
+The rest of this guide uses `docker compose` commands (`logs`, `exec`, restarts) for consistency with that setup. If you're running the prebuilt image via `docker run` instead, swap `docker compose <cmd>` for `docker <cmd> the-ai-counsel` (the `--name` given above), e.g. `docker logs -f the-ai-counsel` instead of `docker compose logs -f`.
 
 ---
 
@@ -41,17 +60,18 @@ This covers:
 
 | Path inside container | Host path | Contents |
 |---|---|---|
-| `/app/data/settings.json` | `./data/settings.json` | API keys, council config, all settings |
+| `/app/data/settings.json` | `./data/settings.json` | Non-secret config (council, prompts, toggles) |
+| `/app/data/credentials.json` | `./data/credentials.json` | API keys and OAuth tokens (file storage mode) |
 | `/app/data/conversations/` | `./data/conversations/` | Full conversation history |
 
 **Your data survives:**
 - Container restarts
-- Image rebuilds (`docker compose up -d --build`)
-- `docker compose down` and back up
+- Image upgrades, whether rebuilt (`docker compose up -d --build`) or re-pulled (`docker pull` + recreate, see [Upgrading](#upgrading))
+- `docker compose down` and back up, or `docker stop`/`docker rm` and back up
 
 **Your data is lost only if you delete `./data/` on the host.** Never do this unless you intend to wipe everything.
 
-> ⚠️ `./data/settings.json` contains your API keys in plain text. Keep this directory out of version control (it is already in `.gitignore`).
+> ⚠️ Secrets live in `./data/credentials.json` (plain text, mode `0600` when possible). OS keystore mode is **not available in containers** — Docker always uses file storage on the data volume. Keep `./data` out of version control (already in `.gitignore`).
 
 ---
 
@@ -61,13 +81,15 @@ Set these in a `.env` file in the project root, or inline in `docker-compose.yml
 
 | Variable | Default | Description |
 |---|---|---|
+| `PORT_BACKEND` | `8001` | Port the backend listens on, and the host port published by `docker-compose.yml`. |
+| `PORT_FRONTEND` | `5173` | Vite dev/preview server port. Not used by the container, which serves the built frontend from the backend port. |
 | `BACKEND_HOST` | *(empty)* | Full URL of the backend, e.g. `https://api.example.com`. Leave empty when frontend and API share the same domain/port. |
 | `FRONTEND_HOST` | *(empty)* | Comma-separated allowed CORS origins, e.g. `https://council.example.com`. Leave empty when serving both from the same origin. |
 | `LLM_COUNCIL_ADMIN_TOKEN` | *(empty)* | Required for remote access to settings export/import/reset. When unset, those admin endpoints only accept direct loopback clients and reject proxied external clients. |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint. **Must be changed when using Docker** — see below. |
 | `FRONTEND_DIST_DIR` | `/app/frontend/dist` | Path to the compiled frontend. Do not change unless you know what you're doing. |
 
-`LLM_COUNCIL_BIND_HOST` and `LLM_COUNCIL_BIND_PORT` apply only to the local `python -m backend.main` dev launcher. Docker starts uvicorn directly with `--host 0.0.0.0 --port 8001`, so use Docker port publishing or reverse proxy settings instead of those variables for container deployments.
+`PORT_BACKEND` sets the port uvicorn listens on in both the local `python -m backend.main` dev launcher and the container (the entrypoint passes it to uvicorn, and `docker-compose.yml` publishes the same port on the host). When `BACKEND_HOST` is empty, the UI calls the API on the same origin as the page, so changing `PORT_BACKEND` at runtime does not require rebuilding the image. `LLM_COUNCIL_BIND_HOST` controls the bind address for the dev launcher only; `LLM_COUNCIL_BIND_PORT` still works as a legacy override for `PORT_BACKEND`.
 
 ### Example `.env`
 
@@ -151,7 +173,19 @@ Settings export/import/reset are admin endpoints because settings exports includ
 
 ## Upgrading
 
-Pull the latest code and rebuild. Your data is untouched.
+**Prebuilt image:** pull the new `:latest` and recreate the container. Your data (mounted at `./data`) is untouched.
+
+```bash
+docker pull ghcr.io/tzvikahe-ops/the-ai-counsel:latest
+docker stop the-ai-counsel && docker rm the-ai-counsel
+docker run -d --restart unless-stopped --name the-ai-counsel \
+  -p 8001:8001 -v ./data:/app/data \
+  ghcr.io/tzvikahe-ops/the-ai-counsel:latest
+```
+
+To pin to a known-good release instead of always tracking `latest`, use a version tag (e.g. `ghcr.io/tzvikahe-ops/the-ai-counsel:0.12.0`) in place of `:latest` above.
+
+**Built from source:** pull the latest code and rebuild.
 
 ```bash
 git pull
@@ -162,7 +196,7 @@ Docker layer caching means only changed layers rebuild. A typical upgrade (Pytho
 
 ### Migrating from LLM Council Plus
 
-If you're upgrading from the original `llm-council-plus` repo, see the full **[Migration Guide](MIGRATION.md)** — it covers Docker, local dev, MCP server re-registration, and skill symlinks. Your `data/` directory (settings, conversations, API keys) copies over directly with no schema changes.
+If you're upgrading from the original `llm-council-plus` repo, see the full **[Migration Guide](MIGRATION.md)** — it covers Docker, local dev, MCP server re-registration, and skill symlinks. Your `data/` directory copies over; on first launch after v0.11.0, any legacy keys in `settings.json` are moved into `credentials.json` automatically.
 
 ---
 
@@ -179,7 +213,7 @@ The `docker-compose.yml` sets `restart: unless-stopped`, so the container restar
 
 - The container runs as a non-root user (`appuser`) for reduced attack surface.
 - A healthcheck polls `/api/health` every 30 seconds. Docker will report the container as `unhealthy` if the backend stops responding, and `restart: unless-stopped` will restart it.
-- API keys are stored in plain text in `./data/settings.json`. Do not expose port `8001` to the public internet without authentication (use a reverse proxy with auth, or restrict access via firewall).
+- API keys and OAuth tokens are stored in plain text in `./data/credentials.json` (file mode only in Docker). See [`CREDENTIALS.md`](CREDENTIALS.md). Do not expose port `8001` to the public internet without authentication (use a reverse proxy with auth, or restrict access via firewall).
 
 ---
 
@@ -224,10 +258,10 @@ If you're running an older image, fix it manually:
 
 ```bash
 chmod 777 ./data
-docker compose restart
+docker compose restart   # or: docker restart the-ai-counsel
 ```
 
-Rebuilding from the latest image (`docker compose up -d --build`) fixes this permanently — the entrypoint now corrects ownership automatically on every startup.
+Upgrading to the latest image (see [Upgrading](#upgrading)) fixes this permanently — the entrypoint now corrects ownership automatically on every startup.
 
 ### Streaming responses don't work behind nginx
 

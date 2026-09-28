@@ -88,9 +88,9 @@ export default function Sidebar({
               style={{ color: 'inherit', textDecoration: 'none', borderBottom: '1px dotted currentColor', paddingBottom: '1px', opacity: 0.7, transition: 'opacity 0.2s', display: 'inline-block' }}
               onMouseEnter={e => e.target.style.opacity = '1'}
               onMouseLeave={e => e.target.style.opacity = '0.7'}
-            >Jacob Ben-David</a>
+            >jacob-bd</a>
           </div>
-          <div className="sidebar-version" lang="en" dir="ltr">v0.9.0-he.1</div>
+          <div className="sidebar-version" lang="en" dir="ltr">v0.13.1+he.1</div>
         </div>
         <div className="sidebar-header-actions">
           {onToggleTheme && (

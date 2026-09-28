@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { OAUTH_PROVIDERS } from '../../constants/oauthProviders';
 
 const DIRECT_PROVIDERS = [
     { id: 'openai', name: 'OpenAI', key: 'openai_api_key' },
@@ -61,6 +62,9 @@ export default function CouncilConfig({
             case 'nvidia': return !!settings?.nvidia_api_key_set;
             case 'opencode-zen': return !!settings?.opencode_api_key_set;
             case 'opencode-go': return !!settings?.opencode_api_key_set;
+            case 'xai-oauth': return !!settings?.xai_oauth_connected;
+            case 'openai-oauth': return !!settings?.openai_oauth_connected;
+            case 'github-copilot': return !!settings?.github_copilot_connected;
             default: return false;
         }
     };
@@ -71,7 +75,7 @@ export default function CouncilConfig({
                 <h3>{t('councilConfig.sourcesHeading')}</h3>
                 <p className="section-description">
                     {t('councilConfig.sourcesDescription')}
-                    <br /><em style={{ opacity: 0.7, fontSize: '12px' }}>{t('councilConfig.sourcesNote')}</em>
+                    <br /><em style={{ opacity: 0.7, fontSize: 'calc(12px * var(--font-scale))' }}>{t('councilConfig.sourcesNote')}</em>
                 </p>
 
                 <div className="hybrid-settings-card">
@@ -97,6 +101,43 @@ export default function CouncilConfig({
                                 )}
                             </span>
                         </label>
+                    </div>
+
+                    <div className="filter-divider"></div>
+
+                    {/* Subscription OAuth - top-level, independent of Remote APIs */}
+                    <div className="filter-group" style={{ marginBottom: '12px' }}>
+                        {OAUTH_PROVIDERS.map((provider) => {
+                            const configured = isSourceConfigured(provider.id);
+                            return (
+                                <label
+                                    key={provider.id}
+                                    className={`toggle-wrapper ${!configured ? 'source-disabled' : ''}`}
+                                    title={!configured ? t('councilConfig.notConnectedTooltip') : ''}
+                                >
+                                    <div className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={configured && !!enabledProviders[provider.id]}
+                                            disabled={!configured}
+                                            onChange={(e) => {
+                                                setEnabledProviders(prev => ({
+                                                    ...prev,
+                                                    [provider.id]: e.target.checked,
+                                                }));
+                                            }}
+                                        />
+                                        <span className="slider"></span>
+                                    </div>
+                                    <span className="toggle-text">
+                                        {provider.label}
+                                        {!configured && (
+                                            <span className="toggle-hint"> {t('councilConfig.notConnected')}</span>
+                                        )}
+                                    </span>
+                                </label>
+                            );
+                        })}
                     </div>
 
                     <div className="filter-divider"></div>
@@ -160,7 +201,7 @@ export default function CouncilConfig({
                                     />
                                     <span className="slider"></span>
                                 </div>
-                                <span className="toggle-text ltr" style={{ fontSize: '13px' }}>
+                                <span className="toggle-text ltr" style={{ fontSize: 'calc(13px * var(--font-scale))' }}>
                                     OpenRouter
                                     {!isSourceConfigured('openrouter') && (
                                         <span className="toggle-hint"> {t('councilConfig.notConfigured')}</span>
@@ -188,7 +229,7 @@ export default function CouncilConfig({
                                     />
                                     <span className="slider"></span>
                                 </div>
-                                <span className="toggle-text ltr" style={{ fontSize: '13px' }}>
+                                <span className="toggle-text ltr" style={{ fontSize: 'calc(13px * var(--font-scale))' }}>
                                     Groq
                                     {!isSourceConfigured('groq') && (
                                         <span className="toggle-hint"> {t('councilConfig.notConfigured')}</span>
@@ -213,11 +254,12 @@ export default function CouncilConfig({
                                         />
                                         <span className="slider"></span>
                                     </div>
-                                    <span className="toggle-text" style={{ fontSize: '13px' }}>{settings?.custom_endpoint_name || customEndpointName || t('councilConfig.customEndpointFallback')}</span>
+                                    <span className="toggle-text" style={{ fontSize: 'calc(13px * var(--font-scale))' }}>{settings?.custom_endpoint_name || customEndpointName || t('councilConfig.customEndpointFallback')}</span>
                                 </label>
                             )}
                         </div>
 
+                        <div className="direct-grid-label">{t('councilConfig.directConnections')}</div>
                         {/* Direct provider grid */}
                         <div className="direct-grid">
                             {DIRECT_PROVIDERS.map(dp => {
@@ -243,7 +285,7 @@ export default function CouncilConfig({
                                             />
                                             <span className="slider"></span>
                                         </div>
-                                        <span className="toggle-text ltr" style={{ fontSize: '13px' }}>
+                                        <span className="toggle-text ltr" style={{ fontSize: 'calc(13px * var(--font-scale))' }}>
                                             {dp.name}
                                         </span>
                                     </label>
@@ -263,7 +305,7 @@ export default function CouncilConfig({
                 {/* Council Heat (Stage 1) */}
                 <div className="subsection">
                     <div className="heat-slider-header">
-                        <h4>{t('councilConfig.councilHeat')} <span style={{ fontWeight: 400, fontSize: '12px', opacity: 0.5 }}>{t('councilConfig.councilHeatStage')}</span></h4>
+                        <h4>{t('councilConfig.councilHeat')} <span style={{ fontWeight: 400, fontSize: 'calc(12px * var(--font-scale))', opacity: 0.5 }}>{t('councilConfig.councilHeatStage')}</span></h4>
                         <span className="heat-value ltr">{councilTemperature.toFixed(1)}</span>
                     </div>
                     <div className="heat-slider-container">
@@ -290,7 +332,7 @@ export default function CouncilConfig({
                 {/* Peer Ranking Heat (Stage 2) */}
                 <div className="subsection" style={{ marginTop: '20px' }}>
                     <div className="heat-slider-header">
-                        <h4>{t('councilConfig.peerRankingHeat')} <span style={{ fontWeight: 400, fontSize: '12px', opacity: 0.5 }}>{t('councilConfig.peerRankingStage')}</span></h4>
+                        <h4>{t('councilConfig.peerRankingHeat')} <span style={{ fontWeight: 400, fontSize: 'calc(12px * var(--font-scale))', opacity: 0.5 }}>{t('councilConfig.peerRankingStage')}</span></h4>
                         <span className="heat-value ltr">{stage2Temperature.toFixed(1)}</span>
                     </div>
                     <div className="heat-slider-container">
@@ -311,7 +353,7 @@ export default function CouncilConfig({
                 {/* Chairman Heat (Stage 3) */}
                 <div className="subsection" style={{ marginTop: '20px' }}>
                     <div className="heat-slider-header">
-                        <h4>{t('councilConfig.chairmanHeat')} <span style={{ fontWeight: 400, fontSize: '12px', opacity: 0.5 }}>{t('councilConfig.chairmanStage')}</span></h4>
+                        <h4>{t('councilConfig.chairmanHeat')} <span style={{ fontWeight: 400, fontSize: 'calc(12px * var(--font-scale))', opacity: 0.5 }}>{t('councilConfig.chairmanStage')}</span></h4>
                         <span className="heat-value ltr">{chairmanTemperature.toFixed(1)}</span>
                     </div>
                     <div className="heat-slider-container">

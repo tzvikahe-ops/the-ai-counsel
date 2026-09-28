@@ -7,9 +7,9 @@ from typing import Any
 
 from ..client import CouncilClient
 from .. import presets as preset_ops
-from ..stream_buffer import buffer_debate
+from ..stream_buffer import buffer_debate, wrap_with_progress
 
-VALID_PERSONA_IDS = (
+BUILTIN_PERSONA_IDS = (
     "skeptic, pragmatist, innovator, historian, ethicist, analyst, contrarian, "
     "strategist, humanist, risk-assessor, comedian, economist"
 )
@@ -20,7 +20,7 @@ def register(server: Any, base_url: str) -> None:
 
     @server.tool(description=(
         "Run a named-persona advisor debate for decisions, risks, strategy, or tradeoffs. "
-        "Requires question + 2-4 persona_ids. Optional: default_model, "
+        "Requires question + 2-4 persona_ids from the personas list, including custom personas. Optional: default_model, "
         "model_assignments, max_rounds (3-10), search_provider. Results include "
         "usage/cost details, word-limit warnings, and a cost_report."
     ))
@@ -31,6 +31,7 @@ def register(server: Any, base_url: str) -> None:
         model_assignments: dict | None = None,
         max_rounds: int = 3,
         search_provider: str | None = None,
+        documents: list[dict] | None = None,
     ) -> str:
         if len(persona_ids) < 2:
             return "Error: at least 2 persona_ids are required."
@@ -41,6 +42,7 @@ def register(server: Any, base_url: str) -> None:
 
         try:
             async with CouncilClient(base_url) as client:
+                prepared_documents = await client.prepare_documents(documents)
                 conv = await client.create_conversation()
                 conversation_id = conv["id"]
                 events = client.stream_debate(
@@ -51,7 +53,9 @@ def register(server: Any, base_url: str) -> None:
                     model_assignments=model_assignments,
                     max_rounds=max_rounds,
                     search_provider=search_provider,
+                    documents=prepared_documents,
                 )
+                events = wrap_with_progress(events)
                 result = await buffer_debate(events, conversation_id)
             return json.dumps(result, indent=2)
         except Exception as exc:
@@ -155,8 +159,9 @@ def register(server: Any, base_url: str) -> None:
             return json.dumps({"status": "error", "message": str(exc)}, indent=2)
 
     @server.tool(description=(
-        "Manage advisor personas. action: 'list', 'get', 'update', 'reset'. "
-        f"Valid persona IDs: {VALID_PERSONA_IDS}."
+        "List, inspect, update, or reset advisor personas. action: 'list', 'get', 'update', 'reset'. "
+        "Custom persona creation and deletion are available in Advisor Setup or through the REST API. "
+        f"Built-in persona IDs: {BUILTIN_PERSONA_IDS}."
     ))
     async def personas(
         action: str,

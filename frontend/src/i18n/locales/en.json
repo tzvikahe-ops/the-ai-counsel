@@ -295,7 +295,23 @@
       "confirmItem8": "Ollama URL → localhost:11434",
       "confirmSafe": "✓ API keys will be PRESERVED",
       "confirmCancel": "Cancel",
-      "confirmReset": "Confirm Reset"
+      "confirmReset": "Confirm Reset",
+      "disconnectAllDesc": "Disconnect every LLM API key, search key, and subscription OAuth login. Council models, prompts, and other settings are left alone. Env-provided keys are ignored until you save a new key.",
+      "disconnectAllBtn": "Disconnect All Providers",
+      "disconnectingAll": "Disconnecting…",
+      "disconnectAllConfirmTitle": "Disconnect all providers?",
+      "disconnectAllConfirmPrompt": "This removes every stored API key and OAuth login from the credential store.",
+      "disconnectAllConfirmListIntro": "This will clear:",
+      "disconnectAllConfirmItem1": "OpenRouter, Groq, OpenCode, and direct provider keys",
+      "disconnectAllConfirmItem2": "Search provider keys (Tavily, Brave, Serper, TinyFish)",
+      "disconnectAllConfirmItem3": "Subscription OAuth (xAI, ChatGPT, Copilot)",
+      "disconnectAllConfirmItem4": "Custom endpoint URL / name",
+      "disconnectAllConfirmItem5": "Provider toggles → all disabled",
+      "disconnectAllConfirmSafe": "✓ Council models, prompts, and other settings are kept",
+      "disconnectAllConfirmButton": "Disconnect All",
+      "defaultsLoadedRelayImport": "Relay-ai credentials imported successfully!",
+      "disconnectAllSuccess": "Disconnected all providers ({{count}} credentials cleared).",
+      "failedToDisconnectAll": "Failed to disconnect all providers"
     },
     "errors": {
       "failedToSave": "Failed to save settings",
@@ -329,7 +345,31 @@
     "sidebarPreview": "Sidebar preview:",
     "responseLanguage": "Response Language",
     "responseLanguageDescription": "Council and advisor models will be instructed to respond in this language. Conversation titles and internal search queries stay in English.",
-    "modelResponses": "Model responses"
+    "modelResponses": "Model responses",
+    "relayImport": {
+      "heading": "Import from relay-ai",
+      "description": "Copy credentials from a local relay-ai install (OS keystore). Imported keys are saved to your chosen credential store (local file or OS keystore) - not into settings.json - so Retest works without re-pasting. Click Discover only when you want to scan; macOS Keychain may ask once per credential (use Always Allow). Import may ask again for large/chunked secrets.",
+      "bannerFound_one": "Found {{count}} credential in relay-ai that can be imported.",
+      "bannerFound_other": "Found {{count}} credentials in relay-ai that can be imported.",
+      "dismiss": "Dismiss",
+      "discovering": "Discovering…",
+      "discoverCredentials": "Discover credentials",
+      "importing": "Importing…",
+      "importSelected": "Import selected ({{count}})",
+      "dismissNotice": "Dismiss notice",
+      "alreadyInCounsel": "· already in Counsel",
+      "importSuccess_one": "✓ Imported successfully - {{count}} credential added.",
+      "importSuccess_other": "✓ Imported successfully - {{count}} credentials added.",
+      "importSkipped": " {{count}} skipped.",
+      "importFailed": " {{count}} failed.",
+      "importFailedGeneric": "Failed to import credentials"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "hint": "Scales all text across the application. Saves automatically.",
+      "default": "Default",
+      "large": "Large"
+    }
   },
   "providers": {
     "heading": "LLM API Keys",
@@ -355,7 +395,7 @@
     "apiKeyConfigured": "✓ API key configured",
     "modelsAvailableSuffix": "models available",
     "opencodeHeading": "OpenCode (Zen + Go)",
-    "opencodeDescription": "One OpenCode API key unlocks Zen (curated, per-token) and Go (subscription). v1 supports OpenAI-compatible chat/completions models only.",
+    "opencodeDescription": "One OpenCode API key unlocks Zen (curated, per-token) and Go (subscription). v1 supports OpenAI-compatible chat/completions models only - GPT Responses, Claude Messages, and per-model Gemini endpoints are not yet wired up.",
     "opencodeApiKey": "OpenCode API Key",
     "opencodeHint": "Get a key at",
     "customHeading": "Custom OpenAI-Compatible Endpoint",
@@ -365,7 +405,54 @@
     "baseUrl": "Base URL",
     "apiKeyLabel": "API Key",
     "optionalLocal": "(optional for local servers)",
-    "endpointConfigured": "✓ Endpoint configured"
+    "endpointConfigured": "✓ Endpoint configured",
+    "oauth": {
+      "heading": "Subscription Logins",
+      "description": "Connect paid subscriptions via OAuth device login. These use your personal subscription through third-party tooling - not official API billing. Use at your own discretion.",
+      "connected": "✓ Connected",
+      "freePlan": "· Free plan",
+      "paidPlan": "· Paid",
+      "paidPlanNamed": "· Paid ({{plan}})",
+      "modelsAvailable": "· {{count}} models available",
+      "disconnecting": "Disconnecting…",
+      "starting": "Starting…",
+      "verificationInstructions": "Open the verification page and enter this code:",
+      "openVerificationPage": "Open verification page",
+      "waitingForAuth": "Waiting for authorization…",
+      "authFailedOrExpired": "Authorization failed or expired",
+      "notConnectedTooltip": "Not connected - sign in under LLM API Keys → Subscription Logins",
+      "notConnected": "· not connected",
+      "providerDescriptions": {
+        "xai-oauth": "Use your SuperGrok subscription via OAuth device login.",
+        "openai-oauth": "Use ChatGPT Plus or Pro models via OAuth device login.",
+        "github-copilot": "Use GitHub Copilot models via OAuth device login."
+      }
+    },
+    "ollamaRunningNotEnabled": "Ollama is running - click Connect to enable it as a provider",
+    "credentialStorage": {
+      "heading": "Where secrets are stored",
+      "description": "Choose where API keys and OAuth tokens are kept on this machine.",
+      "currentlyUsing": "Currently using {{mode}} (effective).",
+      "encryptedFile": "Local file (data volume)",
+      "osKeystore": "OS keystore (Keychain / Credential Manager)",
+      "relayLinkText": "relay-ai",
+      "settingsGeneralLink": "Settings → General",
+      "relayHintPrefix": "Using",
+      "relayHintMiddle": "? Import its credentials from",
+      "relayHintSuffix": ". Imports go into this credential store (not settings.json).",
+      "moveTitle": "Move credentials?",
+      "movePrompt_one": "Move {{count}} stored credential from {{from}} to {{to}}?",
+      "movePrompt_other": "Move {{count}} stored credentials from {{from}} to {{to}}?",
+      "moveHint": "Existing credentials are removed from the old location after a successful copy.",
+      "moving": "Moving…",
+      "moveButton": "Move credentials",
+      "encryptedFileShort": "local file",
+      "osKeystoreShort": "OS keystore"
+    },
+    "failedToDisconnect": "Failed to disconnect {{label}}",
+    "failedToDisconnectOllama": "Failed to disconnect Ollama",
+    "failedToMigrateCredentials": "Failed to migrate credentials",
+    "failedToDismissBanner": "Failed to dismiss banner"
   },
   "councilConfig": {
     "sourcesHeading": "Available Model Sources",
@@ -387,7 +474,8 @@
     "fixedTempWarningChairman": "This model enforces fixed temperature and will ignore this setting.",
     "tooltipOllama": "Not configured - connect Ollama in LLM API Keys",
     "tooltipApiKey": "Not configured - add API key in LLM API Keys",
-    "tooltipSourceMissing": "SOURCE NOT CONFIGURED - Add API key in LLM API Keys"
+    "tooltipSourceMissing": "SOURCE NOT CONFIGURED - Add API key in LLM API Keys",
+    "directConnections": "Direct connections"
   },
   "debate": {
     "heading": "Council Debate Config",
@@ -609,7 +697,23 @@
     "useRecommended": "Use recommended",
     "verdictModel": "Verdict model",
     "saveCurrentAs": "Save current as…",
-    "customLineup": "Custom lineup"
+    "customLineup": "Custom lineup",
+    "newAdvisorTitle": "New Advisor",
+    "createAdvisor": "Create Advisor",
+    "namePlaceholder": "e.g. The Futurist",
+    "rolePlaceholder": "e.g. Trend Forecaster",
+    "descriptionPlaceholder": "Shown on the advisor card in the gallery",
+    "addAdvisor": "Add Advisor",
+    "addAdvisorDesc": "Create a custom persona with your own system prompt",
+    "deleteConfirm": "Delete {{name}}? Saved presets will remove this advisor.",
+    "thisAdvisor": "this advisor",
+    "errors": {
+      "nameRoleSystemPromptRequired": "Name, role, and system prompt are required.",
+      "createFailed": "Failed to create advisor:",
+      "saveFailed": "Failed to save persona:",
+      "resetFailed": "Failed to reset persona:",
+      "deleteFailed": "Failed to delete advisor:"
+    }
   },
   "search": {
     "providerHeading": "Web Search Provider",
@@ -651,5 +755,31 @@
     "filtered": "(filtered)",
     "noModelsFound": "No models found",
     "loadingModels": "Loading models..."
+  },
+  "documentUpload": {
+    "attachTitle": "Attach documents",
+    "attach": "Attach",
+    "extracting": "Extracting",
+    "removeTitle": "Remove {{name}}",
+    "charsUnit": "{{count}} chars",
+    "trimmed": "trimmed",
+    "errors": {
+      "invalidFilename": "Invalid filename.",
+      "tooManyDocuments": "Too many documents. Maximum is {{max}}.",
+      "invalidDocumentObject": "Each document must be an object.",
+      "tooLarge": "{{name}} is too large.",
+      "invalidBase64": "{{name}} is not valid base64.",
+      "exceedsTextLimit": "{{name}} exceeds the per-document text limit.",
+      "invalidPdf": "{{name}} is not a valid PDF.",
+      "unsupportedType": "{{name}} has an unsupported file type.",
+      "ocrTimedOut": "OCR timed out.",
+      "ocrFailed": "OCR failed: {{message}}",
+      "tooManyPages": "{{name}} has too many pages. Maximum is {{max}}.",
+      "encrypted": "{{name}} is encrypted and cannot be opened.",
+      "extractionFailed": "Failed to extract document text.",
+      "textTruncated": "Document text was truncated.",
+      "ocrSkipped": "OCR skipped because {{count}} pages need OCR and the limit is {{max}}.",
+      "ocrUnavailable": "OCR is unavailable or disabled; some scanned/image-only pages may be missing text."
+    }
   }
 }

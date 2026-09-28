@@ -1,0 +1,135 @@
+name: Test & Publish Docker Image
+
+# Runs the backend test suite (blocking) and frontend lint (advisory
+# only, see below) on pushes to main and release tags. Only pushes to
+# main publish `latest`; a matching `vX.Y.Z` release tag publishes the
+# corresponding `X.Y.Z` image tag. Manual runs execute tests but never
+# publish an image.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    name: Run test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install backend dependencies
+        run: uv sync --frozen
+
+      - name: Run backend test suite
+        run: uv run pytest
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Lint frontend
+        # Non-blocking: the codebase currently has pre-existing lint errors
+        # unrelated to any given change. This keeps lint output visible in
+        # CI without gating the Docker publish on unrelated legacy debt.
+        run: npm run lint
+        working-directory: frontend
+        continue-on-error: true
+
+  publish:
+    name: Build and push Docker image
+    needs: test
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
+    concurrency:
+      # Serialize writes to each registry tag. GitHub keeps the newest
+      # pending run, while an in-flight publish is allowed to finish.
+      group: docker-publish-${{ github.ref }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute lowercase image repository
+        id: image
+        run: |
+          echo "repo=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Read project version from pyproject.toml
+        id: version
+        run: |
+          version=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release tag
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        env:
+          PROJECT_VERSION: ${{ steps.version.outputs.value }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          expected_tag="v${PROJECT_VERSION}"
+          if [[ "${RELEASE_TAG}" != "${expected_tag}" ]]; then
+            echo "Release tag ${RELEASE_TAG} does not match project version ${PROJECT_VERSION}."
+            exit 1
+          fi
+
+      - name: Build image with docker compose
+        run: docker compose build
+
+      - name: Verify publish target is current
+        id: publish_gate
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          PROJECT_VERSION: ${{ steps.version.outputs.value }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${REF}" == "refs/heads/main" ]]; then
+            current_sha="$(git ls-remote origin refs/heads/main | awk 'NR == 1 { print $1 }')"
+            if [[ "${current_sha}" != "${EXPECTED_SHA}" ]]; then
+              echo "Skipping stale main run ${EXPECTED_SHA}; main is now ${current_sha}."
+              echo "should_publish=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${PROJECT_VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "should_publish=true" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        if: steps.publish_gate.outputs.should_publish == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag image for GHCR
+        if: steps.publish_gate.outputs.should_publish == 'true'
+        run: |
+          docker tag the-ai-counsel:latest ${{ steps.image.outputs.repo }}:${{ steps.publish_gate.outputs.tag }}
+
+      - name: Push image to GHCR
+        if: steps.publish_gate.outputs.should_publish == 'true'
+        run: |
+          docker push ${{ steps.image.outputs.repo }}:${{ steps.publish_gate.outputs.tag }}

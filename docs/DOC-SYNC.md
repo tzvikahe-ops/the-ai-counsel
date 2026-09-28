@@ -33,20 +33,31 @@ When bumping version, update **all three together** (see `AGENTS.md` → Version
 | `AGENTS.md` | Settings UI section, storage notes |
 | `README.md` | Configuration / first-time setup if user-facing |
 | `docs/QUICKSTART.md` | Setup steps |
+| `docs/CREDENTIALS.md` | Secret storage, Disconnect, relay-ai import, file↔keychain |
 | `the_ai_counsel_mcp/tools/*.py` | Tool descriptions + returned JSON shape |
 | `the_ai_counsel_mcp/tests/test_tools_*.py` | Assertions on new fields |
 | `CHANGELOG.md` | Added/changed/fixed |
+
+### Credentials / OAuth / relay-ai import
+
+| File | Action |
+|------|--------|
+| `docs/CREDENTIALS.md` | User-facing source of truth for storage modes and import/migrate |
+| `skills/the-ai-counsel-api/SKILL.md` | REST credential endpoints, Retest/store rules, disconnect-all |
+| `docs/DOCKER.md` / `docs/MIGRATION.md` | `credentials.json` vs `settings.json` |
+| `AGENTS.md` | Settings section 2 (LLM API Keys) + Backup Disconnect All |
+| `CHANGELOG.md` | |
 
 ### General settings / response language
 
 | File | Action |
 |------|--------|
 | `backend/prompts.py` | `VALID_RESPONSE_LANGUAGES`, `apply_response_language()` — injected before council/advisor/debate prompts; title/search query stay English |
-| `backend/settings.py` | `response_language` field; invalid values fall back to English on load/import |
-| `frontend/src/components/GeneralSettings.jsx` | Date format + response language (Settings → General) |
-| `skills/the-ai-counsel-api/SKILL.md` | GET keys `response_language`, `valid_response_languages`, `response_language_default` |
-| `AGENTS.md` | 8-section Settings list; General first; auto-save behavior |
-| `CHANGELOG.md` | User-facing General section and language list |
+| `backend/settings.py` | `response_language` and `font_size` fields; invalid display values fall back to safe defaults on load/import |
+| `frontend/src/components/settings/GeneralSettings.jsx` | Date format, accessible font size, response language, relay-ai import (Settings → General) |
+| `skills/the-ai-counsel-api/SKILL.md` | GET keys `font_size`, `response_language`, `valid_response_languages`, `response_language_default` |
+| `AGENTS.md` | 8-section Settings list; General first; auto-save behavior and font-size scale |
+| `CHANGELOG.md` | User-facing General section, accessibility preference, and language list |
 
 ### Council behavior (members, chairman, streaming, execution modes)
 
@@ -154,6 +165,13 @@ Document these consistently everywhere they appear:
 - MCP: `advisor_settings` action `get` returns presets; preset CRUD via `advisor_settings` preset actions (REST fallback: `PUT /api/settings`)
 
 ---
+
+## Shipped in v0.11.0 (credentials / OAuth)
+
+- [x] Credential store (`credentials.json` / OS keystore `the-ai-counsel`) — `docs/CREDENTIALS.md`, SKILL Credentials section, README/DOCKER/QUICKSTART/MIGRATION
+- [x] Subscription OAuth + Copilot plan filtering — SKILL prefixes, CHANGELOG, Settings UI
+- [x] relay-ai import (General) + Disconnect All (Backup & Reset) — SKILL REST table, CREDENTIALS.md
+- [x] Retest / Disconnect env-override behavior — SKILL + CREDENTIALS.md
 
 ## Shipped in v0.5.2 (sync verified)
 

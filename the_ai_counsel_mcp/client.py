@@ -4,17 +4,23 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
 
 
+def default_base_url() -> str:
+    """Backend base URL, following PORT_BACKEND from the environment/.env."""
+    return f"http://localhost:{os.getenv('PORT_BACKEND', '8001')}"
+
+
 class CouncilClient:
     """Async HTTP client for The AI Counsel REST API."""
 
-    def __init__(self, base_url: str = "http://localhost:8001", timeout: float = 180.0):
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, base_url: str | None = None, timeout: float = 180.0):
+        self.base_url = (base_url or default_base_url()).rstrip("/")
         self.timeout = timeout
         self._client: httpx.AsyncClient | None = None
 
@@ -160,6 +166,7 @@ class CouncilClient:
         chairman_model: str | None = None,
         web_search: bool = False,
         execution_mode: str = "chat_only",
+        documents: list[dict] | None = None,
     ) -> dict:
         """One-shot query via POST /api/ask. No conversation state."""
         payload: dict[str, Any] = {
@@ -171,9 +178,27 @@ class CouncilClient:
             payload["models"] = models
         if chairman_model:
             payload["chairman_model"] = chairman_model
+        if documents:
+            payload["documents"] = documents
         resp = await self.client.post(f"{self.base_url}/api/ask", json=payload)
         resp.raise_for_status()
         return resp.json()
+
+    async def extract_documents(self, documents: list[dict]) -> dict:
+        resp = await self.client.post(
+            f"{self.base_url}/api/documents/extract-json",
+            json={"documents": documents},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def prepare_documents(self, documents: list[dict] | None) -> list[dict] | None:
+        if not documents:
+            return None
+        if any(doc.get("data_base64") for doc in documents if isinstance(doc, dict)):
+            extracted = await self.extract_documents(documents)
+            return extracted.get("documents", [])
+        return documents
 
     # ── Streaming ─────────────────────────────────────────────────────────────
 
@@ -185,6 +210,7 @@ class CouncilClient:
         execution_mode: str = "full",
         council_models: list[str] | None = None,
         chairman_model: str | None = None,
+        documents: list[dict] | None = None,
     ) -> AsyncIterator[dict]:
         """Stream SSE events from the backend.
 
@@ -202,6 +228,8 @@ class CouncilClient:
             payload["council_models"] = council_models
         if chairman_model:
             payload["chairman_model"] = chairman_model
+        if documents:
+            payload["documents"] = documents
         async with self.client.stream("POST", url, json=payload) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():
@@ -221,6 +249,7 @@ class CouncilClient:
         council_models: list[str] | None = None,
         chairman_model: str | None = None,
         debate_rounds: int | None = None,
+        documents: list[dict] | None = None,
     ) -> AsyncIterator[dict]:
         """Stream SSE events from the multi-round iterative debate endpoint.
 
@@ -238,6 +267,8 @@ class CouncilClient:
             payload["chairman_model"] = chairman_model
         if debate_rounds is not None:
             payload["debate_rounds"] = debate_rounds
+        if documents:
+            payload["documents"] = documents
         async with self.client.stream("POST", url, json=payload) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():
@@ -281,6 +312,7 @@ class CouncilClient:
         model_assignments: dict | None = None,
         max_rounds: int = 3,
         search_provider: str | None = None,
+        documents: list[dict] | None = None,
     ) -> AsyncIterator[dict]:
         """Stream SSE events from an advisor debate.
 
@@ -298,6 +330,8 @@ class CouncilClient:
             "default_model": default_model,
             "model_assignments": model_assignments,
         }
+        if documents:
+            payload["documents"] = documents
         async with self.client.stream("POST", url, json=payload) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():

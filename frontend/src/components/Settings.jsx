@@ -9,6 +9,8 @@ import PromptSettings from './settings/PromptSettings';
 import DebateSettings from './settings/DebateSettings';
 import GeneralSettings, { RESPONSE_LANGUAGE_DEFAULT } from './settings/GeneralSettings';
 import { RESPONSE_LANGUAGES_FALLBACK } from '../constants/responseLanguages';
+import { normalizeFontSize } from '../utils/fontSize';
+import { countStoredCredentials, filterOAuthModels, OAUTH_PROVIDERS } from '../constants/oauthProviders';
 import './Settings.css';
 
 const PROMPT_FIELDS = [
@@ -48,6 +50,9 @@ const normalizeEnabledProviders = (enabledProviders, data, ollamaConnected) => (
   groq: !!enabledProviders?.groq && !!data?.groq_api_key_set,
   direct: !!enabledProviders?.direct && hasAnyDirectKey(data),
   custom: !!enabledProviders?.custom && !!data?.custom_endpoint_url,
+  'xai-oauth': !!enabledProviders?.['xai-oauth'] && !!data?.xai_oauth_connected,
+  'openai-oauth': !!enabledProviders?.['openai-oauth'] && !!data?.openai_oauth_connected,
+  'github-copilot': !!enabledProviders?.['github-copilot'] && !!data?.github_copilot_connected,
 });
 
 const normalizeDirectProviderToggles = (toggles, data) => ({
@@ -61,7 +66,7 @@ const normalizeDirectProviderToggles = (toggles, data) => ({
   'opencode-go': !!toggles?.['opencode-go'] && !!data?.opencode_api_key_set,
 });
 
-export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initialSection = 'llm_keys' }) {
+export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initialSection = 'llm_keys', onFontSizeChange }) {
   const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState(initialSection);
 
@@ -72,6 +77,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
   const [searchResultCount, setSearchResultCount] = useState(8);
   const [searchHybridMode, setSearchHybridMode] = useState(true);
   const [dateFormat, setDateFormat] = useState('auto');
+  const [fontSize, setFontSize] = useState('default');
   const [responseLanguage, setResponseLanguage] = useState(RESPONSE_LANGUAGE_DEFAULT);
   const [responseLanguages, setResponseLanguages] = useState(RESPONSE_LANGUAGES_FALLBACK);
 
@@ -135,14 +141,28 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
   const [isTestingTinyfish, setIsTestingTinyfish] = useState(false);
   const [tinyfishTestResult, setTinyfishTestResult] = useState(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showDisconnectAllConfirm, setShowDisconnectAllConfirm] = useState(false);
+  const [disconnectAllBusy, setDisconnectAllBusy] = useState(false);
+  const [credentialStorageTarget, setCredentialStorageTarget] = useState(null);
+  const [credentialStorageBusy, setCredentialStorageBusy] = useState(false);
+  const [relayItems, setRelayItems] = useState([]);
+  const [relayDiscoverReason, setRelayDiscoverReason] = useState(null);
+  const [relaySelected, setRelaySelected] = useState([]);
+  const [relayDiscoverBusy, setRelayDiscoverBusy] = useState(false);
+  const [relayImportBusy, setRelayImportBusy] = useState(false);
+  const [relayImportMessage, setRelayImportMessage] = useState(null);
+  const [relayBannerVisible, setRelayBannerVisible] = useState(false);
 
   // Enabled Providers (which sources are available)
   const [enabledProviders, setEnabledProviders] = useState({
     openrouter: true,
     ollama: false,
     groq: false,
-    direct: false,  // Master toggle for all direct connections
-    custom: false   // Custom OpenAI-compatible endpoint
+    direct: false,
+    custom: false,
+    'xai-oauth': false,
+    'openai-oauth': false,
+    'github-copilot': false,
   });
 
   // Individual direct provider toggles
@@ -180,6 +200,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
 
   
@@ -212,6 +233,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       searchHybridMode !== (settings.search_hybrid_mode ?? true) ||
       showFreeOnly !== (settings.show_free_only ?? false) ||
       dateFormat !== (settings.date_format || 'auto') ||
+      fontSize !== normalizeFontSize(settings.font_size) ||
       responseLanguage !== (settings.response_language || RESPONSE_LANGUAGE_DEFAULT) ||
       JSON.stringify(enabledProviders) !== JSON.stringify(settings.enabled_providers) ||
       JSON.stringify(directProviderToggles) !== JSON.stringify(settings.direct_provider_toggles) ||
@@ -255,6 +277,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
           search_hybrid_mode: searchHybridMode,
           show_free_only: showFreeOnly,
           date_format: dateFormat,
+          font_size: fontSize,
           response_language: responseLanguage,
           enabled_providers: enabledProviders,
           direct_provider_toggles: directProviderToggles,
@@ -297,6 +320,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
     searchHybridMode,
     showFreeOnly,
     dateFormat,
+    fontSize,
     responseLanguage,
     enabledProviders,
     directProviderToggles,
@@ -315,7 +339,11 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
   ]);
 
   // Helper to determine if filters need to switch based on availability
-  const isRemoteAvailable = enabledProviders.openrouter || enabledProviders.direct || enabledProviders.groq || enabledProviders.custom;
+  const isRemoteAvailable = enabledProviders.openrouter
+    || enabledProviders.direct
+    || enabledProviders.groq
+    || enabledProviders.custom
+    || OAUTH_PROVIDERS.some((p) => enabledProviders[p.id]);
   const isLocalAvailable = enabledProviders.ollama;
 
   const getNewFilter = (currentFilter) => {
@@ -415,6 +443,9 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       setSearchHybridMode(data.search_hybrid_mode ?? true);
       setShowFreeOnly(data.show_free_only ?? false);
       setDateFormat(data.date_format || 'auto');
+      const loadedFontSize = normalizeFontSize(data.font_size);
+      setFontSize(loadedFontSize);
+      onFontSizeChange?.(loadedFontSize);
       setResponseLanguage(data.response_language || RESPONSE_LANGUAGE_DEFAULT);
       setResponseLanguages(
         Array.isArray(data.valid_response_languages) && data.valid_response_languages.length > 0
@@ -589,11 +620,14 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
 
       // Auto-save if connection succeeds
       if (result.success) {
+        const nextEnabled = { ...enabledProviders, custom: true };
         await api.updateSettings({
           custom_endpoint_name: customEndpointName,
           custom_endpoint_url: customEndpointUrl,
-          custom_endpoint_api_key: customEndpointApiKey || null
+          custom_endpoint_api_key: customEndpointApiKey || null,
+          enabled_providers: nextEnabled
         });
+        setEnabledProviders(nextEnabled);
         // Reload settings to get the updated state
         const updatedSettings = await api.getSettings();
         setSettings(updatedSettings);
@@ -615,6 +649,44 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
     setCustomEndpointTestResult(null);
   };
 
+  const handleDisconnectProviderKey = async ({
+    secretField,
+    label = 'provider',
+    enabledPatch = null,
+    directTogglePatch = null,
+    extraUpdates = null,
+    onLocalClear,
+  }) => {
+    try {
+      setError(null);
+      const updates = { [secretField]: '', ...(extraUpdates || {}) };
+      if (enabledPatch) {
+        updates.enabled_providers = { ...enabledProviders, ...enabledPatch };
+      }
+      if (directTogglePatch) {
+        updates.direct_provider_toggles = { ...directProviderToggles, ...directTogglePatch };
+      }
+      const result = await api.updateSettings(updates);
+      onLocalClear?.();
+      if (enabledPatch) {
+        setEnabledProviders((prev) => ({ ...prev, ...enabledPatch }));
+      }
+      if (directTogglePatch) {
+        setDirectProviderToggles((prev) => ({ ...prev, ...directTogglePatch }));
+      }
+      // Prefer server response so UI clears even before a full reload.
+      if (result && typeof result === 'object') {
+        setSettings((prev) => ({ ...prev, ...result }));
+      }
+      await loadSettings();
+      await loadModels();
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err.message || t('providers.failedToDisconnect', { label }));
+    }
+  };
+
   const handleClearCustomEndpoint = async () => {
     try {
       await api.updateSettings({
@@ -624,13 +696,81 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         enabled_providers: { ...enabledProviders, custom: false },
       });
       resetCustomEndpointLocalState();
-      setEnabledProviders(prev => ({ ...prev, custom: false }));
+      setEnabledProviders((prev) => ({ ...prev, custom: false }));
       await loadSettings();
+      await loadModels();
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch {
       setError(t('settingsShell.errors.failedToDisconnectCustom'));
     }
+  };
+
+  const handleDisconnectOpenRouter = () => handleDisconnectProviderKey({
+    secretField: 'openrouter_api_key',
+    label: 'OpenRouter',
+    enabledPatch: { openrouter: false },
+    onLocalClear: () => {
+      setOpenrouterApiKey('');
+      setOpenrouterTestResult(null);
+    },
+  });
+
+  const handleDisconnectGroq = () => handleDisconnectProviderKey({
+    secretField: 'groq_api_key',
+    label: 'Groq',
+    enabledPatch: { groq: false },
+    onLocalClear: () => {
+      setGroqApiKey('');
+      setGroqTestResult(null);
+    },
+  });
+
+  const handleDisconnectDirectKey = (providerId, keyField) => handleDisconnectProviderKey({
+    secretField: keyField,
+    label: providerId,
+    directTogglePatch: { [providerId]: false },
+    onLocalClear: () => {
+      setDirectKeys((prev) => ({ ...prev, [keyField]: '' }));
+      setKeyValidationStatus((prev) => {
+        const next = { ...prev };
+        delete next[providerId];
+        return next;
+      });
+    },
+  });
+
+  const handleDisconnectOpencode = () => handleDisconnectProviderKey({
+    secretField: 'opencode_api_key',
+    label: 'OpenCode',
+    directTogglePatch: { 'opencode-zen': false, 'opencode-go': false },
+    onLocalClear: () => {
+      setOpencodeApiKey('');
+      setOpencodeTestResult(null);
+    },
+  });
+
+  const handleDisconnectSearchKey = (providerId) => {
+    const field = `${providerId}_api_key`;
+    const localClearers = {
+      serper: () => { setSerperApiKey(''); setSerperTestResult(null); },
+      tavily: () => { setTavilyApiKey(''); setTavilyTestResult(null); },
+      brave: () => { setBraveApiKey(''); setBraveTestResult(null); },
+      tinyfish: () => { setTinyfishApiKey(''); setTinyfishTestResult(null); },
+    };
+    return handleDisconnectProviderKey({
+      secretField: field,
+      label: providerId,
+      extraUpdates: selectedSearchProvider === providerId
+        ? { search_provider: 'duckduckgo' }
+        : null,
+      onLocalClear: () => {
+        localClearers[providerId]?.();
+        if (selectedSearchProvider === providerId) {
+          setSelectedSearchProvider('duckduckgo');
+        }
+      },
+    });
   };
 
   const handleTestSerper = async () => {
@@ -783,8 +923,13 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
 
       // Auto-save API key if validation succeeds and a new key was provided
       if (result.success && openrouterApiKey) {
-        await api.updateSettings({ openrouter_api_key: openrouterApiKey });
+        const nextEnabled = { ...enabledProviders, openrouter: true };
+        await api.updateSettings({
+          openrouter_api_key: openrouterApiKey,
+          enabled_providers: nextEnabled
+        });
         setOpenrouterApiKey(''); // Clear input after save
+        setEnabledProviders(nextEnabled);
 
         // Reload settings
         await loadSettings();
@@ -815,8 +960,13 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
 
       // Auto-save API key if validation succeeds and a new key was provided
       if (result.success && groqApiKey) {
-        await api.updateSettings({ groq_api_key: groqApiKey });
+        const nextEnabled = { ...enabledProviders, groq: true };
+        await api.updateSettings({
+          groq_api_key: groqApiKey,
+          enabled_providers: nextEnabled
+        });
         setGroqApiKey(''); // Clear input after save
+        setEnabledProviders(nextEnabled);
 
         // Reload settings
         await loadSettings();
@@ -845,7 +995,12 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
 
       if (result.success) {
         // Auto-save base URL if connection succeeds
-        await api.updateSettings({ ollama_base_url: ollamaBaseUrl });
+        const nextEnabled = { ...enabledProviders, ollama: true };
+        await api.updateSettings({
+          ollama_base_url: ollamaBaseUrl,
+          enabled_providers: nextEnabled
+        });
+        setEnabledProviders(nextEnabled);
 
         // Reload settings
         await loadSettings();
@@ -862,6 +1017,23 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       }
     } finally {
       setIsTestingOllama(false);
+    }
+  };
+
+  const handleDisconnectOllama = async () => {
+    try {
+      setError(null);
+      const nextEnabled = { ...enabledProviders, ollama: false };
+      await api.updateSettings({ enabled_providers: nextEnabled });
+      setEnabledProviders(nextEnabled);
+      setOllamaTestResult(null);
+      setOllamaAvailableModels([]);
+      await loadSettings();
+      await loadModels();
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err.message || t('providers.failedToDisconnectOllama'));
     }
   };
 
@@ -891,10 +1063,62 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
 
   const handleDateFormatChange = (newFormat) => setDateFormat(newFormat);
 
+  const handleFontSizeChange = (newFontSize) => {
+    const normalized = normalizeFontSize(newFontSize);
+    setFontSize(normalized);
+    onFontSizeChange?.(normalized);
+  };
+
   const handleResponseLanguageChange = (newLanguage) => setResponseLanguage(newLanguage);
 
   const handleResetToDefaults = () => {
     setShowResetConfirm(true);
+  };
+
+  const confirmDisconnectAllProviders = async () => {
+    setDisconnectAllBusy(true);
+    setError(null);
+    try {
+      const result = await api.disconnectAllProviders();
+      setShowDisconnectAllConfirm(false);
+      setKeyValidationStatus({});
+      setOpenrouterTestResult(null);
+      setGroqTestResult(null);
+      setOpencodeTestResult(null);
+      setTavilyTestResult(null);
+      setBraveTestResult(null);
+      setSerperTestResult(null);
+      setTinyfishTestResult(null);
+      setRelayImportMessage(null);
+      resetCustomEndpointLocalState();
+      setOpenrouterApiKey('');
+      setGroqApiKey('');
+      setOpencodeApiKey('');
+      setDirectKeys({
+        openai_api_key: '',
+        anthropic_api_key: '',
+        google_api_key: '',
+        mistral_api_key: '',
+        deepseek_api_key: '',
+        nvidia_api_key: '',
+      });
+      await loadSettings();
+      await loadModels();
+      setSuccessMessage(
+        result?.message
+        || t('settingsShell.backup.disconnectAllSuccess', { count: result?.cleared ?? 0 })
+      );
+      setSuccess(true);
+      setTimeout(() => {
+        setSuccess(false);
+        setSuccessMessage(null);
+      }, 4000);
+    } catch (err) {
+      setError(err.message || t('settingsShell.backup.failedToDisconnectAll'));
+      setShowDisconnectAllConfirm(false);
+    } finally {
+      setDisconnectAllBusy(false);
+    }
   };
 
   const confirmResetToDefaults = async () => {
@@ -907,7 +1131,10 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         ollama: false,
         groq: false,
         direct: false,
-        custom: false
+        custom: false,
+        'xai-oauth': false,
+        'openai-oauth': false,
+        'github-copilot': false,
       });
       resetCustomEndpointLocalState();
 
@@ -938,6 +1165,8 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       setFullContentResults(3);
       setShowFreeOnly(false);
       setDateFormat('auto');
+      setFontSize('default');
+      onFontSizeChange?.('default');
       setResponseLanguage(RESPONSE_LANGUAGE_DEFAULT);
       setOllamaBaseUrl('http://localhost:11434');
 
@@ -961,7 +1190,10 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
           ollama: false,
           groq: false,
           direct: false,
-          custom: false
+          custom: false,
+          'xai-oauth': false,
+          'openai-oauth': false,
+          'github-copilot': false,
         },
         custom_endpoint_name: '',
         custom_endpoint_url: '',
@@ -990,6 +1222,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
         auto_converge: true,
         convergence_threshold: 2,
         date_format: 'auto',
+        font_size: 'default',
         response_language: RESPONSE_LANGUAGE_DEFAULT,
         ...defaultPrompts,
       };
@@ -1037,8 +1270,16 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       }
 
       if (result?.success && apiKey) {
-        await api.updateSettings({ opencode_api_key: apiKey });
+        const nextEnabled = { ...enabledProviders, direct: true };
+        const nextDirectToggles = { ...directProviderToggles, 'opencode-zen': true, 'opencode-go': true };
+        await api.updateSettings({
+          opencode_api_key: apiKey,
+          enabled_providers: nextEnabled,
+          direct_provider_toggles: nextDirectToggles
+        });
         setOpencodeApiKey('');
+        setEnabledProviders(nextEnabled);
+        setDirectProviderToggles(nextDirectToggles);
         await loadSettings();
         await loadOpencodeModels();
         setSuccess(true);
@@ -1089,8 +1330,16 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
 
       // Auto-save API key if validation succeeds AND it was a new key
       if (result.success && apiKey) {
-        await api.updateSettings({ [keyField]: apiKey });
+        const nextEnabled = { ...enabledProviders, direct: true };
+        const nextDirectToggles = { ...directProviderToggles, [providerId]: true };
+        await api.updateSettings({
+          [keyField]: apiKey,
+          enabled_providers: nextEnabled,
+          direct_provider_toggles: nextDirectToggles
+        });
         setDirectKeys(prev => ({ ...prev, [keyField]: '' })); // Clear input after save
+        setEnabledProviders(nextEnabled);
+        setDirectProviderToggles(nextDirectToggles);
 
         // Reload settings
         await loadSettings();
@@ -1145,6 +1394,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
 
       // Display
       date_format: dateFormat,
+      font_size: fontSize,
       response_language: responseLanguage,
 
       // Prompts
@@ -1210,6 +1460,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
 
         // Apply Display Preferences
         if (config.date_format) setDateFormat(config.date_format);
+        if (config.font_size) handleFontSizeChange(config.font_size);
         if (config.response_language) setResponseLanguage(config.response_language);
 
         // Apply Prompts
@@ -1237,6 +1488,131 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
     reader.readAsText(file);
     // Reset input
     event.target.value = '';
+  };
+
+  const currentCredentialStorage = settings?.credential_storage_preferred
+    ?? settings?.credential_storage
+    ?? 'file';
+
+  const handleCredentialStorageChange = (mode) => {
+    if (mode === currentCredentialStorage) return;
+    setCredentialStorageTarget(mode);
+  };
+
+  const confirmCredentialStorageMigration = async () => {
+    if (!credentialStorageTarget) return;
+    setCredentialStorageBusy(true);
+    setError(null);
+    try {
+      const result = await api.setCredentialStorage(credentialStorageTarget);
+      setCredentialStorageTarget(null);
+      await loadSettings();
+      const moved = result.moved ?? 0;
+      setSuccess(true);
+      if (moved > 0) {
+        setError(null);
+      }
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err.message || t('providers.failedToMigrateCredentials'));
+      setCredentialStorageTarget(null);
+    } finally {
+      setCredentialStorageBusy(false);
+    }
+  };
+
+  const handleDiscoverRelayAi = async () => {
+    setRelayDiscoverBusy(true);
+    setRelayDiscoverReason(null);
+    setRelayImportMessage(null);
+    try {
+      const data = await api.discoverRelayAi();
+      const items = data.items || [];
+      setRelayItems(items);
+      setRelayDiscoverReason(data.reason || data.hint || null);
+      setRelaySelected(items.filter((i) => !i.already_configured_in_counsel).map((i) => i.relay_id));
+      if (items.length > 0 && !settings?.relay_ai_import_dismissed) {
+        setRelayBannerVisible(true);
+      }
+    } catch (err) {
+      setRelayDiscoverReason(err.message);
+      setRelayItems([]);
+    } finally {
+      setRelayDiscoverBusy(false);
+    }
+  };
+
+  const handleImportRelayAi = async () => {
+    if (relaySelected.length === 0) return;
+    setRelayImportBusy(true);
+    setError(null);
+    setRelayImportMessage(null);
+    try {
+      const selected = [...relaySelected];
+      const result = await api.importRelayAi(selected, true);
+      // Clear stale Retest errors from before import (keys were in store, not settings.json).
+      setKeyValidationStatus({});
+      setOpenrouterTestResult(null);
+      setGroqTestResult(null);
+      setOpencodeTestResult(null);
+      setTavilyTestResult(null);
+      setBraveTestResult(null);
+      setSerperTestResult(null);
+      setTinyfishTestResult(null);
+      await loadSettings();
+      await loadModels();
+      // Update local list — do not re-discover (avoids another macOS Keychain prompt storm).
+      setRelayItems((prev) => prev.map((item) => (
+        selected.includes(item.relay_id)
+          ? { ...item, already_configured_in_counsel: true }
+          : item
+      )));
+      setRelaySelected([]);
+
+      const importedCount = Array.isArray(result?.imported) ? result.imported.length : selected.length;
+      const skippedCount = Array.isArray(result?.skipped) ? result.skipped.length : 0;
+      const errorCount = result?.errors ? Object.keys(result.errors).length : 0;
+      let message = t('generalExtra.relayImport.importSuccess', { count: importedCount });
+      if (skippedCount > 0) {
+        message += t('generalExtra.relayImport.importSkipped', { count: skippedCount });
+      }
+      if (errorCount > 0) {
+        message += t('generalExtra.relayImport.importFailed', { count: errorCount });
+      }
+      setRelayImportMessage({
+        tone: errorCount > 0 && importedCount === 0 ? 'error' : 'success',
+        text: message,
+      });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 4000);
+    } catch (err) {
+      setRelayImportMessage({
+        tone: 'error',
+        text: err.message || t('generalExtra.relayImport.importFailedGeneric'),
+      });
+      setError(err.message || t('generalExtra.relayImport.importFailedGeneric'));
+    } finally {
+      setRelayImportBusy(false);
+    }
+  };
+
+  const handleDismissRelayBanner = async () => {
+    try {
+      await api.dismissRelayImport();
+      setRelayBannerVisible(false);
+      setSettings((prev) => ({ ...prev, relay_ai_import_dismissed: true }));
+    } catch (err) {
+      setError(err.message || t('providers.failedToDismissBanner'));
+    }
+  };
+
+  const handleOAuthSettingsChange = (data) => {
+    setSettings(data);
+    setEnabledProviders(normalizeEnabledProviders(
+      data.enabled_providers || enabledProviders,
+      data,
+      ollamaStatus?.connected
+    ));
   };
 
   // Helper function to check if a direct provider is configured
@@ -1296,7 +1672,14 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
       models.push(...customEndpointModels);
     }
 
-    // Deduplicate by model ID (prefer direct connections over OpenRouter for same model)
+    if (settings) {
+      models.push(...filterOAuthModels(directAvailableModels, {
+        ...settings,
+        enabled_providers: enabledProviders,
+      }));
+    }
+
+    // Deduplicate by model ID
     // Since direct models are added last, always set to overwrite earlier entries
     const uniqueModels = new Map();
     models.forEach(model => {
@@ -1413,9 +1796,23 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
               <GeneralSettings
                 dateFormat={dateFormat}
                 onDateFormatChange={handleDateFormatChange}
+                fontSize={fontSize}
+                onFontSizeChange={handleFontSizeChange}
                 responseLanguage={responseLanguage}
                 onResponseLanguageChange={handleResponseLanguageChange}
                 responseLanguages={responseLanguages}
+                settings={settings}
+                relayItems={relayItems}
+                relaySelected={relaySelected}
+                setRelaySelected={setRelaySelected}
+                relayBannerVisible={relayBannerVisible}
+                relayDiscoverBusy={relayDiscoverBusy}
+                relayImportBusy={relayImportBusy}
+                relayImportMessage={relayImportMessage}
+                relayDiscoverReason={relayDiscoverReason}
+                onDiscoverRelayAi={handleDiscoverRelayAi}
+                onImportRelayAi={handleImportRelayAi}
+                onDismissRelayBanner={handleDismissRelayBanner}
               />
             )}
 
@@ -1445,7 +1842,9 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
                 isTestingOllama={isTestingOllama}
                 ollamaTestResult={ollamaTestResult}
                 ollamaStatus={ollamaStatus}
+                ollamaEnabled={!!enabledProviders.ollama}
                 loadOllamaModels={loadOllamaModels}
+                onDisconnectOllama={handleDisconnectOllama}
                 // Direct
                 directKeys={directKeys}
                 setDirectKeys={setDirectKeys}
@@ -1471,6 +1870,16 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
                 customEndpointTestResult={customEndpointTestResult}
                 customEndpointModels={customEndpointModels}
                 onClearCustomEndpoint={handleClearCustomEndpoint}
+                onDisconnectOpenRouter={handleDisconnectOpenRouter}
+                onDisconnectGroq={handleDisconnectGroq}
+                onDisconnectDirectKey={handleDisconnectDirectKey}
+                onDisconnectOpencode={handleDisconnectOpencode}
+                onOAuthSettingsChange={handleOAuthSettingsChange}
+                onOAuthModelsRefresh={loadModels}
+                currentCredentialStorage={currentCredentialStorage}
+                credentialStorageBusy={credentialStorageBusy}
+                onCredentialStorageChange={handleCredentialStorageChange}
+                onNavigateToGeneral={() => setActiveSection('general')}
               />
             )}
 
@@ -1578,6 +1987,7 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
                 setSearchResultCount={setSearchResultCount}
                 searchHybridMode={searchHybridMode}
                 setSearchHybridMode={setSearchHybridMode}
+                onDisconnectSearchKey={handleDisconnectSearchKey}
               />
             )}
 
@@ -1623,6 +2033,19 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
                 <div className="subsection" style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
                   <h4 style={{ color: '#f87171' }}>{t('settingsShell.backup.dangerZone')}</h4>
                   <p className="section-description">
+                    {t('settingsShell.backup.disconnectAllDesc')}
+                  </p>
+                  <button
+                    className="reset-button"
+                    type="button"
+                    onClick={() => setShowDisconnectAllConfirm(true)}
+                    style={{ marginTop: '10px' }}
+                    disabled={disconnectAllBusy}
+                  >
+                    {disconnectAllBusy ? t('settingsShell.backup.disconnectingAll') : t('settingsShell.backup.disconnectAllBtn')}
+                  </button>
+
+                  <p className="section-description" style={{ marginTop: '24px' }}>
                     {t('settingsShell.backup.dangerDesc')}
                   </p>
                   <button
@@ -1644,9 +2067,12 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
           {error && <div className="settings-error">{error}</div>}
           {success && (
             <div className="settings-success">
-              {activeSection === 'llm_keys' && !settings?.openrouter_api_key_set && !ollamaStatus?.connected
-                ? t('settingsShell.defaultsLoadedMsg')
-                : t('settingsShell.settingsSavedMsg')}
+              {successMessage
+                || (activeSection === 'general' && relayImportMessage?.tone === 'success'
+                  ? relayImportMessage.text
+                  : activeSection === 'llm_keys' && !settings?.openrouter_api_key_set && !ollamaStatus?.connected
+                    ? t('settingsShell.defaultsLoadedMsg')
+                    : t('settingsShell.settingsSavedMsg'))}
             </div>
           )}
 
@@ -1661,6 +2087,90 @@ export default function Settings({ onClose, ollamaStatus, onRefreshOllama, initi
           </div>
         </div>
       </div>
+
+      {
+        credentialStorageTarget && (
+          <div className="settings-overlay confirmation-overlay" onClick={() => !credentialStorageBusy && setCredentialStorageTarget(null)}>
+            <div className="settings-modal confirmation-modal" onClick={e => e.stopPropagation()}>
+              <div className="settings-header">
+                <h2>{t('providers.credentialStorage.moveTitle')}</h2>
+              </div>
+              <div className="settings-content confirmation-content" style={{ padding: '20px 24px' }}>
+                <p style={{ marginBottom: '16px' }}>
+                  {t('providers.credentialStorage.movePrompt', {
+                    count: countStoredCredentials(settings),
+                    from: currentCredentialStorage === 'file'
+                      ? t('providers.credentialStorage.encryptedFileShort')
+                      : t('providers.credentialStorage.osKeystoreShort'),
+                    to: credentialStorageTarget === 'file'
+                      ? t('providers.credentialStorage.encryptedFileShort')
+                      : t('providers.credentialStorage.osKeystoreShort'),
+                  })}
+                </p>
+                <p className="api-key-hint">{t('providers.credentialStorage.moveHint')}</p>
+              </div>
+              <div className="settings-footer">
+                <div className="footer-actions" style={{ width: '100%', justifyContent: 'flex-end' }}>
+                  <button className="cancel-button" onClick={() => setCredentialStorageTarget(null)} disabled={credentialStorageBusy}>
+                    {t('settingsShell.backup.confirmCancel')}
+                  </button>
+                  <button className="action-btn" onClick={confirmCredentialStorageMigration} disabled={credentialStorageBusy}>
+                    {credentialStorageBusy ? t('providers.credentialStorage.moving') : t('providers.credentialStorage.moveButton')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        showDisconnectAllConfirm && (
+          <div className="settings-overlay confirmation-overlay" onClick={() => !disconnectAllBusy && setShowDisconnectAllConfirm(false)}>
+            <div className="settings-modal confirmation-modal" onClick={e => e.stopPropagation()}>
+              <div className="settings-header">
+                <h2>{t('settingsShell.backup.disconnectAllConfirmTitle')}</h2>
+              </div>
+              <div className="settings-content confirmation-content" style={{ padding: '20px 24px' }}>
+                <p style={{ marginBottom: '16px' }}>
+                  {t('settingsShell.backup.disconnectAllConfirmPrompt')}
+                </p>
+                <div className="confirmation-details" style={{ padding: '16px 20px' }}>
+                  <p><strong>{t('settingsShell.backup.disconnectAllConfirmListIntro')}</strong></p>
+                  <ul style={{ margin: '12px 0', lineHeight: '1.8' }}>
+                    <li>{t('settingsShell.backup.disconnectAllConfirmItem1')}</li>
+                    <li>{t('settingsShell.backup.disconnectAllConfirmItem2')}</li>
+                    <li>{t('settingsShell.backup.disconnectAllConfirmItem3')}</li>
+                    <li>{t('settingsShell.backup.disconnectAllConfirmItem4')}</li>
+                    <li>{t('settingsShell.backup.disconnectAllConfirmItem5')}</li>
+                  </ul>
+                  <p className="confirmation-safe" style={{ marginTop: '14px' }}>
+                    {t('settingsShell.backup.disconnectAllConfirmSafe')}
+                  </p>
+                </div>
+              </div>
+              <div className="settings-footer">
+                <div className="footer-actions" style={{ width: '100%', justifyContent: 'flex-end' }}>
+                  <button
+                    className="cancel-button"
+                    onClick={() => setShowDisconnectAllConfirm(false)}
+                    disabled={disconnectAllBusy}
+                  >
+                    {t('settingsShell.backup.confirmCancel')}
+                  </button>
+                  <button
+                    className="reset-button"
+                    onClick={confirmDisconnectAllProviders}
+                    disabled={disconnectAllBusy}
+                  >
+                    {disconnectAllBusy ? t('settingsShell.backup.disconnectingAll') : t('settingsShell.backup.disconnectAllConfirmButton')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {
         showResetConfirm && (

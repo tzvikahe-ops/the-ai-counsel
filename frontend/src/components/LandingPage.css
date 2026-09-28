@@ -10,13 +10,12 @@
   overflow: hidden;
 }
 
-/* Animated gradient orbs */
+/* Static gradient orbs avoid continuous GPU compositing behind glass panels. */
 .landing-orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
   pointer-events: none;
-  will-change: transform;
 }
 
 .landing-orb--blue {
@@ -25,7 +24,6 @@
   top: -15%;
   left: -10%;
   background: radial-gradient(ellipse, rgba(59, 130, 246, 0.18) 0%, transparent 70%);
-  animation: orb-drift-blue 18s ease-in-out infinite alternate;
 }
 
 .landing-orb--violet {
@@ -34,17 +32,6 @@
   bottom: -10%;
   right: -8%;
   background: radial-gradient(ellipse, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
-  animation: orb-drift-violet 22s ease-in-out infinite alternate;
-}
-
-@keyframes orb-drift-blue {
-  from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(60px, 40px) scale(1.08); }
-}
-
-@keyframes orb-drift-violet {
-  from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(-50px, -35px) scale(1.06); }
 }
 
 /* Subtle grid overlay */
@@ -78,7 +65,7 @@
 
 .landing-eyebrow {
   font-family: var(--font-code);
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -88,7 +75,7 @@
 
 .landing-title {
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-size: clamp(calc(2.4rem * var(--font-scale)), calc(5vw * var(--font-scale)), calc(3.6rem * var(--font-scale)));
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.03em;
@@ -105,7 +92,7 @@
 
 .landing-subtitle {
   font-family: var(--font-ui);
-  font-size: 1rem;
+  font-size: calc(1rem * var(--font-scale));
   color: var(--text-muted);
   margin: 0;
   letter-spacing: 0.01em;
@@ -253,7 +240,7 @@
 
 .landing-card__label {
   font-family: var(--font-code);
-  font-size: 10px;
+  font-size: calc(10px * var(--font-scale));
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -264,7 +251,7 @@
 
 .landing-card__title {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: calc(1.35rem * var(--font-scale));
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
@@ -273,7 +260,7 @@
 }
 
 .landing-card__desc {
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--font-scale));
   color: var(--text-secondary);
   line-height: 1.65;
   margin: 4px 0 0;
@@ -289,7 +276,7 @@
 }
 
 .landing-card__features li {
-  font-size: 0.8rem;
+  font-size: calc(0.8rem * var(--font-scale));
   color: var(--text-muted);
   padding-inline-start: 18px;
   position: relative;
@@ -315,7 +302,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--font-scale));
   font-weight: 600;
   padding-top: 4px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -446,7 +433,7 @@
   }
 
   .landing-title {
-    font-size: 2rem;
+    font-size: calc(2rem * var(--font-scale));
   }
 
   .landing-inner {

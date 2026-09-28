@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDatePart } from '../../utils/dateFormat';
+import { FONT_SIZE_OPTIONS } from '../../utils/fontSize';
 import { RESPONSE_LANGUAGE_DEFAULT, RESPONSE_LANGUAGES_FALLBACK } from '../../constants/responseLanguages';
 
 export { RESPONSE_LANGUAGE_DEFAULT };
@@ -13,9 +14,24 @@ const UI_LANGUAGES = [
 export default function GeneralSettings({
   dateFormat,
   onDateFormatChange,
+  fontSize,
+  onFontSizeChange,
   responseLanguage,
   onResponseLanguageChange,
   responseLanguages = RESPONSE_LANGUAGES_FALLBACK,
+  // relay-ai import (optional — desktop only feature)
+  settings,
+  relayItems = [],
+  relaySelected = [],
+  setRelaySelected,
+  relayBannerVisible = false,
+  relayDiscoverBusy = false,
+  relayImportBusy = false,
+  relayImportMessage = null,
+  relayDiscoverReason = null,
+  onDiscoverRelayAi,
+  onImportRelayAi,
+  onDismissRelayBanner,
 }) {
   const { t, i18n } = useTranslation();
 
@@ -74,6 +90,22 @@ export default function GeneralSettings({
             {t('generalExtra.sidebarPreview')} <span className="ltr">{formatDatePart(new Date(), dateFormat)}</span>
           </span>
         </div>
+        <div className="general-setting-row">
+          <label htmlFor="font-size-select" className="general-setting-label">{t('generalExtra.fontSize.label')}</label>
+          <select
+            id="font-size-select"
+            value={fontSize}
+            onChange={(e) => onFontSizeChange(e.target.value)}
+            className="select-input general-setting-select"
+          >
+            {FONT_SIZE_OPTIONS.map(({ value }) => (
+              <option key={value} value={value}>{t(`generalExtra.fontSize.${value}`, { defaultValue: value })}</option>
+            ))}
+          </select>
+          <span className="general-setting-hint">
+            {t('generalExtra.fontSize.hint')}
+          </span>
+        </div>
       </div>
 
       <div className="subsection general-subsection-divider">
@@ -94,6 +126,89 @@ export default function GeneralSettings({
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="subsection general-subsection-divider">
+        <h4>{t('generalExtra.relayImport.heading')}</h4>
+        <p className="section-description">
+          {t('generalExtra.relayImport.description')}
+        </p>
+
+        {relayBannerVisible && relayItems.length > 0 && !settings?.relay_ai_import_dismissed && (
+          <div className="relay-import-banner">
+            <div className="relay-import-banner-text">
+              {t('generalExtra.relayImport.bannerFound', { count: relayItems.length })}
+            </div>
+            <button type="button" className="cancel-button" onClick={onDismissRelayBanner}>
+              {t('generalExtra.relayImport.dismiss')}
+            </button>
+          </div>
+        )}
+
+        <button
+          type="button"
+          className="action-btn"
+          onClick={onDiscoverRelayAi}
+          disabled={relayDiscoverBusy}
+          style={{ marginBottom: '12px' }}
+        >
+          {relayDiscoverBusy ? t('generalExtra.relayImport.discovering') : t('generalExtra.relayImport.discoverCredentials')}
+        </button>
+
+        {relayDiscoverReason && relayItems.length === 0 && (
+          <p className="api-key-hint">{relayDiscoverReason}</p>
+        )}
+
+        {relayImportMessage && (
+          <div
+            className={`test-result ${relayImportMessage.tone === 'error' ? 'error' : 'success'}`}
+            style={{ marginBottom: '12px' }}
+            role="status"
+          >
+            {relayImportMessage.text}
+          </div>
+        )}
+
+        {relayItems.length > 0 && (
+          <div className="relay-import-list">
+            {relayItems.map((item) => (
+              <label key={item.relay_id} className="relay-import-item">
+                <input
+                  type="checkbox"
+                  checked={relaySelected.includes(item.relay_id)}
+                  onChange={(e) => {
+                    setRelaySelected?.((prev) => (
+                      e.target.checked
+                        ? [...prev, item.relay_id]
+                        : prev.filter((id) => id !== item.relay_id)
+                    ));
+                  }}
+                />
+                <span>
+                  {item.label}
+                  {item.already_configured_in_counsel && (
+                    <span className="toggle-hint"> {t('generalExtra.relayImport.alreadyInCounsel')}</span>
+                  )}
+                </span>
+              </label>
+            ))}
+            <div className="council-actions" style={{ marginTop: '12px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="action-btn"
+                onClick={onImportRelayAi}
+                disabled={relayImportBusy || relaySelected.length === 0}
+              >
+                {relayImportBusy ? t('generalExtra.relayImport.importing') : t('generalExtra.relayImport.importSelected', { count: relaySelected.length })}
+              </button>
+              {!settings?.relay_ai_import_dismissed && (
+                <button type="button" className="cancel-button" onClick={onDismissRelayBanner}>
+                  {t('generalExtra.relayImport.dismissNotice')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

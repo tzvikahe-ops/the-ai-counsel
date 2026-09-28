@@ -11,25 +11,32 @@ import backend.personas as personas_module
 from backend.personas import (
     DEFAULT_PERSONAS,
     Persona,
+    create_persona,
+    delete_persona,
     delete_persona_override,
     get_all_personas,
     get_persona,
     get_personas_by_ids,
     save_persona_override,
+    update_custom_persona,
 )
 
 
 @pytest.fixture(autouse=True)
 def isolated_overrides(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Redirect the overrides file to a temp path and reset the in-memory cache."""
+    """Redirect the overrides/custom-persona files to a temp path and reset caches."""
     overrides_file = tmp_path / "persona_overrides.json"
+    custom_file = tmp_path / "custom_personas.json"
     monkeypatch.setattr(personas_module, "_OVERRIDES_FILE", overrides_file)
+    monkeypatch.setattr(personas_module, "_CUSTOM_FILE", custom_file)
     monkeypatch.setattr(personas_module, "_DATA_DIR", tmp_path)
-    # Reset cache so each test starts clean
+    # Reset caches so each test starts clean
     monkeypatch.setattr(personas_module, "_overrides_cache", None)
+    monkeypatch.setattr(personas_module, "_custom_cache", None)
     yield
     # Reset again after test
     monkeypatch.setattr(personas_module, "_overrides_cache", None)
+    monkeypatch.setattr(personas_module, "_custom_cache", None)
 
 
 # ── get_all_personas ──────────────────────────────────────────────────────────
@@ -235,3 +242,85 @@ def test_delete_persona_override_only_removes_target():
     pragmatist = get_persona("pragmatist")
     assert pragmatist.name == "Keep Me"
     assert pragmatist.is_customized is True
+
+
+# ── create_persona ──────────────────────────────────────────────────────────
+
+def _futurist_fields(**overrides):
+    fields = {
+        "name": "The Futurist",
+        "role": "Trend Forecaster",
+        "description": "Projects long-term consequences.",
+        "system_prompt": "You are The Futurist.",
+    }
+    fields.update(overrides)
+    return fields
+
+
+def test_create_persona_adds_a_thirteenth_advisor():
+    create_persona(_futurist_fields())
+    result = get_all_personas()
+    assert len(result) == 13
+
+
+def test_create_persona_marks_custom_and_customized():
+    created = create_persona(_futurist_fields())
+    assert created.is_custom is True
+    assert created.is_customized is True
+
+
+def test_create_persona_slugifies_name_into_id():
+    created = create_persona(_futurist_fields(name="The Futurist!"))
+    assert created.id == "the-futurist"
+
+
+def test_create_persona_dedupes_id_collisions():
+    first = create_persona(_futurist_fields())
+    second = create_persona(_futurist_fields())
+    assert first.id != second.id
+
+
+def test_create_persona_avoids_default_id_collision():
+    created = create_persona(_futurist_fields(name="Skeptic"))
+    assert created.id != "skeptic"
+    assert get_persona("skeptic").is_custom is False
+
+
+def test_create_persona_persists_to_disk():
+    created = create_persona(_futurist_fields())
+    custom_file = personas_module._CUSTOM_FILE
+    assert custom_file.exists()
+    data = json.loads(custom_file.read_text(encoding="utf-8"))
+    assert data[created.id]["name"] == "The Futurist"
+
+
+# ── update_custom_persona ────────────────────────────────────────────────────
+
+def test_update_custom_persona_changes_fields():
+    created = create_persona(_futurist_fields())
+    updated = update_custom_persona(created.id, {"role": "Chief Futurist"})
+    assert updated.role == "Chief Futurist"
+    assert updated.name == "The Futurist"
+
+
+def test_update_custom_persona_unknown_id_returns_none():
+    assert update_custom_persona("ghost", {"role": "x"}) is None
+
+
+def test_update_custom_persona_does_not_affect_defaults():
+    assert update_custom_persona("skeptic", {"name": "Hijacked"}) is None
+    assert get_persona("skeptic").name == "The Skeptic"
+
+
+# ── delete_persona ───────────────────────────────────────────────────────────
+
+def test_delete_persona_removes_custom_advisor():
+    created = create_persona(_futurist_fields())
+    assert delete_persona(created.id) is True
+    assert get_persona(created.id) is None
+    assert len(get_all_personas()) == 12
+
+
+def test_delete_persona_cannot_remove_default():
+    assert delete_persona("skeptic") is False
+    assert get_persona("skeptic") is not None

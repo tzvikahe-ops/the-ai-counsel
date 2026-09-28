@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -9,6 +10,13 @@ from pydantic import BaseModel
 
 _DATA_DIR = Path(__file__).parent.parent / "data"
 _OVERRIDES_FILE = _DATA_DIR / "persona_overrides.json"
+_CUSTOM_FILE = _DATA_DIR / "custom_personas.json"
+
+_CUSTOM_COLORS = [
+    "#ef4444", "#f59e0b", "#8b5cf6", "#6366f1", "#10b981",
+    "#3b82f6", "#ec4899", "#f97316", "#06b6d4", "#64748b",
+    "#eab308", "#14b8a6",
+]
 
 
 class Persona(BaseModel):
@@ -21,6 +29,7 @@ class Persona(BaseModel):
     avatar_emoji: str
     color: str
     is_customized: bool = False
+    is_custom: bool = False
 
 
 DEFAULT_PERSONAS: List[Persona] = [
@@ -287,6 +296,98 @@ def delete_persona_override(persona_id: str) -> Persona:
     return _DEFAULT_MAP[persona_id]
 
 
+_custom_cache: Optional[Dict[str, Dict[str, Any]]] = None
+
+
+def _load_custom_personas() -> Dict[str, Dict[str, Any]]:
+    global _custom_cache
+    if _custom_cache is not None:
+        return _custom_cache
+    if not _CUSTOM_FILE.exists():
+        _custom_cache = {}
+        return _custom_cache
+    try:
+        _custom_cache = json.loads(_CUSTOM_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        _custom_cache = {}
+    return _custom_cache
+
+
+def _save_custom_personas(custom: Dict[str, Dict[str, Any]]) -> None:
+    global _custom_cache
+    _DATA_DIR.mkdir(parents=True, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(dir=_DATA_DIR, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(json.dumps(custom, indent=2, ensure_ascii=False))
+        os.replace(tmp_path, _CUSTOM_FILE)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
+    _custom_cache = custom
+
+
+def _slugify(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
+    return slug or "advisor"
+
+
+def _unique_custom_id(name: str, existing: Dict[str, Dict[str, Any]]) -> str:
+    base_slug = _slugify(name)
+    candidate = base_slug
+    suffix = 2
+    while candidate in _DEFAULT_MAP or candidate in existing:
+        candidate = f"{base_slug}-{suffix}"
+        suffix += 1
+    return candidate
+
+
+def create_persona(fields: Dict[str, Any]) -> Persona:
+    """Create a brand-new custom advisor persona (not one of the 12 defaults)."""
+    custom = _load_custom_personas()
+    persona_id = _unique_custom_id(fields["name"], custom)
+    color = fields.get("color") or _CUSTOM_COLORS[len(custom) % len(_CUSTOM_COLORS)]
+    record = {
+        "name": fields["name"],
+        "role": fields["role"],
+        "description": fields["description"],
+        "system_prompt": fields["system_prompt"],
+        "avatar_emoji": fields.get("avatar_emoji") or "🧑‍💼",
+        "color": color,
+    }
+    custom[persona_id] = record
+    _save_custom_personas(custom)
+    return Persona(id=persona_id, is_customized=True, is_custom=True, **record)
+
+
+def update_custom_persona(persona_id: str, fields: Dict[str, Any]) -> Optional[Persona]:
+    """Update an existing custom advisor persona. Returns None if it isn't custom."""
+    custom = _load_custom_personas()
+    if persona_id not in custom:
+        return None
+    record = custom[persona_id]
+    for key in ("name", "role", "description", "system_prompt", "avatar_emoji", "color"):
+        if fields.get(key):
+            record[key] = fields[key]
+    custom[persona_id] = record
+    _save_custom_personas(custom)
+    return _custom_persona_from_record(persona_id, record)
+
+
+def delete_persona(persona_id: str) -> bool:
+    """Permanently delete a custom advisor persona. Returns False if it wasn't custom."""
+    custom = _load_custom_personas()
+    if persona_id not in custom:
+        return False
+    custom.pop(persona_id)
+    _save_custom_personas(custom)
+    return True
+
+
+def _custom_persona_from_record(persona_id: str, record: Dict[str, Any]) -> Persona:
+    return Persona(id=persona_id, is_customized=True, is_custom=True, **record)
+
+
 def get_all_personas() -> List[Persona]:
     overrides = _load_overrides()
     result = []
@@ -295,27 +396,28 @@ def get_all_personas() -> List[Persona]:
             result.append(_apply_override(p, overrides[p.id]))
         else:
             result.append(p)
+    for persona_id, record in _load_custom_personas().items():
+        result.append(_custom_persona_from_record(persona_id, record))
     return result
 
 
 def get_persona(persona_id: str) -> Optional[Persona]:
     base = _DEFAULT_MAP.get(persona_id)
-    if not base:
-        return None
-    overrides = _load_overrides()
-    if persona_id in overrides:
-        return _apply_override(base, overrides[persona_id])
-    return base
+    if base:
+        overrides = _load_overrides()
+        if persona_id in overrides:
+            return _apply_override(base, overrides[persona_id])
+        return base
+    custom = _load_custom_personas()
+    if persona_id in custom:
+        return _custom_persona_from_record(persona_id, custom[persona_id])
+    return None
 
 
 def get_personas_by_ids(persona_ids: List[str]) -> List[Persona]:
-    overrides = _load_overrides()
     found = []
     for pid in persona_ids:
-        base = _DEFAULT_MAP.get(pid)
-        if base:
-            if pid in overrides:
-                found.append(_apply_override(base, overrides[pid]))
-            else:
-                found.append(base)
+        persona = get_persona(pid)
+        if persona:
+            found.append(persona)
     return found

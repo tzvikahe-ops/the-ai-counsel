@@ -21,7 +21,7 @@ The AI Counsel is a rebrand and continuation of LLM Council Plus. All features, 
 **What did NOT change:**
 
 - **Data format** — `data/settings.json` and `data/conversations/*.json` are identical in schema. No migration script needed.
-- **Environment variables** — `LLM_COUNCIL_BIND_HOST`, `LLM_COUNCIL_BIND_PORT`, `LLM_COUNCIL_ADMIN_TOKEN` all work as before.
+- **Environment variables** — `LLM_COUNCIL_BIND_HOST`, `LLM_COUNCIL_BIND_PORT`, `LLM_COUNCIL_ADMIN_TOKEN` all work as before. Optional `PORT_BACKEND` / `PORT_FRONTEND` can override the listen ports; defaults stay 8001 / 5173.
 - **Port** — Backend still runs on `8001`.
 - **API surface** — All `/api/*` endpoints are unchanged. New endpoints were added (see CHANGELOG).
 
@@ -141,13 +141,18 @@ ln -s ~/the-ai-counsel/skills/the-ai-counsel-api ~/.claude/skills/the-ai-counsel
 No. Copy `data/conversations/` to the new project and they appear immediately.
 
 **Q: Will I lose my API keys and settings?**
-No. Copy `data/settings.json` and all keys, presets, prompts, and temperatures carry over.
+No. Copy the whole `data/` directory. Non-secret settings stay in `settings.json`; from v0.11.0 secrets live in `credentials.json` (auto-migrated from legacy inline keys on first launch). See [`CREDENTIALS.md`](CREDENTIALS.md).
 
 **Q: Do I need to reconfigure anything?**
 No. The settings schema is unchanged. The only thing that changes is the product name in the UI.
 
 **Q: Can I run both side by side?**
-Yes, as long as they use different ports. The new repo defaults to 8001 — if the old one is still running on 8001, either stop it first or change the port via `LLM_COUNCIL_BIND_PORT` or Docker port mapping.
+Yes, as long as they use different ports. The new repo defaults to 8001 — if the old one is still running on 8001, either stop it first or change the port via `PORT_BACKEND`, `LLM_COUNCIL_BIND_PORT`, or Docker port mapping.
 
 **Q: What about the old repo?**
 The `jacob-bd/llm-council-plus` repo will remain available with a notice pointing to the new repo. It will not receive further updates.
+
+
+## Credential storage upgrade (subscription OAuth / keystore)
+
+On first launch after this release, plaintext API keys in `data/settings.json` are moved into `data/credentials.json` (or the OS keystore if you switch storage mode under Settings → LLM API Keys on a desktop install). Docker deployments always use the file store — OS keystore is not available in containers. Admin settings export now includes a `credentials` object; legacy exports with inline `*_api_key` fields still import correctly.

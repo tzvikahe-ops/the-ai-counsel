@@ -26,11 +26,20 @@ export default function SearchableModelSelect({
     // Use source field if available, otherwise fallback to provider check
     const isOpenRouter = model.source === 'openrouter' || model.provider === 'OpenRouter';
     const isOllama = model.id?.startsWith('ollama:') || model.provider === 'Ollama';
+    const isXaiOAuth = model.id?.startsWith('xai-oauth:') || model.source === 'xai-oauth';
+    const isOpenAiOAuth = model.id?.startsWith('openai-oauth:') || model.source === 'openai-oauth';
+    const isCopilot = model.id?.startsWith('github-copilot:') || model.source === 'github-copilot';
 
     if (isOpenRouter) {
       groupLabel = 'OpenRouter (Cloud)';
     } else if (isOllama) {
       groupLabel = 'Local (Ollama)';
+    } else if (isXaiOAuth) {
+      groupLabel = 'xAI SuperGrok (Subscription)';
+    } else if (isOpenAiOAuth) {
+      groupLabel = 'ChatGPT Plus/Pro (Subscription)';
+    } else if (isCopilot) {
+      groupLabel = 'GitHub Copilot (Subscription)';
     } else {
       groupLabel = `${model.provider || 'Direct'} (Direct)`;
     }
@@ -50,6 +59,7 @@ export default function SearchableModelSelect({
   const providerOrder = [
     'OpenAI (Direct)', 'Anthropic (Direct)', 'Google (Direct)', 'Mistral (Direct)', 'DeepSeek (Direct)',
     'Groq (Direct)',
+    'xAI SuperGrok (Subscription)', 'ChatGPT Plus/Pro (Subscription)', 'GitHub Copilot (Subscription)',
     'OpenRouter (Cloud)',
     'Local (Ollama)'
   ];
@@ -136,7 +146,7 @@ export default function SearchableModelSelect({
     groupHeading: (base) => ({
       ...base,
       color: '#94a3b8',
-      fontSize: '11px',
+      fontSize: 'calc(11px * var(--font-scale))',
       fontWeight: '600',
       textTransform: 'uppercase',
       letterSpacing: '0.5px',
@@ -154,7 +164,7 @@ export default function SearchableModelSelect({
       padding: '8px 12px',
       borderRadius: '4px',
       cursor: 'pointer',
-      fontSize: '13px',
+      fontSize: 'calc(13px * var(--font-scale))',
       '&:active': {
         backgroundColor: 'rgba(59, 130, 246, 0.4)',
       },
@@ -162,7 +172,7 @@ export default function SearchableModelSelect({
     singleValue: (base) => ({
       ...base,
       color: '#e2e8f0',
-      fontSize: '13px',
+      fontSize: 'calc(13px * var(--font-scale))',
     }),
     input: (base) => ({
       ...base,
@@ -171,7 +181,7 @@ export default function SearchableModelSelect({
     placeholder: (base) => ({
       ...base,
       color: '#64748b',
-      fontSize: '13px',
+      fontSize: 'calc(13px * var(--font-scale))',
     }),
     indicatorSeparator: () => ({
       display: 'none',
@@ -195,7 +205,7 @@ export default function SearchableModelSelect({
     noOptionsMessage: (base) => ({
       ...base,
       color: '#64748b',
-      fontSize: '13px',
+      fontSize: 'calc(13px * var(--font-scale))',
     }),
     loadingMessage: (base) => ({
       ...base,

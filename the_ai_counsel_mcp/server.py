@@ -2,6 +2,8 @@
 
 from mcp.server.fastmcp import FastMCP
 
+from . import __version__
+from .client import default_base_url
 from .tools import advisors as advisors_tools
 from .tools import config_backup as config_backup_tools
 from .tools import conversations as conversations_tools
@@ -11,31 +13,33 @@ from .tools import providers as providers_tools
 
 
 def create_server(
-    base_url: str = "http://localhost:8001",
+    base_url: str | None = None,
     host: str = "0.0.0.0",
     port: int = 8002,
 ) -> FastMCP:
     """Create and configure The AI Counsel MCP server."""
+    if base_url is None:
+        base_url = default_base_url()
     server = FastMCP(
         name="the-ai-counsel",
+        # Keep this short: MCP clients re-send the whole instructions block on every
+        # reconnect, and agent harnesses that spawn a fresh process per turn pay for it
+        # each time. Only cross-cutting facts belong here — per-tool actions, arguments
+        # and result shapes are already carried by each tool's own description.
         instructions=(
-            "The AI Counsel — 10 MCP tools with action parameters. "
-            "Run: council_deliberate (stage1|stage2|stage3|full), model_chat (quick|multi_turn), "
-            "advisor_debate, run_iterative_debate. "
-            "Config: council_settings, advisor_settings (each: get|update|list_presets|"
-            "save_preset|delete_preset|set_default_preset), personas (list|get|update|reset), "
-            "conversations (list|get|progress), providers (list_models|health|test|set_api_key|set_search), "
-            "config_backup (export|import|reset). "
-            "Provider model IDs use a `provider:model` prefix. Supported prefixes include "
-            "openrouter, ollama, groq, openai, anthropic, google, mistral, deepseek, nvidia, "
-            "custom, opencode-zen, and opencode-go. "
-            "Deliberation, debate, advisor, and model_chat results include a top-level `cost_report` "
-            "(total_cost, total_tokens, by_model, known_cost_calls, unknown_cost_calls, free_calls). "
-            "Prefer these MCP tools over curl. Full REST reference: skills/the-ai-counsel-api/SKILL.md."
+            "The AI Counsel — multi-model deliberation, debate and chat tools. "
+            "Model IDs are `provider:model`; supported prefixes: openrouter, ollama, groq, "
+            "openai, anthropic, google, mistral, deepseek, nvidia, custom, opencode-zen, opencode-go. "
+            "Deliberation, debate and chat tools accept an optional `documents` list; pass extracted "
+            "text or base64 source files, which are extracted before model calls. "
+            "Prefer these tools over curl. Full REST reference: skills/the-ai-counsel-api/SKILL.md."
         ),
         host=host,
         port=port,
     )
+    # FastMCP 1.27 exposes the protocol version on its underlying Server rather
+    # than accepting it as a constructor argument.
+    server._mcp_server.version = __version__
 
     server.base_url = base_url  # type: ignore[attr-defined]
 

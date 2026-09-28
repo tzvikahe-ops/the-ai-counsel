@@ -3,7 +3,19 @@
 import json
 import pytest
 
+@pytest.fixture(autouse=True)
+def _isolate_opencode_credentials(monkeypatch, tmp_path):
+    from backend.credentials import file_backend, store
+    monkeypatch.setattr(file_backend, "CREDENTIALS_FILE", tmp_path / "credentials.json")
+    monkeypatch.setattr(store, "get_effective_mode", lambda: "file")
+    monkeypatch.setattr(store, "_preferred_mode", lambda: "file")
+    monkeypatch.setattr(store, "ENV_OVERRIDES", {})
+    # Clear any accidental env
+    monkeypatch.delenv("OPENCODE_API_KEY", raising=False)
+
+
 from backend.providers.opencode import OpenCodeProvider
+from the_ai_counsel_mcp import __version__
 
 
 class _FakeResponse:
@@ -74,7 +86,10 @@ def fake_settings(monkeypatch):
         opencode_api_key = "sk-zen-test"
 
     from backend import settings as settings_module
+    from backend.credentials import store
     from backend.providers import opencode as opencode_module
+
+    store.set_secret("api:opencode", "sk-zen-test")
 
     def fake():
         return FakeSettings()
@@ -104,7 +119,64 @@ async def test_query_uses_chat_completions_with_bearer_auth(fake_httpx, fake_set
     assert result["usage"]["prompt_tokens"] == 3
     headers = fake_httpx.instances[0].kwargs["headers"]
     assert headers["Authorization"] == "Bearer sk-zen-test"
+    assert headers["User-Agent"] == f"the-ai-counsel/{__version__}"
+    assert "x-opencode-session" not in headers
     assert fake_httpx.instances[0].kwargs["__url__"] == "https://opencode.ai/zen/v1/chat/completions"
+
+
+@pytest.mark.asyncio
+async def test_go_chat_completions_sends_session_header_and_user_agent(fake_httpx, fake_settings):
+    fake_httpx.responses.append((200, {"choices": [{"message": {"content": "hello"}}]}, ""))
+
+    provider = OpenCodeProvider(product="go")
+    await provider.query(
+        "opencode-go:glm-5.1",
+        [{"role": "user", "content": "hi"}],
+        session_id="conversation-123",
+    )
+
+    headers = fake_httpx.instances[0].kwargs["headers"]
+    assert headers["x-opencode-session"] == "conversation-123"
+    assert headers["User-Agent"] == f"the-ai-counsel/{__version__}"
+
+
+@pytest.mark.asyncio
+async def test_standalone_go_retry_reuses_generated_session_id(fake_httpx, fake_settings, monkeypatch):
+    async def fake_sleep(_):
+        return None
+
+    monkeypatch.setattr("backend.providers.opencode.asyncio.sleep", fake_sleep)
+    fake_httpx.responses.append((429, {}, "rate limited"))
+    fake_httpx.responses.append((200, {"choices": [{"message": {"content": "ok"}}]}, ""))
+
+    provider = OpenCodeProvider(product="go")
+    result = await provider.query("opencode-go:glm-5.1", [{"role": "user", "content": "hi"}])
+
+    assert result["error"] is False
+    first_headers = fake_httpx.instances[0].kwargs["headers"]
+    second_headers = fake_httpx.instances[1].kwargs["headers"]
+    assert first_headers["x-opencode-session"]
+    assert second_headers["x-opencode-session"] == first_headers["x-opencode-session"]
+
+
+@pytest.mark.asyncio
+async def test_go_messages_protocol_sends_session_header(fake_httpx, fake_settings):
+    fake_httpx.responses.append((
+        200,
+        {"content": [{"text": "hello from minimax"}]},
+        "",
+    ))
+
+    provider = OpenCodeProvider(product="go")
+    await provider.query(
+        "opencode-go:minimax-m3",
+        [{"role": "user", "content": "hi"}],
+        session_id="conversation-messages",
+    )
+
+    headers = fake_httpx.instances[0].kwargs["headers"]
+    assert headers["x-opencode-session"] == "conversation-messages"
+    assert headers["User-Agent"] == f"the-ai-counsel/{__version__}"
 
 
 @pytest.mark.asyncio
@@ -177,6 +249,8 @@ async def test_get_models_filters_supported_protocols(fake_httpx, fake_settings)
     free = next(m for m in models if m["id"] == "opencode-zen:big-pickle")
     assert free["is_free"] is True
     assert free["provider"] == "OpenCode Zen"
+    assert fake_httpx.instances[0].kwargs["headers"]["User-Agent"] == f"the-ai-counsel/{__version__}"
+    assert "x-opencode-session" not in fake_httpx.instances[0].kwargs["headers"]
 
 
 @pytest.mark.asyncio
@@ -379,3 +453,43 @@ async def test_go_minimax_uses_messages(fake_httpx, fake_settings):
     assert provider._supports_messages("minimax-m2.7") is True
     assert provider._supports_messages("minimax-m2.5") is True
     assert provider._supports_chat_completions("minimax-m3") is False
+
+
+@pytest.mark.asyncio
+async def test_query_model_forwards_conversation_id_to_opencode(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from backend import council
+
+    provider = council.PROVIDERS["opencode-go"]
+    mock_query = AsyncMock(return_value={"content": "ok", "error": False})
+    monkeypatch.setattr(provider, "query", mock_query)
+    monkeypatch.setattr(council, "attach_cost", AsyncMock(side_effect=lambda _model, response: response))
+
+    await council.query_model(
+        "opencode-go:glm-5.1",
+        [{"role": "user", "content": "hi"}],
+        conversation_id="conversation-456",
+    )
+
+    assert mock_query.await_args.kwargs["session_id"] == "conversation-456"
+
+
+@pytest.mark.asyncio
+async def test_query_model_does_not_pass_opencode_session_to_other_providers(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from backend import council
+
+    provider = council.PROVIDERS["openrouter"]
+    mock_query = AsyncMock(return_value={"content": "ok", "error": False})
+    monkeypatch.setattr(provider, "query", mock_query)
+    monkeypatch.setattr(council, "attach_cost", AsyncMock(side_effect=lambda _model, response: response))
+
+    await council.query_model(
+        "openrouter:test-model",
+        [{"role": "user", "content": "hi"}],
+        conversation_id="conversation-789",
+    )
+
+    assert "session_id" not in mock_query.await_args.kwargs

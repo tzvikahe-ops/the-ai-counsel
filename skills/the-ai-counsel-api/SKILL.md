@@ -1,7 +1,7 @@
 ---
 name: the-ai-counsel-api
-version: 0.9.0-he.1
-description: The AI Counsel - MCP-first (10 action-based tools) when The AI Counsel MCP server is connected; REST/curl fallback when MCP is unavailable, for cron scripts, or raw SSE. Triggers on "ask the council", "run a debate", "configure models", "run a deliberation", "check council health", etc.
+version: 0.13.1+he.1
+description: The AI Counsel - MCP-first (10 action-based tools) when The AI Counsel MCP server is connected; REST/curl fallback when MCP is unavailable, for cron scripts, or raw SSE. Triggers on "ask the council", "run a debate", "configure models", "run a deliberation", "check council health", "import relay-ai keys", "disconnect providers", etc.
 ---
 
 # The AI Counsel - API & MCP Skill
@@ -17,9 +17,11 @@ Use **Council** for direct answers, creative prompts, factual questions, and "gi
 
 **Transport rule (read first):** If The AI Counsel **MCP tools are available** in your session, **call them** - do **not** shell out to `curl` for the same operation. This skill’s REST sections are the **fallback reference** when MCP is missing, the SSE session is stale, or you need raw SSE/admin export.
 
-**MCP server (v0.9.0):** Built-in SSE at `http://localhost:8001/mcp/sse` (stdio: `python -m the_ai_counsel_mcp`). Exposes **10 action-based tools** (not 25). Verify via `GET /api/health` → `"mcp": {"tools": 10, "sse_url": "..."}`.
+**MCP server (v0.13.1):** Built-in SSE at `http://localhost:8001/mcp/sse` (stdio: `python -m the_ai_counsel_mcp`). Exposes **10 action-based tools** (not 25). Verify via `GET /api/health` → `"mcp": {"tools": 10, "sse_url": "..."}`.
 
-**Default base URL (REST fallback only):** `http://localhost:8001`  
+**The server's connect message is minimal by design** — it does not list the tools. Use the roster below.
+
+**Default base URL (REST fallback only):** `http://localhost:8001` (override with `PORT_BACKEND` / `LLM_COUNCIL_BIND_PORT`)  
 **Remote server:** replace with `http://<server-ip>:8001`
 
 ---
@@ -47,6 +49,7 @@ Use MCP when your tool list includes any of these **10 tools** (server may appea
 | List / read conversations | `conversations` | `list`, `get` | ~~conversation GETs~~ |
 | Check active run progress | `conversations` | `progress` | ~~`GET /api/conversations/{id}/progress`~~ |
 | List / read / edit personas | `personas` | `list`, `get`, `update`, `reset` | ~~`/api/personas`~~ |
+| Create / delete custom personas | _(no MCP action)_ | _(Advisor Setup or REST)_ | ~~`POST /api/personas` / `DELETE /api/personas/{id}`~~ |
 | Read advisor defaults (+ presets) | `advisor_settings` | `get` | ~~`GET /api/settings`~~ (advisor fields) |
 | Update advisor defaults | `advisor_settings` | `update` | ~~`PUT /api/settings`~~ (advisor fields) |
 | Advisor preset CRUD | `advisor_settings` | `list_presets`, `save_preset`, `delete_preset`, `set_default_preset` | ~~`PUT /api/settings`~~ |
@@ -65,12 +68,14 @@ Use MCP when your tool list includes any of these **10 tools** (server may appea
 | `run_iterative_debate` | Direct params: `query`, optional `debate_rounds` (1-5), `critique_mode` (`freeform`/`paragraph`/`claim`), `auto_converge` (bool), `convergence_threshold` (1-3), `web_search`, `models` |
 | `council_settings` | `get`, `update` (members/chairman/temps/mode/prompts/provider toggles/**debate config**), `list_presets`, `save_preset`, `delete_preset`, `set_default_preset` |
 | `advisor_settings` | Same preset actions + `get`, `update` |
-| `personas` | `list`, `get`, `update`, `reset` |
+| `personas` | `list`, `get`, `update`, `reset` (custom create/delete via UI or REST) |
 | `conversations` | `list`, `get`, `progress` |
 | `providers` | `list_models`, `health`, `test`, `set_api_key`, `set_search` |
 | `config_backup` | `export`, `import`, `reset` |
 
 In Claude Code, tools appear as `mcp__the-ai-counsel__<name>` (server identifier may vary). Full parameters: [`docs/mcp/TOOLS.md`](../../docs/mcp/TOOLS.md).
+
+**Document inputs:** `council_deliberate`, `model_chat`, `advisor_debate`, and `run_iterative_debate` accept optional `documents`. Pass already extracted text as `{name, mime_type, text}` or source files as `{name, mime_type, data_base64}`. Base64 documents are extracted by the backend before model calls; providers receive normalized text context, not raw file bytes.
 
 **Agent checklist before running curl:**
 
@@ -86,8 +91,26 @@ In Claude Code, tools appear as `mcp__the-ai-counsel__<name>` (server identifier
 | **MCP errors** (connection refused, stale SSE, tool not found) | Fallback per this skill |
 | **Raw SSE event parsing** (custom UIs) | MCP deliberation tools return consolidated results, not per-event SSE |
 | **Admin export with bearer token** | `GET /api/settings/export` - manual admin action |
+| **Disconnect all providers** | `POST /api/settings/disconnect-all-providers` - no MCP action yet |
+| **Credential storage / relay-ai import / OAuth device login** | REST only (see Credentials section below) |
 
 See [`docs/mcp/TOOLS.md`](../../docs/mcp/TOOLS.md) for MCP parameters and [`docs/mcp/EXAMPLES.md`](../../docs/mcp/EXAMPLES.md) for walkthroughs.
+
+---
+
+## Credentials & secrets (v0.11.0)
+
+User guide: [`docs/CREDENTIALS.md`](../../docs/CREDENTIALS.md).
+
+**Rules for agents:**
+
+1. Secrets live in the **credential store** (`data/credentials.json` or OS keystore service `the-ai-counsel`) - **not** in `settings.json`.
+2. `GET /api/settings` returns `*_api_key_set` / `*_oauth_connected` only - never plaintext keys.
+3. Set a key via `PUT /api/settings` with the `*_api_key` field, or MCP `providers` → `set_api_key`. Empty string = Disconnect (clears store + ignores env for that secret until a new key is saved).
+4. **Retest** with an empty `api_key` body reads the credential store (`resolve_api_key`) - do not assume keys are still on the Settings model.
+5. **relay-ai import** copies from Keychain service `relay-ai` into Counsel’s store; it does **not** share or overwrite the `relay-ai` service. Switching Counsel storage to keychain writes service **`the-ai-counsel`** only.
+6. **Disconnect All Providers:** `POST /api/settings/disconnect-all-providers` (admin/loopback). Clears all secrets + disables provider toggles; keeps council/prompts.
+7. Docker/containers always use file storage - OS keystore is unavailable.
 
 ---
 
@@ -98,7 +121,7 @@ Use this table **only when MCP tools are unavailable** or the operation has no M
 | Operation | Method | Endpoint |
 |-----------|--------|----------|
 | Health check | GET | `/api/health` (includes `"mcp": {"tools": 10}`) |
-| **One-shot query (no state)** | **POST** | **`/api/ask`** |
+| **One-shot query (persisted, no prior history)** | **POST** | **`/api/ask`** |
 | Get settings (council + advisor config) | GET | `/api/settings` |
 | Update settings | PUT | `/api/settings` |
 | List all models | GET | `/api/models` + `/api/models/direct` + `/api/ollama/tags` + `/api/custom-endpoint/models` |
@@ -106,17 +129,22 @@ Use this table **only when MCP tools are unavailable** or the operation has no M
 | Create conversation | POST | `/api/conversations` |
 | Get conversation | GET | `/api/conversations/{id}` |
 | **Get live run progress** | **GET** | **`/api/conversations/{id}/progress`** |
+| Extract uploaded documents | POST | `/api/documents/extract` |
+| Extract JSON/base64 documents | POST | `/api/documents/extract-json` |
 | Send message (sync JSON) | POST | `/api/conversations/{id}/message` |
 | Send message (SSE stream) | POST | `/api/conversations/{id}/message/stream` |
 | **Run council debate (SSE stream)** | **POST** | **`/api/conversations/{id}/message/debate`** |
 | **Run advisor debate (SSE stream)** | **POST** | **`/api/conversations/{id}/debate/stream`** |
 | List all personas | GET | `/api/personas` |
+| Create a custom persona | POST | `/api/personas` |
 | Update a persona | PATCH | `/api/personas/{id}` |
 | Reset persona to defaults | DELETE | `/api/personas/{id}/override` |
+| Delete a custom persona | DELETE | `/api/personas/{id}` |
 | Test a provider | POST | `/api/settings/test-provider` |
 | Export settings (backup) | GET | `/api/settings/export` |
 | Import settings (restore) | POST | `/api/settings/import` |
 | Reset settings to defaults | POST | `/api/settings/reset` |
+| Disconnect all providers (keys + OAuth) | POST | `/api/settings/disconnect-all-providers` |
 
 **Model ID prefix format:**
 ```
@@ -128,9 +156,28 @@ custom:nvidia/nemotron-3-super-120b    → Custom endpoint
 groq:llama3-70b-8192                   → Groq fast inference
 opencode-zen:glm-5.1                   → Direct OpenCode Zen (chat/completions only, v1)
 opencode-go:kimi-k2.5                  → Direct OpenCode Go (chat/completions only, v1; subscription)
+xai-oauth:grok-4                       → xAI SuperGrok (subscription OAuth)
+openai-oauth:gpt-5                     → ChatGPT Plus/Pro (subscription OAuth; Codex Responses)
+github-copilot:gpt-4.1                 → GitHub Copilot (subscription OAuth)
 ```
 
-**OpenCode note (v0.8.0):** The OpenCode provider only exposes models that route to `/v1/chat/completions`. GPT Responses, Anthropic Messages, and per-model Gemini are not supported in v1 and are filtered out of `/v1/models`. A single shared `opencode_api_key` field covers both products; Go users can also use Zen's free models. Use `POST /api/settings/test-opencode` to validate both products at once.
+**Subscription OAuth (device-code login):**
+| Action | Method | Path |
+|--------|--------|------|
+| Start login | POST | `/api/oauth/{provider_id}/start` (`xai-oauth` \| `openai-oauth` \| `github-copilot`) |
+| Poll status | GET | `/api/oauth/{provider_id}/status?session_id=` |
+| Disconnect | DELETE | `/api/oauth/{provider_id}` |
+| Credential storage mode | POST | `/api/settings/credential-storage` body `{mode: "file"\|"keyring"}` |
+| Discover relay-ai keys | GET | `/api/credentials/import/relay-ai/discover` |
+| Import relay-ai keys | POST | `/api/credentials/import/relay-ai` body `{ids:[], replace_existing?}` |
+
+GET `/api/settings` exposes `*_oauth_connected` booleans, `credential_storage*` fields, and (when Copilot is connected) `github_copilot_plan` / `github_copilot_is_free_plan`; secrets are never returned. OS keystore mode is desktop-only (not available in Docker).
+
+**Disconnect API keys:** `PUT /api/settings` with an empty string for any `*_api_key` field clears that secret from the credential store and ignores a matching process env override (e.g. `OPENCODE_API_KEY`) until a new non-empty key is saved. Applies to OpenRouter, Groq, OpenCode, direct providers, custom endpoint, and search provider keys.
+
+**Disconnect all:** `POST /api/settings/disconnect-all-providers` - wipe credential store + OAuth, set `disabled_secret_ids` for all known secrets, disable all provider toggles. Returns `{status, cleared, message, ...settings}`.
+
+**OpenCode note (v0.8.0):** The OpenCode provider only exposes models that route to `/v1/chat/completions`. GPT Responses, Anthropic Messages, and per-model Gemini are not supported in v1 and are filtered out of `/v1/models`. A single shared `opencode_api_key` field covers both products; Go users can also use Zen's free models. Direct Go requests automatically carry the current Counsel conversation ID as `x-opencode-session` across all turns, stages, and retries, plus the identifying `the-ai-counsel/<version>` user agent; standalone provider calls generate one fallback session ID per logical query. Use `POST /api/settings/test-opencode` to validate both products at once.
 
 ---
 
@@ -138,7 +185,7 @@ opencode-go:kimi-k2.5                  → Direct OpenCode Go (chat/completions 
 
 | Scenario | Endpoint | Why |
 |----------|----------|-----|
-| One-shot query, no history needed | `POST /api/ask` | Simplest path. One call, JSON response, no state. |
+| One-shot query, no history needed | `POST /api/ask` | Simplest path. One call; the completed run is saved and returns `conversation_id`. |
 | One-shot query with web search | `POST /api/ask` with `web_search: true` | Same simplicity, adds search context. |
 | Full deliberation, don't need live progress | `POST /api/ask` with `execution_mode: "full"` | Returns all stages in one JSON response. |
 | Multi-turn conversation with follow-ups | `POST /api/conversations/{id}/message` | Models see full prior context. JSON response. |
@@ -149,8 +196,9 @@ opencode-go:kimi-k2.5                  → Direct OpenCode Go (chat/completions 
 
 **Key principles:**
 - Never mutate global config for ad-hoc queries. Use per-request `models` / `council_models` / `chairman_model` overrides instead.
+- Use optional `documents` on `/api/ask`, conversation message endpoints, council debate, and advisor debate when prompts need file context.
 - Use conversation endpoints when you need follow-up questions - models automatically receive prior turns as context.
-- `/api/ask` is stateless - no memory between calls.
+- `/api/ask` does not load prior history. Each successful call creates a new saved conversation visible in the UI and returns its `conversation_id`.
 - Advisor debates always require a conversation - create one first, then stream the debate to it.
 - Use `GET /api/conversations/{id}/progress` to check on an active run started by another client (MCP, UI, or another script) - returns `{active: false}` when no run is in progress.
 
@@ -183,7 +231,7 @@ Token semantics:
 Pricing order:
 
 1. Provider-reported cost when available. OpenRouter `usage.cost` / `usage.total_cost` is treated as known.
-2. Known-free rules report `$0`: `ollama:*`, `nvidia:*`, OpenRouter models ending in `:free`, the known free `opencode-zen:*` models, and custom endpoints whose configured `endpoint_url` contains the official `opencode.ai` host.
+2. Known-free rules report `$0`: `ollama:*`, `nvidia:*`, OpenRouter models ending in `:free`, subscription OAuth prefixes (`xai-oauth:*`, `openai-oauth:*`, `github-copilot:*`), the known free `opencode-zen:*` models, and custom endpoints whose configured `endpoint_url` contains the official `opencode.ai` host.
 3. OpenCode hardcoded pricing table for paid OpenCode Go and Zen models (`pricing_source: "table:opencode"`, `cost_status: "estimated"`).
 4. Catalog estimate from `https://ai-model-pricing.com/api/v1/pricing.json`, cached locally in `data/model_pricing_cache.json`.
 5. Fallback catalog estimate from LiteLLM's `model_prices_and_context_window.json`.
@@ -201,11 +249,58 @@ Custom endpoint note: custom OpenAI-compatible endpoints do not have a universal
 
 ---
 
+## Document uploads and extraction
+
+Document inputs are converted to plain text before model calls so they work consistently across OpenRouter, Ollama, Groq, direct providers, custom endpoints, REST, MCP, and the UI.
+
+Supported v1 formats:
+
+- PDFs
+- Text-like files: `.txt`, `.md`, `.csv`, `.json`, `.yaml`, `.xml`, `.html`
+- Logs, source code, and common config files
+
+REST endpoints:
+
+- `POST /api/documents/extract` accepts multipart uploads from the UI and returns extracted document payloads plus warnings.
+- `POST /api/documents/extract-json` accepts JSON documents with `data_base64` and returns extracted document payloads plus warnings.
+
+Request bodies that accept `documents`:
+
+- `POST /api/ask`
+- `POST /api/conversations/{id}/message`
+- `POST /api/conversations/{id}/message/stream`
+- `POST /api/conversations/{id}/message/debate`
+- `POST /api/conversations/{id}/debate/stream`
+
+Document payload shape:
+
+```json
+{
+  "name": "notes.txt",
+  "mime_type": "text/plain",
+  "text": "Meeting notes..."
+}
+```
+
+For source files over MCP/JSON, use `data_base64` instead of `text`; the MCP client extracts those files through `/api/documents/extract-json` before starting the model run.
+
+Conversation history stores attachment metadata only: file name, MIME type, byte size, extracted character count, page count when available, and warnings. It does not store raw file bytes or extracted text.
+
+PDF handling:
+
+- Embedded text extraction uses `pdfplumber`.
+- OCR is optional. Set `LLM_COUNCIL_OCR_ENABLED=1` and install OCRmyPDF, Tesseract, Ghostscript, and qpdf in the backend runtime.
+- If OCR is disabled or unavailable, extraction continues with embedded text and warnings.
+
+---
+
 ## Examples (REST fallback)
 
 ### 1. One-Shot Query (scripts / REST-only environments)
 
-The simplest way to query a model. No conversation, no state, no cleanup.
+The simplest way to query a model. Each successful call creates a new
+conversation visible in the UI and returns its `conversation_id`; no prior
+conversation history is loaded.
 
 ```bash
 curl -X POST http://localhost:8001/api/ask \
@@ -215,7 +310,7 @@ curl -X POST http://localhost:8001/api/ask \
     "models": ["custom:moonshotai/kimi-k2.6"],
     "execution_mode": "chat_only"
   }'
-# → {"response": "The capital of France is Paris.", "model": "custom:moonshotai/kimi-k2.6", "error": null}
+# → {"conversation_id": "...", "response": "The capital of France is Paris.", "model": "custom:moonshotai/kimi-k2.6", "error": null}
 ```
 
 ```python
@@ -244,15 +339,19 @@ async def ask(query, model, web_search=False, base_url="http://localhost:8001"):
 | `chairman_model` | string | No | Global chairman config | Override chairman for `full` mode |
 | `web_search` | boolean | No | `false` | Enable web search context |
 | `execution_mode` | string | No | `"chat_only"` | `chat_only`, `chat_ranking`, or `full` |
+| `documents` | array | No | `[]` | Extracted document payloads from `/api/documents/extract` or `/api/documents/extract-json` |
 
 **Response shapes by mode:**
 
-- **`chat_only` + 1 model:** `{"response": "...", "model": "...", "error": null, "usage": {...}, "cost": {...}, "cost_report": {...}}`
-- **`chat_only` + N models:** `{"responses": [{model, response, error, usage, cost}, ...], "cost_report": {...}}`
-- **`chat_ranking`:** `{"responses": [...], "rankings": [...], "aggregate_rankings": [...], "label_to_model": {...}, "cost_report": {...}}`
-- **`full`:** `{"response": "...", "chairman_model": "...", "responses": [...], "rankings": [...], "aggregate_rankings": [...], "label_to_model": {...}, "cost_report": {...}}`
+- **`chat_only` + 1 model:** `{"conversation_id": "...", "response": "...", "model": "...", "error": null, "usage": {...}, "cost": {...}, "cost_report": {...}}`
+- **`chat_only` + N models:** `{"conversation_id": "...", "responses": [{model, response, error, usage, cost}, ...], "cost_report": {...}}`
+- **`chat_ranking`:** `{"conversation_id": "...", "responses": [...], "rankings": [...], "aggregate_rankings": [...], "label_to_model": {...}, "cost_report": {...}}`
+- **`full`:** `{"conversation_id": "...", "response": "...", "chairman_model": "...", "responses": [...], "rankings": [...], "aggregate_rankings": [...], "label_to_model": {...}, "cost_report": {...}}`
 
-`cost_report` is always in USD. It summarizes `total_cost`, `input_tokens`, `output_tokens`, `total_tokens`, `total_calls`, `known_cost_calls`, `unknown_cost_calls`, `estimated_calls`, `free_calls`, `by_model`, `by_stage`, and raw `calls`.
+`conversation_id` identifies the saved UI conversation. `cost_report` is always
+in USD. It summarizes `total_cost`, `input_tokens`, `output_tokens`,
+`total_tokens`, `total_calls`, `known_cost_calls`, `unknown_cost_calls`,
+`estimated_calls`, `free_calls`, `by_model`, `by_stage`, and raw `calls`.
 
 ---
 
@@ -286,7 +385,8 @@ async def deliberate(query, models, base_url="http://localhost:8001"):
         return data["response"]  # Chairman's synthesized answer
 ```
 
-No conversation management. No config mutation. One call.
+No conversation setup. No config mutation. One call; use the returned
+`conversation_id` to inspect the saved run.
 
 ---
 
@@ -377,7 +477,7 @@ async def multi_turn_chat(base_url="http://localhost:8001"):
 **How context works:**
 - Each message sent to a conversation endpoint includes all prior user/assistant turns as chat history
 - For assistant context, the system uses the chairman synthesis (stage3) when available, otherwise the first successful model response from stage1
-- `/api/ask` is stateless - no multi-turn memory (use conversations for that)
+- `/api/ask` creates a new saved conversation per call but has no multi-turn memory (use conversation message endpoints for follow-ups)
 - You can reuse the same `conversation_id` across sessions - history is persisted to disk
 
 **When to use multi-turn vs one-shot:**
@@ -445,6 +545,7 @@ Key fields returned:
 - `enabled_providers` - global provider toggles (`openrouter`, `ollama`, `groq`, `direct`, `custom`) - apply to all model pickers (Council, Advisors, Settings)
 - `direct_provider_toggles` - per-direct-provider toggles (also global)
 - `date_format` - display date format (`"auto"`, `"MM/DD/YYYY"`, `"DD/MM/YYYY"`, `"YYYY-MM-DD"`)
+- `font_size` - global UI text scale (`"default"` = 110%, `"large"` = 150%); applies to existing and future chats
 - `response_language` - language for council/advisor model responses (default `"English"`)
 - `valid_response_languages` - read-only list of allowed `response_language` values (canonical source: `VALID_RESPONSE_LANGUAGES` in `backend/prompts.py`)
 - `response_language_default` - default language string (`"English"`)
@@ -473,6 +574,8 @@ All fields are optional - only provided fields are updated. Requires minimum 1 m
 - `"full"` - all 3 stages (individual → peer review → chairman synthesis)
 - `"chat_ranking"` - stages 1+2 (no chairman synthesis)
 - `"chat_only"` - stage 1 only (fastest, individual responses)
+
+**Accessibility display preference:** `font_size` accepts `default` or `large` and can be updated through `PUT /api/settings`. The setting is global to the UI and does not alter conversation data.
 
 **Temperature fields:**
 
@@ -559,7 +662,9 @@ Security/admin environment variables:
 |----------|---------|---------|
 | `LLM_COUNCIL_ADMIN_TOKEN` | unset | Enables remote access to settings export/import/reset when callers send `Authorization: Bearer <token>`. If unset, these admin endpoints accept only direct loopback clients and reject proxied external clients. |
 | `LLM_COUNCIL_BIND_HOST` | `127.0.0.1` | Local dev launcher bind host for `python -m backend.main`. Set to `0.0.0.0` for intentional LAN access. |
-| `LLM_COUNCIL_BIND_PORT` | `8001` | Local dev launcher bind port for `python -m backend.main`. |
+| `LLM_COUNCIL_BIND_PORT` | `8001` | Legacy override for `PORT_BACKEND`; takes precedence when set. |
+| `PORT_BACKEND` | `8001` | Backend / MCP SSE listen port. Also used by Vite in local dev as the API port. |
+| `PORT_FRONTEND` | `5173` | Vite dev/preview server port. Not used by the Docker image, which serves the built UI from the backend port. |
 
 ---
 
@@ -691,10 +796,11 @@ async def poll_progress(conv_id: str, base_url="http://localhost:8001"):
 ### 14. List and Inspect Personas
 
 ```bash
-# List all 12 personas with current customizations
+# List the 12 built-in personas plus any custom personas
 curl http://localhost:8001/api/personas | python3 -m json.tool
 
-# Each persona has: id, name, role, description, system_prompt, avatar_emoji, color, is_customized
+# Each persona has: id, name, role, description, system_prompt, avatar_emoji,
+# color, is_customized, and is_custom (true for personas created by the user)
 ```
 
 ```python
@@ -706,13 +812,27 @@ async def get_persona(persona_id, base_url="http://localhost:8001"):
     return next((p for p in personas if p["id"] == persona_id), None)
 ```
 
-**Built-in persona IDs:** `skeptic`, `pragmatist`, `innovator`, `historian`, `ethicist`, `analyst`, `contrarian`, `strategist`, `humanist`, `risk-assessor`, `comedian`, `economist`
+**Built-in persona IDs:** `skeptic`, `pragmatist`, `innovator`, `historian`, `ethicist`, `analyst`, `contrarian`, `strategist`, `humanist`, `risk-assessor`, `comedian`, `economist`. Custom IDs are generated from the persona name and are returned by `GET /api/personas`.
+
+**To create a custom persona:**
+
+```bash
+curl -X POST http://localhost:8001/api/personas \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "The Futurist",
+    "role": "Trend Forecaster",
+    "description": "Projects long-term consequences.",
+    "system_prompt": "You are The Futurist. Identify emerging trends, plausible futures, and the assumptions that separate them."
+  }'
+# → Returns the new persona with is_custom: true
+```
 
 ---
 
 ### 15. Update a Persona
 
-Customize any persona's name, role, description, system prompt, or emoji. Changes persist to disk and mark `is_customized: true`.
+Customize any built-in persona's name, role, description, system prompt, or emoji. Custom personas can be edited through the same UI/API. Changes persist to disk and mark `is_customized: true`.
 
 ```bash
 curl -X PATCH http://localhost:8001/api/personas/skeptic \
@@ -733,6 +853,15 @@ Only provided fields are changed; others keep their current values.
 curl -X DELETE http://localhost:8001/api/personas/skeptic/override
 # → Returns the restored default persona with is_customized: false
 ```
+
+**To delete a custom persona:**
+
+```bash
+curl -X DELETE http://localhost:8001/api/personas/the-futurist
+# → Returns {"deleted": "the-futurist"}
+```
+
+Deleting a custom persona also removes its ID and any per-persona model assignment from saved `advisor_presets`. Presets are retained so they can be repaired if fewer than two advisors remain.
 
 ---
 

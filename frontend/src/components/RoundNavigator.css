@@ -34,7 +34,7 @@
 }
 
 .round-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--text-secondary);
   font-weight: 500;
 }

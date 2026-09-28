@@ -49,6 +49,7 @@
   --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-content: 'IBM Plex Sans', 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-code: 'JetBrains Mono', monospace;
+  --font-scale: 1.1;
 
   --shadow-glass: 0 12px 40px rgba(0, 0, 0, 0.35);
   --shadow-glow-blue: 0 0 24px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -112,6 +113,7 @@
 body {
   margin: 0;
   font-family: var(--font-ui);
+  font-size: calc(16px * var(--font-scale));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--body-bg);
@@ -152,7 +154,7 @@ body::after {
 
 .markdown-content {
   font-family: var(--font-content);
-  font-size: 16px;
+  font-size: calc(16px * var(--font-scale));
   font-weight: 400;
   line-height: 1.68;
   color: var(--md-text);
@@ -178,7 +180,7 @@ body::after {
   background: var(--code-inline-bg);
   padding: 0.2em 0.4em;
   border-radius: 4px;
-  font-size: 0.9em;
+  font-size: calc(0.9em * var(--font-scale));
   color: var(--code-inline-color);
 }
 
@@ -191,7 +193,7 @@ body::after {
   margin: 1em 0;
 }
 
-.markdown-content pre code { background: transparent; padding: 0; color: inherit; font-size: 0.85em; }
+.markdown-content pre code { background: transparent; padding: 0; color: inherit; font-size: calc(0.85em * var(--font-scale)); }
 
 .markdown-content ul, .markdown-content ol { padding-inline-start: 1.5em; margin-bottom: 1em; }
 
@@ -211,7 +213,7 @@ body::after {
   width: 100%;
   border-collapse: collapse;
   margin: 1em 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-family: var(--font-ui);
   border-radius: 8px;
   overflow: hidden;
@@ -273,6 +275,28 @@ samp,
 [dir="rtl"] textarea:not(.ltr):not([dir="ltr"]),
 [dir="rtl"] select:not(.ltr):not([dir="ltr"]) {
   text-align: right;
+}
+
+/* Global Button Reset */
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-ui);
+  font-size: inherit;
+}
+
+/* Accessibility scaling applies to text, while icon glyphs retain their
+   existing geometry so larger text does not break compact controls. */
+[class*="icon"],
+[class*="emoji"],
+[class*="chevron"],
+[class*="arrow"],
+[class*="trophy"],
+[class*="star"],
+[class*="avatar"],
+.close-button {
+  --font-scale: 1;
 }
 
 /* Inputs that should always stay LTR even inside RTL doc (URLs, keys, model IDs) */

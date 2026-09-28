@@ -16,7 +16,7 @@
   justify-content: center;
   color: var(--text-secondary);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -82,7 +82,6 @@
 /* Ensure modals sit on top of the glass UI */
 .settings-overlay {
   background: rgba(0, 0, 0, 0.7); /* Darker overlay for contrast */
-  backdrop-filter: blur(4px);
 }
 
 .settings-modal {

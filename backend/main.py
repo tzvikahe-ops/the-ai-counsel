@@ -1,6 +1,9 @@
 """FastAPI backend for LLM Council."""
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+import base64
+import binascii
+
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,6 +15,7 @@ import secrets
 import uuid
 import json
 import asyncio
+from dataclasses import dataclass, field
 
 from . import storage
 from .council import generate_conversation_title, generate_search_query, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings, PROVIDERS
@@ -19,11 +23,50 @@ from .config import get_chairman_model, get_council_models
 from .costs import build_advisor_cost_report, build_council_cost_report, build_iterative_debate_cost_report
 from .model_preflight import build_preflight_error_message, preflight_models
 from .search import perform_web_search, SearchProvider
-from .settings import get_settings, save_settings, update_settings, Settings, DEFAULT_COUNCIL_MODELS, DEFAULT_CHAIRMAN_MODEL, AVAILABLE_MODELS, PROMPT_DEFAULTS
+from .settings import (
+    get_settings,
+    save_settings,
+    update_settings,
+    remove_persona_from_advisor_presets,
+    Settings,
+    DEFAULT_COUNCIL_MODELS,
+    DEFAULT_CHAIRMAN_MODEL,
+    PROMPT_DEFAULTS,
+    VALID_FONT_SIZES,
+)
+from .settings_payload import apply_admin_import, build_admin_export, build_settings_response
+from .credentials import (
+    apply_settings_secret_updates,
+    disconnect_all_credentials,
+    get_api_key,
+    get_availability,
+    migrate_storage_mode,
+    resolve_api_key,
+    wipe_all_secrets,
+)
+from .credentials.relay_import import discover_relay_ai_credentials, import_relay_ai_credentials
+from .credentials.upgrade import ensure_credentials_upgraded
+from .oauth.sessions import disconnect_oauth, get_oauth_session_status, start_oauth_session
 from .prompts import VALID_RESPONSE_LANGUAGES, RESPONSE_LANGUAGE_DEFAULT
-from .personas import get_all_personas, save_persona_override, delete_persona_override, get_persona
+from .personas import (
+    get_all_personas,
+    save_persona_override,
+    delete_persona_override,
+    get_persona,
+    create_persona,
+    update_custom_persona,
+    delete_persona,
+)
 from .advisors import run_debate
 from .debate import run_iterative_debate, MAX_DEBATE_ROUNDS
+from .documents import (
+    DocumentError,
+    DocumentLimits,
+    build_effective_query,
+    extract_text_bytes,
+    to_attachment_metadata,
+    validate_documents_for_request,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -300,6 +343,35 @@ FRONTEND_DIST_DIR = os.getenv(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist"),
 )
 
+# Backend HTTP port. Configured via PORT_BACKEND in .env (LLM_COUNCIL_BIND_PORT
+# is still honoured as a legacy override for existing deployments).
+def _resolve_backend_port() -> int:
+    """Resolve the backend port, failing with a usable message on bad input.
+
+    This runs at import time rather than only in __main__, so a malformed value
+    would otherwise raise a bare ValueError from anything that imports this
+    module -- the test suite and the container healthcheck included.
+    """
+    raw = (os.getenv("LLM_COUNCIL_BIND_PORT") or os.getenv("PORT_BACKEND") or "").strip()
+    if not raw:
+        return 8001
+    try:
+        port = int(raw)
+    except ValueError:
+        raise ValueError(
+            f"Invalid backend port {raw!r}. Set PORT_BACKEND (or "
+            f"LLM_COUNCIL_BIND_PORT) to an integer between 1 and 65535."
+        ) from None
+    if not 1 <= port <= 65535:
+        raise ValueError(
+            f"Backend port {port} is out of range. Set PORT_BACKEND (or "
+            f"LLM_COUNCIL_BIND_PORT) to an integer between 1 and 65535."
+        )
+    return port
+
+
+BACKEND_PORT = _resolve_backend_port()
+
 CORS_FRONTEND_HOSTS = [
     origin.strip()
     for origin in os.getenv("FRONTEND_HOST", "").split(",")
@@ -333,6 +405,7 @@ class StartDebateRequest(BaseModel):
     max_rounds: int = 3
     web_search: bool = False
     search_provider: Optional[str] = None
+    documents: Optional[List[Dict[str, Any]]] = None
 
 
 ExecutionMode = Literal["chat_only", "chat_ranking", "full"]
@@ -346,6 +419,7 @@ class SendMessageRequest(BaseModel):
     council_models: Optional[List[str]] = None
     chairman_model: Optional[str] = None
     debate_rounds: Optional[int] = None
+    documents: Optional[List[Dict[str, Any]]] = None
 
 
 class AskRequest(BaseModel):
@@ -354,6 +428,67 @@ class AskRequest(BaseModel):
     chairman_model: Optional[str] = None
     web_search: bool = False
     execution_mode: ExecutionMode = "chat_only"
+    documents: Optional[List[Dict[str, Any]]] = None
+
+
+class DocumentExtractJsonRequest(BaseModel):
+    documents: List[Dict[str, Any]]
+
+
+def _documents_response(documents: List[Dict[str, Any]]) -> Dict[str, Any]:
+    validated = validate_documents_for_request(documents)
+    return {
+        "documents": validated,
+        "attachments": to_attachment_metadata(validated),
+        "warnings": [
+            warning
+            for doc in validated
+            for warning in (doc.get("metadata") or {}).get("warnings", [])
+        ],
+    }
+
+
+def _prepare_document_context(content: str, documents: Optional[List[Dict[str, Any]]]) -> tuple[str, List[Dict[str, Any]]]:
+    validated = validate_documents_for_request(documents)
+    return build_effective_query(content, validated), to_attachment_metadata(validated)
+
+
+@app.post("/api/documents/extract")
+async def extract_documents_endpoint(files: List[UploadFile] = File(description="Documents to extract")):
+    documents = []
+    try:
+        for file in files:
+            data = await file.read()
+            documents.append(extract_text_bytes(file.filename or "attachment", file.content_type or "", data))
+        return _documents_response(documents)
+    except DocumentError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/documents/extract-json")
+async def extract_documents_json_endpoint(body: DocumentExtractJsonRequest):
+    documents = []
+    limits = DocumentLimits()
+    try:
+        for item in body.documents:
+            name = item.get("name") or "attachment"
+            mime_type = item.get("mime_type") or item.get("content_type") or ""
+            if item.get("text") is not None:
+                documents.append(item)
+                continue
+            if not item.get("data_base64"):
+                raise DocumentError(f"{name} must include text or data_base64.")
+            b64 = str(item["data_base64"])
+            if len(b64) > limits.max_document_base64_chars:
+                raise DocumentError(f"{name} is too large.")
+            try:
+                data = base64.b64decode(b64, validate=True)
+            except (binascii.Error, ValueError) as exc:
+                raise DocumentError(f"{name} is not valid base64.") from exc
+            documents.append(extract_text_bytes(name, mime_type, data, limits))
+        return _documents_response(documents)
+    except DocumentError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def _validate_execution_mode(mode: str) -> None:
@@ -367,24 +502,38 @@ def _apply_search_env(settings: Settings, provider_override: Optional[str] = Non
     """Set env vars for the active search provider and return it."""
     provider_str = provider_override if provider_override else settings.search_provider
     provider = SearchProvider(provider_str)
-    if settings.serper_api_key and provider == SearchProvider.SERPER:
-        os.environ["SERPER_API_KEY"] = settings.serper_api_key
-    if settings.tavily_api_key and provider == SearchProvider.TAVILY:
-        os.environ["TAVILY_API_KEY"] = settings.tavily_api_key
-    if settings.brave_api_key and provider == SearchProvider.BRAVE:
-        os.environ["BRAVE_API_KEY"] = settings.brave_api_key
-    if settings.tinyfish_api_key and provider == SearchProvider.TINYFISH:
-        os.environ["TINYFISH_API_KEY"] = settings.tinyfish_api_key
+    if provider == SearchProvider.SERPER:
+        key = get_api_key("serper")
+        if key:
+            os.environ["SERPER_API_KEY"] = key
+    elif provider == SearchProvider.TAVILY:
+        key = get_api_key("tavily")
+        if key:
+            os.environ["TAVILY_API_KEY"] = key
+    elif provider == SearchProvider.BRAVE:
+        key = get_api_key("brave")
+        if key:
+            os.environ["BRAVE_API_KEY"] = key
+    elif provider == SearchProvider.TINYFISH:
+        key = get_api_key("tinyfish")
+        if key:
+            os.environ["TINYFISH_API_KEY"] = key
     return provider
 
 
-async def _fetch_search_context(content: str, settings: Settings, provider_override: Optional[str] = None) -> tuple:
+async def _fetch_search_context(
+    content: str,
+    settings: Settings,
+    provider_override: Optional[str] = None,
+    *,
+    conversation_id: Optional[str] = None,
+) -> tuple:
     """Run web search and return (search_context, search_query)."""
     provider = _apply_search_env(settings, provider_override)
     # Use LLM query generation only when explicitly selected and not using DuckDuckGo
     # (DDG has built-in query optimization; no need to pre-process)
     if settings.search_keyword_extraction == "llm" and provider != SearchProvider.DUCKDUCKGO:
-        search_query = await generate_search_query(content)
+        search_query = await generate_search_query(content, conversation_id=conversation_id)
     else:
         search_query = content
     search_result = await perform_web_search(
@@ -428,15 +577,16 @@ def _build_council_preflight_models(body: SendMessageRequest) -> List[str]:
     return models
 
 
-async def _run_model_preflight(models: List[str]) -> str:
+async def _run_model_preflight(
+    models: List[str],
+    *,
+    conversation_id: Optional[str] = None,
+) -> str:
     """Return a user-facing error message if model preflight fails."""
-    result = await preflight_models(models)
+    result = await preflight_models(models, conversation_id=conversation_id)
     if result.ok:
         return ""
     return build_preflight_error_message(result)
-
-
-from dataclasses import dataclass, field
 
 
 @dataclass
@@ -459,6 +609,7 @@ async def _run_council_pipeline(
     request: Optional[Request] = None,
     history: Optional[List[Dict[str, str]]] = None,
     preflight: bool = True,
+    conversation_id: Optional[str] = None,
 ) -> PipelineResult:
     """Shared orchestration for stage1 → stage2 → stage3 (non-streaming)."""
     result = PipelineResult()
@@ -470,11 +621,21 @@ async def _run_council_pipeline(
             council_models=models_override,
             chairman_model=chairman_override,
         )
-        preflight_error = await _run_model_preflight(_build_council_preflight_models(body))
+        preflight_error = await _run_model_preflight(
+            _build_council_preflight_models(body),
+            conversation_id=conversation_id,
+        )
         if preflight_error:
             raise HTTPException(status_code=400, detail=preflight_error)
 
-    async for item in stage1_collect_responses(content, search_context, request=request, models_override=models_override, history=history):
+    async for item in stage1_collect_responses(
+        content,
+        search_context,
+        request=request,
+        models_override=models_override,
+        history=history,
+        conversation_id=conversation_id,
+    ):
         if isinstance(item, int):
             continue
         result.stage1.append(item)
@@ -484,7 +645,13 @@ async def _run_council_pipeline(
         raise HTTPException(status_code=502, detail=f"All models failed: {'; '.join(errors)}")
 
     if execution_mode in ("chat_ranking", "full"):
-        async for item in stage2_collect_rankings(content, result.stage1, search_context, request=request):
+        async for item in stage2_collect_rankings(
+            content,
+            result.stage1,
+            search_context,
+            request=request,
+            conversation_id=conversation_id,
+        ):
             if isinstance(item, dict) and not item.get('model'):
                 result.label_to_model = item
                 continue
@@ -494,7 +661,8 @@ async def _run_council_pipeline(
     if execution_mode == "full":
         result.stage3 = await stage3_synthesize_final(
             content, result.stage1, result.stage2, search_context,
-            chairman_override=chairman_override
+            chairman_override=chairman_override,
+            conversation_id=conversation_id,
         )
 
     result.cost_report = build_council_cost_report(result.stage1, result.stage2, result.stage3)
@@ -529,7 +697,7 @@ class Conversation(BaseModel):
 @app.get("/api/health")
 async def health_check(request: Request):
     """Health check endpoint."""
-    host = request.headers.get("host", "localhost:8001")
+    host = request.headers.get("host", f"localhost:{BACKEND_PORT}")
     scheme = request.headers.get("x-forwarded-proto", "http")
     return {
         "status": "ok",
@@ -646,9 +814,13 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
         cost_report = None
         _register_run(conversation_id, body.execution_mode)
         try:
-            storage.add_user_message(conversation_id, body.content, conversation=conversation)
+            effective_content, attachments = _prepare_document_context(body.content, body.documents)
+            storage.add_user_message(conversation_id, body.content, conversation=conversation, attachments=attachments)
 
-            preflight_error = await _run_model_preflight(_build_council_preflight_models(body))
+            preflight_error = await _run_model_preflight(
+                _build_council_preflight_models(body),
+                conversation_id=conversation_id,
+            )
             if preflight_error:
                 storage.add_error_message(conversation_id, preflight_error)
                 yield f"data: {json.dumps({'type': 'error', 'message': preflight_error})}\n\n"
@@ -656,7 +828,9 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
 
             # Start title generation in parallel (don't await yet)
             if is_first_message:
-                title_task = asyncio.create_task(generate_conversation_title(body.content))
+                title_task = asyncio.create_task(
+                    generate_conversation_title(body.content, conversation_id=conversation_id)
+                )
 
             search_context = ""
             search_query = ""
@@ -676,7 +850,10 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
                 # Use LLM query generation only when explicitly selected and not using DuckDuckGo
                 # (DDG has built-in query optimization; no need to pre-process)
                 if settings.search_keyword_extraction == "llm" and provider != SearchProvider.DUCKDUCKGO:
-                    search_query = await generate_search_query(body.content)
+                    search_query = await generate_search_query(
+                        body.content,
+                        conversation_id=conversation_id,
+                    )
                 else:
                     search_query = body.content
 
@@ -704,7 +881,14 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
 
             total_models = 0
 
-            async for item in stage1_collect_responses(body.content, search_context, request, models_override=body.council_models, history=history):
+            async for item in stage1_collect_responses(
+                effective_content,
+                search_context,
+                request,
+                models_override=body.council_models,
+                history=history,
+                conversation_id=conversation_id,
+            ):
                 if isinstance(item, int):
                     total_models = item
                     _active_runs[conversation_id]["progress"]["stage1"]["total"] = total_models
@@ -733,7 +917,13 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
                 await asyncio.sleep(0.05)
 
                 # Iterate over the async generator
-                async for item in stage2_collect_rankings(body.content, stage1_results, search_context, request):
+                async for item in stage2_collect_rankings(
+                    effective_content,
+                    stage1_results,
+                    search_context,
+                    request,
+                    conversation_id=conversation_id,
+                ):
                     # First item is the label mapping
                     if isinstance(item, dict) and not item.get('model'):
                         label_to_model = item
@@ -764,7 +954,14 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
                     print("Client disconnected before Stage 3")
                     raise asyncio.CancelledError("Client disconnected")
 
-                stage3_result = await stage3_synthesize_final(body.content, stage1_results, stage2_results, search_context, chairman_override=body.chairman_model)
+                stage3_result = await stage3_synthesize_final(
+                    effective_content,
+                    stage1_results,
+                    stage2_results,
+                    search_context,
+                    chairman_override=body.chairman_model,
+                    conversation_id=conversation_id,
+                )
                 _active_runs[conversation_id]["stage3_response"] = stage3_result
                 yield f"data: {json.dumps({'type': 'stage3_complete', 'data': stage3_result})}\n\n"
 
@@ -877,9 +1074,13 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
         debate_converged = False
         _register_run(conversation_id, body.execution_mode)
         try:
-            storage.add_user_message(conversation_id, body.content, conversation=conversation)
+            effective_content, attachments = _prepare_document_context(body.content, body.documents)
+            storage.add_user_message(conversation_id, body.content, conversation=conversation, attachments=attachments)
 
-            preflight_error = await _run_model_preflight(_build_council_preflight_models(body))
+            preflight_error = await _run_model_preflight(
+                _build_council_preflight_models(body),
+                conversation_id=conversation_id,
+            )
             if preflight_error:
                 storage.add_error_message(conversation_id, preflight_error)
                 yield f"data: {json.dumps({'type': 'error', 'message': preflight_error})}\n\n"
@@ -887,7 +1088,9 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
 
             # Start title generation in parallel
             if is_first_message:
-                title_task = asyncio.create_task(generate_conversation_title(body.content))
+                title_task = asyncio.create_task(
+                    generate_conversation_title(body.content, conversation_id=conversation_id)
+                )
 
             search_context = ""
             search_query = ""
@@ -904,7 +1107,10 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
                     raise asyncio.CancelledError("Client disconnected")
 
                 if settings.search_keyword_extraction == "llm" and provider != SearchProvider.DUCKDUCKGO:
-                    search_query = await generate_search_query(body.content)
+                    search_query = await generate_search_query(
+                        body.content,
+                        conversation_id=conversation_id,
+                    )
                 else:
                     search_query = body.content
 
@@ -930,11 +1136,12 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
             effective_rounds = min(max(effective_rounds, 1), MAX_DEBATE_ROUNDS)
 
             async for event in run_iterative_debate(
-                body.content, search_context, request, body.execution_mode,
+                effective_content, search_context, request, body.execution_mode,
                 models_override=body.council_models,
                 chairman_override=body.chairman_model,
                 history=history,
                 debate_rounds=effective_rounds,
+                conversation_id=conversation_id,
             ):
                 event_type = event.get("type")
                 yield f"data: {json.dumps(event)}\n\n"
@@ -1101,22 +1308,63 @@ class PersonaOverrideRequest(BaseModel):
     avatar_emoji: Optional[str] = None
 
 
+class PersonaCreateRequest(BaseModel):
+    name: str
+    role: str
+    description: str
+    system_prompt: str
+    avatar_emoji: Optional[str] = None
+
+
+@app.post("/api/personas")
+async def add_persona(body: PersonaCreateRequest):
+    """Create a brand-new custom advisor persona."""
+    if not body.name.strip() or not body.role.strip() or not body.system_prompt.strip():
+        raise HTTPException(status_code=400, detail="Name, role, and system prompt are required")
+    created = create_persona(body.model_dump(exclude_none=True))
+    return created.model_dump()
+
+
 @app.patch("/api/personas/{persona_id}")
 async def update_persona(persona_id: str, body: PersonaOverrideRequest):
-    """Save user overrides for a persona."""
-    if not get_persona(persona_id):
+    """Save user overrides for a persona, or edit a custom persona in place."""
+    persona = get_persona(persona_id)
+    if not persona:
         raise HTTPException(status_code=404, detail="Persona not found")
-    updated = save_persona_override(persona_id, body.model_dump(exclude_none=True))
+    fields = body.model_dump(exclude_none=True)
+    if persona.is_custom:
+        updated = update_custom_persona(persona_id, fields)
+    else:
+        updated = save_persona_override(persona_id, fields)
     return updated.model_dump()
 
 
 @app.delete("/api/personas/{persona_id}/override")
 async def reset_persona(persona_id: str):
     """Remove user overrides and restore persona defaults."""
-    if not get_persona(persona_id):
+    persona = get_persona(persona_id)
+    if not persona:
         raise HTTPException(status_code=404, detail="Persona not found")
+    if persona.is_custom:
+        raise HTTPException(status_code=400, detail="Custom advisors have no default to reset to; delete instead")
     restored = delete_persona_override(persona_id)
     return restored.model_dump()
+
+
+@app.delete("/api/personas/{persona_id}")
+async def remove_persona(persona_id: str):
+    """Permanently delete a custom advisor persona."""
+    persona = get_persona(persona_id)
+    if not persona:
+        raise HTTPException(status_code=404, detail="Persona not found")
+    if not persona.is_custom:
+        raise HTTPException(status_code=400, detail="Built-in advisors cannot be deleted")
+    # Clean settings first so a failed persona-file write cannot leave a
+    # deleted persona referenced by a saved preset.
+    remove_persona_from_advisor_presets(persona_id)
+    if not delete_persona(persona_id):
+        raise HTTPException(status_code=404, detail="Persona not found")
+    return {"deleted": persona_id}
 
 
 @app.post("/api/conversations/{conversation_id}/debate/stream")
@@ -1139,7 +1387,8 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
         _register_advisor_run(conversation_id, body)
         try:
             conversation["mode"] = "advisors"
-            storage.add_user_message(conversation_id, body.question, conversation=conversation)
+            effective_question, attachments = _prepare_document_context(body.question, body.documents)
+            storage.add_user_message(conversation_id, body.question, conversation=conversation, attachments=attachments)
 
             search_context = ""
             if body.search_provider or body.web_search:
@@ -1147,7 +1396,12 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
                 event = {"type": "advisor_search_start"}
                 _update_advisor_run(conversation_id, event)
                 yield f"data: {json.dumps(event)}\n\n"
-                search_context, search_query, _ = await _fetch_search_context(body.question, settings, body.search_provider)
+                search_context, search_query, _ = await _fetch_search_context(
+                    body.question,
+                    settings,
+                    body.search_provider,
+                    conversation_id=conversation_id,
+                )
                 event = {"type": "advisor_search_complete", "data": {"search_query": search_query}}
                 _update_advisor_run(conversation_id, event)
                 yield f"data: {json.dumps(event)}\n\n"
@@ -1162,7 +1416,7 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
 
             web_search_used = bool(body.search_provider or body.web_search)
             async for event in run_debate(
-                question=body.question,
+                question=effective_question,
                 persona_ids=body.persona_ids,
                 model_assignments=body.model_assignments,
                 default_model=body.default_model,
@@ -1172,8 +1426,11 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
                 search_context=search_context,
                 request=request,
                 preflight=True,
+                conversation_id=conversation_id,
             ):
                 event_type = event.get("type", "")
+                if event_type == "advisor_debate_start" and "data" in event:
+                    event["data"]["question"] = body.question
                 _update_advisor_run(conversation_id, event)
 
                 if event_type == "advisor_complete":
@@ -1219,14 +1476,20 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
             )
 
             if is_first_message:
-                title = await generate_conversation_title(body.question)
+                title = await generate_conversation_title(
+                    body.question,
+                    conversation_id=conversation_id,
+                )
                 storage.update_conversation_title(conversation_id, title)
                 yield f"data: {json.dumps({'type': 'title_complete', 'data': {'title': title}})}\n\n"
 
         except asyncio.CancelledError:
             if is_first_message:
                 try:
-                    title = await generate_conversation_title(body.question)
+                    title = await generate_conversation_title(
+                        body.question,
+                        conversation_id=conversation_id,
+                    )
                     storage.update_conversation_title(conversation_id, title)
                 except Exception:
                     pass
@@ -1259,23 +1522,36 @@ async def send_message_sync(conversation_id: str, body: SendMessageRequest):
 
     history = _build_chat_history(conversation)
 
-    preflight_error = await _run_model_preflight(_build_council_preflight_models(body))
+    preflight_error = await _run_model_preflight(
+        _build_council_preflight_models(body),
+        conversation_id=conversation_id,
+    )
     if preflight_error:
         raise HTTPException(status_code=400, detail=preflight_error)
 
-    storage.add_user_message(conversation_id, body.content, conversation=conversation)
+    try:
+        effective_content, attachments = _prepare_document_context(body.content, body.documents)
+    except DocumentError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    storage.add_user_message(conversation_id, body.content, conversation=conversation, attachments=attachments)
 
     search_context = ""
     search_query = ""
     if body.web_search:
         settings = get_settings()
-        search_context, search_query, _ = await _fetch_search_context(body.content, settings)
+        search_context, search_query, _ = await _fetch_search_context(
+            body.content,
+            settings,
+            conversation_id=conversation_id,
+        )
 
     result = await _run_council_pipeline(
-        body.content, body.execution_mode, search_context,
+        effective_content, body.execution_mode, search_context,
         models_override=body.council_models, chairman_override=body.chairman_model,
         history=history,
         preflight=False,
+        conversation_id=conversation_id,
     )
 
     metadata = {"execution_mode": body.execution_mode, "cost_report": result.cost_report}
@@ -1309,9 +1585,10 @@ async def send_message_sync(conversation_id: str, body: SendMessageRequest):
 
 @app.post("/api/ask")
 async def ask_oneshot(body: AskRequest):
-    """One-shot query: no conversation, no state. Returns JSON directly."""
+    """Run a one-shot query, persist it as a conversation, and return JSON."""
     settings = get_settings()
     models = body.models if body.models else settings.council_models
+    conversation_id = str(uuid.uuid4())
 
     if not models:
         raise HTTPException(status_code=400, detail="At least one model is required")
@@ -1322,23 +1599,69 @@ async def ask_oneshot(body: AskRequest):
         council_models=models,
         chairman_model=body.chairman_model,
     )
-    preflight_error = await _run_model_preflight(_build_council_preflight_models(preflight_body))
+    preflight_error = await _run_model_preflight(
+        _build_council_preflight_models(preflight_body),
+        conversation_id=conversation_id,
+    )
     if preflight_error:
         raise HTTPException(status_code=400, detail=preflight_error)
 
     search_context = ""
+    search_query = ""
     if body.web_search:
-        search_context, _, _ = await _fetch_search_context(body.content, settings)
+        search_context, search_query, _ = await _fetch_search_context(
+            body.content,
+            settings,
+            conversation_id=conversation_id,
+        )
+
+    try:
+        effective_content, attachments = _prepare_document_context(body.content, body.documents)
+    except DocumentError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     result = await _run_council_pipeline(
-        body.content, body.execution_mode, search_context,
+        effective_content, body.execution_mode, search_context,
         models_override=models, chairman_override=body.chairman_model,
         preflight=False,
+        conversation_id=conversation_id,
+    )
+
+    conversation = storage.create_conversation(conversation_id)
+    conversation["title"] = storage.derive_conversation_title(body.content)
+    storage.add_user_message(
+        conversation_id,
+        body.content,
+        conversation=conversation,
+        attachments=attachments,
+    )
+
+    metadata = {
+        "execution_mode": body.execution_mode,
+        "cost_report": result.cost_report,
+    }
+    if body.execution_mode in ("chat_ranking", "full"):
+        metadata["label_to_model"] = result.label_to_model
+        metadata["aggregate_rankings"] = result.aggregate_rankings
+    if search_context:
+        metadata["search_context"] = search_context
+        metadata["web_search"] = True
+    if search_query:
+        metadata["search_query"] = search_query
+
+    storage.add_assistant_message(
+        conversation_id,
+        result.stage1,
+        result.stage2 if body.execution_mode in ("chat_ranking", "full") else None,
+        result.stage3 if body.execution_mode == "full" else None,
+        metadata,
+        conversation=conversation,
     )
 
     if body.execution_mode == "chat_only" and len(result.stage1) == 1:
         r = result.stage1[0]
         return {
+            "conversation_id": conversation_id,
             "response": r.get("response"),
             "model": r.get("model"),
             "error": r.get("error"),
@@ -1348,10 +1671,15 @@ async def ask_oneshot(body: AskRequest):
         }
 
     if body.execution_mode == "chat_only":
-        return {"responses": result.stage1, "cost_report": result.cost_report}
+        return {
+            "conversation_id": conversation_id,
+            "responses": result.stage1,
+            "cost_report": result.cost_report,
+        }
 
     if body.execution_mode == "chat_ranking":
         return {
+            "conversation_id": conversation_id,
             "responses": result.stage1,
             "rankings": result.stage2,
             "aggregate_rankings": result.aggregate_rankings,
@@ -1360,6 +1688,7 @@ async def ask_oneshot(body: AskRequest):
         }
 
     return {
+        "conversation_id": conversation_id,
         "response": result.stage3.get("response") if result.stage3 else None,
         "chairman_model": result.stage3.get("model") if result.stage3 else None,
         "responses": result.stage1,
@@ -1420,6 +1749,7 @@ class UpdateSettingsRequest(BaseModel):
     # Display Preferences
     date_format: Optional[str] = None
     response_language: Optional[str] = None
+    font_size: Optional[str] = None
 
     # Execution Mode
     execution_mode: Optional[str] = None
@@ -1461,87 +1791,7 @@ class TestTavilyRequest(BaseModel):
 @app.get("/api/settings")
 async def get_app_settings():
     """Get current application settings."""
-    settings = get_settings()
-    return {
-        "search_provider": settings.search_provider,
-        "search_keyword_extraction": settings.search_keyword_extraction,
-        "search_result_count": settings.search_result_count,
-        "search_hybrid_mode": settings.search_hybrid_mode,
-        "ollama_base_url": settings.ollama_base_url,
-        "full_content_results": settings.full_content_results,
-
-        # Custom Endpoint
-        "custom_endpoint_name": settings.custom_endpoint_name,
-        "custom_endpoint_url": settings.custom_endpoint_url,
-        # Don't send the API key to frontend for security
-
-        # API Key Status
-        "serper_api_key_set": bool(settings.serper_api_key),
-        "tavily_api_key_set": bool(settings.tavily_api_key),
-        "brave_api_key_set": bool(settings.brave_api_key),
-        "tinyfish_api_key_set": bool(settings.tinyfish_api_key),
-        "openrouter_api_key_set": bool(settings.openrouter_api_key),
-        "openai_api_key_set": bool(settings.openai_api_key),
-        "anthropic_api_key_set": bool(settings.anthropic_api_key),
-        "google_api_key_set": bool(settings.google_api_key),
-        "mistral_api_key_set": bool(settings.mistral_api_key),
-        "deepseek_api_key_set": bool(settings.deepseek_api_key),
-        "groq_api_key_set": bool(settings.groq_api_key),
-        "nvidia_api_key_set": bool(settings.nvidia_api_key),
-        "opencode_api_key_set": bool(settings.opencode_api_key),
-        "custom_endpoint_api_key_set": bool(settings.custom_endpoint_api_key),
-
-        # Enabled Providers
-        "enabled_providers": settings.enabled_providers,
-        "direct_provider_toggles": settings.direct_provider_toggles,
-
-        # Council Configuration (unified)
-        "council_models": settings.council_models,
-        "chairman_model": settings.chairman_model,
-
-        # Remote/Local filters
-        "council_member_filters": settings.council_member_filters,
-        "chairman_filter": settings.chairman_filter,
-        "search_query_filter": settings.search_query_filter,
-
-        # Temperature Settings
-        "council_temperature": settings.council_temperature,
-        "chairman_temperature": settings.chairman_temperature,
-        "stage2_temperature": settings.stage2_temperature,
-
-        # Prompts
-        "stage1_prompt": settings.stage1_prompt,
-        "stage2_prompt": settings.stage2_prompt,
-        "stage3_prompt": settings.stage3_prompt,
-        "stage4_prompt": settings.stage4_prompt,
-        "title_prompt": settings.title_prompt,
-        "query_prompt": settings.query_prompt,
-
-        # Advisor Settings
-        "advisor_default_model": settings.advisor_default_model,
-        "advisor_tiebreaker_model": settings.advisor_tiebreaker_model,
-        "advisor_temperature": settings.advisor_temperature,
-        "advisor_default_rounds": settings.advisor_default_rounds,
-        "advisor_round1_prompt": settings.advisor_round1_prompt,
-        "advisor_followup_prompt": settings.advisor_followup_prompt,
-        "advisor_cross_pollination_prompt": settings.advisor_cross_pollination_prompt,
-        "advisor_verdict_prompt": settings.advisor_verdict_prompt,
-        "advisor_tiebreaker_prompt": settings.advisor_tiebreaker_prompt,
-        "advisor_presets": [p.model_dump() if hasattr(p, "model_dump") else p for p in settings.advisor_presets],
-        "council_presets": [p.model_dump() if hasattr(p, "model_dump") else p for p in settings.council_presets],
-
-        # Display Preferences
-        "date_format": settings.date_format,
-        "response_language": settings.response_language,
-        "valid_response_languages": list(VALID_RESPONSE_LANGUAGES),
-        "response_language_default": RESPONSE_LANGUAGE_DEFAULT,
-
-        # Iterative Debate
-        "critique_mode": settings.critique_mode,
-        "debate_rounds": settings.debate_rounds,
-        "auto_converge": settings.auto_converge,
-        "convergence_threshold": settings.convergence_threshold,
-    }
+    return build_settings_response()
 
 
 
@@ -1566,8 +1816,7 @@ async def export_settings():
     Admin-only — see _require_admin. Without auth, returning plaintext keys to any
     network peer would be a credential disclosure.
     """
-    settings = get_settings()
-    content = settings.model_dump_json(indent=2)
+    content = json.dumps(build_admin_export(), indent=2)
     return Response(
         content=content,
         media_type="application/json",
@@ -1576,19 +1825,42 @@ async def export_settings():
 
 
 @app.post("/api/settings/import", dependencies=[Depends(_require_admin)])
-async def import_settings(new_settings: Settings):
+async def import_settings(payload: Dict[str, Any]):
     """Import settings from a full settings JSON blob (admin-only)."""
-    from .settings import _normalize_prompt_defaults
-    normalized = Settings(**_normalize_prompt_defaults(new_settings.model_dump()))
-    save_settings(normalized)
+    try:
+        apply_admin_import(payload)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid settings: {exc}")
     return {"status": "imported", "message": "Settings imported successfully"}
 
 
 @app.post("/api/settings/reset", dependencies=[Depends(_require_admin)])
 async def reset_settings():
     """Reset all settings to defaults (admin-only)."""
+    wipe_all_secrets()
     save_settings(Settings())
     return {"status": "reset", "message": "Settings reset to defaults"}
+
+
+@app.post("/api/settings/disconnect-all-providers", dependencies=[Depends(_require_admin)])
+async def disconnect_all_providers():
+    """Disconnect every API key / OAuth provider (keeps council config & prompts)."""
+    result = disconnect_all_credentials()
+    for env_name in (
+        "TAVILY_API_KEY",
+        "BRAVE_API_KEY",
+        "SERPER_API_KEY",
+        "TINYFISH_API_KEY",
+    ):
+        os.environ.pop(env_name, None)
+    payload = build_settings_response()
+    payload["status"] = "disconnected"
+    payload["cleared"] = result.get("cleared", 0)
+    payload["message"] = (
+        f"Disconnected all providers ({payload['cleared']} credential"
+        f"{'' if payload['cleared'] == 1 else 's'} cleared)."
+    )
+    return payload
 
 
 @app.put("/api/settings")
@@ -1753,6 +2025,14 @@ async def update_app_settings(request: UpdateSettingsRequest):
             )
         updates["response_language"] = request.response_language
 
+    if request.font_size is not None:
+        if request.font_size not in VALID_FONT_SIZES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid font_size. Must be one of: {list(VALID_FONT_SIZES)}",
+            )
+        updates["font_size"] = request.font_size
+
     if request.execution_mode is not None:
         _validate_execution_mode(request.execution_mode)
         updates["execution_mode"] = request.execution_mode
@@ -1797,82 +2077,100 @@ async def update_app_settings(request: UpdateSettingsRequest):
         from .settings import _normalize_council_presets
         updates["council_presets"] = _normalize_council_presets(request.council_presets)
 
+    # Route API keys into credential store (do not re-inline into settings.json).
+    updates = apply_settings_secret_updates(updates)
+
+    # Sync search env from store when keys were updated (clear when removed).
+    for env_name, secret_id in (
+        ("TAVILY_API_KEY", "tavily"),
+        ("BRAVE_API_KEY", "brave"),
+        ("SERPER_API_KEY", "serper"),
+        ("TINYFISH_API_KEY", "tinyfish"),
+    ):
+        val = get_api_key(secret_id)
+        if val:
+            os.environ[env_name] = val
+        else:
+            os.environ.pop(env_name, None)
+
     if updates:
         settings = update_settings(**updates)
     else:
         settings = get_settings()
 
-    return {
-        "search_provider": settings.search_provider,
-        "search_keyword_extraction": settings.search_keyword_extraction,
-        "search_result_count": settings.search_result_count,
-        "search_hybrid_mode": settings.search_hybrid_mode,
-        "ollama_base_url": settings.ollama_base_url,
-        "full_content_results": settings.full_content_results,
+    return build_settings_response(settings)
 
-        # Custom Endpoint
-        "custom_endpoint_name": settings.custom_endpoint_name,
-        "custom_endpoint_url": settings.custom_endpoint_url,
 
-        # API Key Status
-        "serper_api_key_set": bool(settings.serper_api_key),
-        "tavily_api_key_set": bool(settings.tavily_api_key),
-        "brave_api_key_set": bool(settings.brave_api_key),
-        "tinyfish_api_key_set": bool(settings.tinyfish_api_key),
-        "openrouter_api_key_set": bool(settings.openrouter_api_key),
-        "openai_api_key_set": bool(settings.openai_api_key),
-        "anthropic_api_key_set": bool(settings.anthropic_api_key),
-        "google_api_key_set": bool(settings.google_api_key),
-        "mistral_api_key_set": bool(settings.mistral_api_key),
-        "deepseek_api_key_set": bool(settings.deepseek_api_key),
-        "groq_api_key_set": bool(settings.groq_api_key),
-        "nvidia_api_key_set": bool(settings.nvidia_api_key),
-        "opencode_api_key_set": bool(settings.opencode_api_key),
-        "custom_endpoint_api_key_set": bool(settings.custom_endpoint_api_key),
+@app.post("/api/settings/credential-storage")
+async def set_credential_storage(payload: Dict[str, Any]):
+    """Migrate credential storage mode (file <-> keyring)."""
+    mode = (payload or {}).get("mode")
+    try:
+        result = await migrate_storage_mode(mode)
+        return {"status": "ok", **result, "availability": get_availability()}
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
-        # Enabled Providers
-        "enabled_providers": settings.enabled_providers,
-        "direct_provider_toggles": settings.direct_provider_toggles,
 
-        # Council Configuration (unified)
-        "council_models": settings.council_models,
-        "chairman_model": settings.chairman_model,
+class OAuthStartResponse(BaseModel):
+    session_id: str
+    provider_id: str
+    user_code: str
+    verification_uri: str
+    verification_uri_complete: Optional[str] = None
+    expires_in: Optional[int] = None
+    status: str = "pending"
 
-        # Remote/Local filters
-        "council_member_filters": settings.council_member_filters,
-        "chairman_filter": settings.chairman_filter,
 
-        # Prompts
-        "stage1_prompt": settings.stage1_prompt,
-        "stage2_prompt": settings.stage2_prompt,
-        "stage3_prompt": settings.stage3_prompt,
-        "stage4_prompt": settings.stage4_prompt,
-        "title_prompt": settings.title_prompt,
-        "query_prompt": settings.query_prompt,
+@app.post("/api/oauth/{provider_id}/start")
+async def oauth_start(provider_id: str):
+    try:
+        return await start_oauth_session(provider_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
 
-        # Advisor Settings
-        "advisor_default_model": settings.advisor_default_model,
-        "advisor_tiebreaker_model": settings.advisor_tiebreaker_model,
-        "advisor_temperature": settings.advisor_temperature,
-        "advisor_default_rounds": settings.advisor_default_rounds,
-        "advisor_round1_prompt": settings.advisor_round1_prompt,
-        "advisor_followup_prompt": settings.advisor_followup_prompt,
-        "advisor_cross_pollination_prompt": settings.advisor_cross_pollination_prompt,
-        "advisor_verdict_prompt": settings.advisor_verdict_prompt,
-        "advisor_tiebreaker_prompt": settings.advisor_tiebreaker_prompt,
-        "advisor_presets": [p.model_dump() if hasattr(p, "model_dump") else p for p in settings.advisor_presets],
-        "council_presets": [p.model_dump() if hasattr(p, "model_dump") else p for p in settings.council_presets],
 
-        # Display Preferences
-        "date_format": settings.date_format,
-        "response_language": settings.response_language,
+@app.get("/api/oauth/{provider_id}/status")
+async def oauth_status(provider_id: str, session_id: str):
+    return get_oauth_session_status(provider_id, session_id)
 
-        # Iterative Debate
-        "critique_mode": settings.critique_mode,
-        "debate_rounds": settings.debate_rounds,
-        "auto_converge": settings.auto_converge,
-        "convergence_threshold": settings.convergence_threshold,
-    }
+
+@app.delete("/api/oauth/{provider_id}")
+async def oauth_disconnect(provider_id: str):
+    try:
+        disconnect_oauth(provider_id)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"status": "disconnected", "provider_id": provider_id}
+
+
+@app.get("/api/credentials/import/relay-ai/discover")
+async def relay_ai_discover():
+    return discover_relay_ai_credentials()
+
+
+@app.post("/api/credentials/import/relay-ai")
+async def relay_ai_import(payload: Dict[str, Any]):
+    ids = payload.get("ids") or []
+    replace_existing = bool(payload.get("replace_existing"))
+    if not isinstance(ids, list):
+        raise HTTPException(status_code=400, detail="ids must be a list")
+    try:
+        result = import_relay_ai_credentials(ids, replace_existing=replace_existing)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return result
+
+
+@app.put("/api/settings/relay-ai-import-dismissed")
+async def dismiss_relay_import(payload: Dict[str, Any] = None):
+    update_settings(relay_ai_import_dismissed=True)
+    return {"relay_ai_import_dismissed": True}
+
+
+
 
 
 @app.get("/api/models/direct")
@@ -1900,14 +2198,17 @@ async def get_direct_models():
 async def test_tavily_api(request: TestTavilyRequest):
     """Test Tavily API key with a simple search."""
     import httpx
-    settings = get_settings()
+
+    api_key = resolve_api_key("tavily", request.api_key)
+    if not api_key:
+        return {"success": False, "message": "No API key provided or configured"}
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
                 "https://api.tavily.com/search",
                 json={
-                    "api_key": request.api_key or settings.tavily_api_key,
+                    "api_key": api_key,
                     "query": "test",
                     "max_results": 1,
                     "search_depth": "basic",
@@ -1936,7 +2237,10 @@ class TestBraveRequest(BaseModel):
 async def test_brave_api(request: TestBraveRequest):
     """Test Brave API key with a simple search."""
     import httpx
-    settings = get_settings()
+
+    api_key = resolve_api_key("brave", request.api_key)
+    if not api_key:
+        return {"success": False, "message": "No API key provided or configured"}
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -1946,7 +2250,7 @@ async def test_brave_api(request: TestBraveRequest):
                 headers={
                     "Accept": "application/json",
                     "Accept-Encoding": "gzip",
-                    "X-Subscription-Token": request.api_key or settings.brave_api_key,
+                    "X-Subscription-Token": api_key,
                 },
             )
 
@@ -1972,7 +2276,10 @@ class TestSerperRequest(BaseModel):
 async def test_serper_api(request: TestSerperRequest):
     """Test Serper API key with a simple search."""
     import httpx
-    settings = get_settings()
+
+    api_key = resolve_api_key("serper", request.api_key)
+    if not api_key:
+        return {"success": False, "message": "No API key provided or configured"}
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -1980,7 +2287,7 @@ async def test_serper_api(request: TestSerperRequest):
                 "https://google.serper.dev/search",
                 json={"q": "test", "num": 1},
                 headers={
-                    "X-API-KEY": request.api_key or settings.serper_api_key,
+                    "X-API-KEY": api_key,
                     "Content-Type": "application/json",
                 },
             )
@@ -2007,14 +2314,17 @@ class TestTinyfishRequest(BaseModel):
 async def test_tinyfish_api(request: TestTinyfishRequest):
     """Test TinyFish API key with a simple search."""
     import httpx
-    settings = get_settings()
+
+    api_key = resolve_api_key("tinyfish", request.api_key)
+    if not api_key:
+        return {"success": False, "message": "No API key provided or configured"}
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(
                 "https://api.search.tinyfish.ai/",
                 params={"query": "test"},
-                headers={"X-API-Key": request.api_key or settings.tinyfish_api_key},
+                headers={"X-API-Key": api_key},
             )
 
             if response.status_code == 200:
@@ -2038,35 +2348,20 @@ class TestOpenRouterRequest(BaseModel):
 class TestProviderRequest(BaseModel):
     """Request to test a specific provider's API key."""
     provider_id: str
-    api_key: str
+    api_key: Optional[str] = None
 
 
 @app.post("/api/settings/test-provider")
 async def test_provider_api(request: TestProviderRequest):
     """Test an API key for a specific provider."""
     from .council import PROVIDERS
-    from .settings import get_settings
-    
+
     if request.provider_id not in PROVIDERS:
         raise HTTPException(status_code=400, detail="Invalid provider ID")
 
-    api_key = request.api_key
+    api_key = resolve_api_key(request.provider_id, request.api_key)
     if not api_key:
-        # Try to get from settings
-        settings = get_settings()
-        # Provider-id → settings-key map. Falls back to "<id>_api_key".
-        _PROVIDER_SETTINGS_KEY_OVERRIDES = {
-            "opencode-zen": "opencode_api_key",
-            "opencode-go": "opencode_api_key",
-        }
-        setting_key = _PROVIDER_SETTINGS_KEY_OVERRIDES.get(
-            request.provider_id, f"{request.provider_id}_api_key"
-        )
-        if hasattr(settings, setting_key):
-             api_key = getattr(settings, setting_key)
-    
-    if not api_key:
-         return {"success": False, "message": "No API key provided or configured"}
+        return {"success": False, "message": "No API key provided or configured"}
 
     provider = PROVIDERS[request.provider_id]
     return await provider.validate_key(api_key)
@@ -2083,9 +2378,7 @@ async def test_opencode_key(request: TestOpenCodeRequest):
     """Test the OpenCode API key by listing models on Zen and/or Go."""
     from .providers.opencode import OpenCodeProvider
 
-    api_key = request.api_key
-    if not api_key:
-        api_key = get_settings().opencode_api_key
+    api_key = resolve_api_key("opencode", request.api_key)
     if not api_key:
         return {"success": False, "message": "No OpenCode API key provided or configured"}
 
@@ -2186,7 +2479,8 @@ async def test_custom_endpoint(request: TestCustomEndpointRequest):
     from .providers.custom_openai import CustomOpenAIProvider
 
     provider = CustomOpenAIProvider()
-    return await provider.validate_connection(request.url, request.api_key or "")
+    api_key = resolve_api_key("custom_endpoint", request.api_key)
+    return await provider.validate_connection(request.url, api_key)
 
 
 @app.get("/api/custom-endpoint/models")
@@ -2301,7 +2595,7 @@ async def test_openrouter_api(request: TestOpenRouterRequest):
 # ---------- MCP server (mounted on same port as REST API) ----------
 try:
     from the_ai_counsel_mcp.server import create_server as _create_mcp_server
-    _mcp = _create_mcp_server(base_url="http://127.0.0.1:8001")
+    _mcp = _create_mcp_server(base_url=f"http://127.0.0.1:{BACKEND_PORT}")
     app.mount("/mcp", _mcp.sse_app())
     logger.info("MCP server mounted at /mcp (SSE at /mcp/sse, messages at /mcp/messages)")
 except Exception:
@@ -2318,7 +2612,7 @@ if __name__ == "__main__":
     # to 0.0.0.0 explicitly when you intentionally want network exposure
     # (Docker CMD already passes --host 0.0.0.0).
     bind_host = os.getenv("LLM_COUNCIL_BIND_HOST", "127.0.0.1")
-    bind_port = int(os.getenv("LLM_COUNCIL_BIND_PORT", "8001"))
+    bind_port = BACKEND_PORT
     if bind_host not in _LOOPBACK_HOSTS and not _ADMIN_TOKEN:
         logger.warning(
             "Binding to %s without LLM_COUNCIL_ADMIN_TOKEN set: "

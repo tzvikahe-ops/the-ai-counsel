@@ -16,7 +16,7 @@ The The AI Counsel MCP server exposes **10 action-based tools**. Each tool group
 | [`run_iterative_debate`](#run_iterative_debate) | _(none — direct params)_ | Multi-round council debate with critique modes |
 | [`council_settings`](#council_settings) | `get`, `update`, `list_presets`, `save_preset`, `delete_preset`, `set_default_preset` | Council config + presets |
 | [`advisor_settings`](#advisor_settings) | `get`, `update`, `list_presets`, `save_preset`, `delete_preset`, `set_default_preset` | Advisor defaults + presets |
-| [`personas`](#personas) | `list`, `get`, `update`, `reset` | Advisor persona CRUD |
+| [`personas`](#personas) | `list`, `get`, `update`, `reset` | List/edit/reset personas; create/delete custom personas via UI or REST |
 | [`conversations`](#conversations) | `list`, `get`, `progress` | Saved conversation history and active-run progress |
 | [`providers`](#providers) | `list_models`, `health`, `test`, `set_api_key`, `set_search` | Models, health, keys, search |
 | [`config_backup`](#config_backup) | `export`, `import`, `reset` | Full settings backup/restore |
@@ -26,6 +26,36 @@ The The AI Counsel MCP server exposes **10 action-based tools**. Each tool group
 Deliberation tools return a `cost_report` object when a run performs model calls. It includes USD `total_cost`, `input_tokens`, `output_tokens`, `total_tokens`, call counts, known/unknown/estimated/free counts, `by_model`, `by_stage` where applicable, and raw `calls`.
 
 Cost attribution uses provider-reported cost first, then known-free rules (`ollama:*`, `nvidia:*`, OpenRouter `:free`, `opencode-zen:*` free models, and custom endpoints whose configured URL points at the official `opencode.ai` host), then OpenCode pricing tables, then cached catalog estimates from `ai-model-pricing.com` with LiteLLM as fallback. Reasoning tokens are preserved in `usage.reasoning_tokens` and are billed as output tokens when the provider reports them that way. When pricing is unavailable, token usage is preserved and cost is marked unknown.
+
+---
+
+## Document Inputs
+
+`council_deliberate`, `model_chat`, `advisor_debate`, and `run_iterative_debate` accept optional `documents`. Documents are converted to plain text before model calls, so the same context works across all providers and models.
+
+Tool callers can pass either extracted text:
+
+```json
+{
+  "name": "notes.txt",
+  "mime_type": "text/plain",
+  "text": "Meeting notes: Alpha approved the plan."
+}
+```
+
+Or base64 file data:
+
+```json
+{
+  "name": "report.pdf",
+  "mime_type": "application/pdf",
+  "data_base64": "JVBERi0xLjQK..."
+}
+```
+
+Base64 documents are posted to `/api/documents/extract-json`; raw base64 is not sent to model providers. Conversation storage keeps attachment metadata only.
+
+Supported v1 formats are PDFs plus text-like files (`.txt`, `.md`, `.csv`, `.json`, `.yaml`, `.xml`, `.html`, logs, code files, and common configs). PDF OCR is optional and requires `LLM_COUNCIL_OCR_ENABLED=1` plus OCRmyPDF, Tesseract, Ghostscript, and qpdf in the backend runtime.
 
 ---
 
@@ -40,6 +70,7 @@ Run council deliberation. Creates a conversation automatically unless `conversat
 | `web_search` | boolean | No | Enrich query with web search (default `false`) |
 | `conversation_id` | string | No | Continue an existing thread |
 | `models` | string[] | No | Override council members for `full` only (1–8 model IDs) |
+| `documents` | object[] | No | Optional extracted-text or base64 document inputs |
 
 **Example:** Full deliberation with search
 ```json
@@ -80,6 +111,7 @@ Chat with a single model.
 | `model` | string | Yes | Model ID with prefix, e.g. `openai:gpt-4.1` |
 | `conversation_id` | string | No | Required for `multi_turn` follow-ups (from prior response) |
 | `web_search` | boolean | No | Default `false` |
+| `documents` | object[] | No | Optional extracted-text or base64 document inputs |
 
 **Example:** Quick one-shot
 ```json
@@ -90,7 +122,27 @@ Chat with a single model.
 }
 ```
 
-Responses include `usage`, `cost`, and `cost_report` alongside the model response. Ollama, NVIDIA, OpenRouter `:free`, known-free OpenCode models, and custom endpoints whose configured URL points at the official `opencode.ai` host report zero cost.
+**Example:** Quick one-shot with an extracted text document
+```json
+{
+  "action": "quick",
+  "query": "Summarize the attachment.",
+  "model": "openai:gpt-4.1",
+  "documents": [
+    {
+      "name": "notes.txt",
+      "mime_type": "text/plain",
+      "text": "Meeting notes: Alpha approved the plan."
+    }
+  ]
+}
+```
+
+Quick responses include the saved run's `conversation_id`, plus `usage`, `cost`,
+and `cost_report` alongside the model response. The conversation appears in the
+UI. Ollama, NVIDIA, OpenRouter `:free`, known-free OpenCode models, and custom
+endpoints whose configured URL points at the official `opencode.ai` host report
+zero cost.
 
 ---
 
@@ -101,11 +153,12 @@ Run a multi-round advisor debate with named personas.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `question` | string | Yes | Debate topic |
-| `persona_ids` | string[] | Yes | 2–4 persona IDs |
+| `persona_ids` | string[] | Yes | 2–4 persona IDs returned by `personas` (built-in or custom) |
 | `default_model` | string | No | Default model for all personas |
 | `model_assignments` | object | No | Per-persona model overrides |
 | `max_rounds` | integer | No | 3–10 (default 3) |
 | `search_provider` | string | No | Override search provider |
+| `documents` | object[] | No | Optional extracted-text or base64 document inputs |
 
 **Example:**
 ```json
@@ -135,6 +188,7 @@ Run a multi-round iterative debate with convergence detection. Models debate acr
 | `convergence_threshold` | integer | No | 1–3, consecutive stable rounds to trigger early stop (default `2`) |
 | `web_search` | boolean | No | Enrich query with web search (default `false`) |
 | `models` | string[] | No | Override council members for the debate |
+| `documents` | object[] | No | Optional extracted-text or base64 document inputs |
 
 **Example:**
 ```json
@@ -194,8 +248,9 @@ Manage council configuration and presets.
 | `convergence_threshold` | integer | `update` | Consecutive stable rounds before early stop (1–3) |
 | `date_format` | string | `update` | Sidebar date format: `auto`, `MM/DD/YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD` |
 | `response_language` | string | `update` | Council/advisor response language (see `valid_response_languages` on `get`) |
+| `font_size` | string | `get`, `update` | Global UI text scale: `default` (110%) or `large` (150%) |
 
-**`get` response includes:** `council_models`, `chairman_model`, temperatures, `execution_mode`, search settings, debate settings, `date_format`, `response_language`, `valid_response_languages`, title/query prompts, and `council_presets`.
+**`get` response includes:** `council_models`, `chairman_model`, temperatures, `execution_mode`, search settings, debate settings, `date_format`, `response_language`, `font_size`, `valid_response_languages`, title/query prompts, and `council_presets`.
 
 **`update` success:**
 ```json
@@ -232,7 +287,7 @@ Manage advisor defaults and presets.
 
 ## personas
 
-Manage advisor personas.
+Manage advisor personas. The MCP tool lists, inspects, updates, and resets personas. Create or delete custom personas in Advisor Setup or through the REST API; use the IDs returned by `list` when starting a debate.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -240,7 +295,7 @@ Manage advisor personas.
 | `persona_id` | string | For get/update/reset | e.g. `skeptic`, `pragmatist` |
 | `name`, `role`, `description`, `system_prompt`, `avatar_emoji` | string | For `update` | Fields to change (at least one required) |
 
-Valid IDs: `skeptic`, `pragmatist`, `innovator`, `historian`, `ethicist`, `analyst`, `contrarian`, `strategist`, `humanist`, `risk-assessor`, `comedian`, `economist`.
+Built-in IDs: `skeptic`, `pragmatist`, `innovator`, `historian`, `ethicist`, `analyst`, `contrarian`, `strategist`, `humanist`, `risk-assessor`, `comedian`, `economist`. Custom IDs are generated from their names and appear in the `list` response. Deleting a custom persona also removes it from saved advisor presets, including any per-persona model assignment.
 
 ---
 
@@ -327,3 +382,11 @@ Admin REST endpoints (`/api/settings/export` with bearer token) remain available
 ## REST fallback
 
 When MCP is unavailable, use [`skills/the-ai-counsel-api/SKILL.md`](../../skills/the-ai-counsel-api/SKILL.md) for equivalent REST endpoints. Preset CRUD is now available via `council_settings` / `advisor_settings` MCP actions — REST `PUT /api/settings` remains the fallback.
+
+
+### Credential / OAuth notes
+
+- `GET` settings (via `council_settings`) may include `*_oauth_connected`, `credential_storage*`, and Copilot plan fields; secrets are never returned (see [`../CREDENTIALS.md`](../CREDENTIALS.md)).
+- Device-code OAuth Connect is UI-only in v1 (not exposed as MCP actions).
+- Admin `config_backup` export/import includes the credential store when using the updated settings export shape (`credentials` object).
+- **Disconnect all providers** is REST-only: `POST /api/settings/disconnect-all-providers`. Per-key clear: `providers` → `set_api_key` with an empty key, or `PUT /api/settings` with `*_api_key: ""`.

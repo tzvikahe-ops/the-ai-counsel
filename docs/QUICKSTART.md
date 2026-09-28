@@ -2,6 +2,16 @@
 
 Get The AI Counsel running in under 5 minutes.
 
+### 📺 Video Overview
+
+Watch the video overview to see how to set up and run The AI Counsel:
+
+<p align="center">
+  <a href="https://youtu.be/OQV92Y_4Wo4" target="_blank">
+    <img src="https://img.youtube.com/vi/OQV92Y_4Wo4/maxresdefault.jpg" alt="The AI Counsel Video Overview" width="75%">
+  </a>
+</p>
+
 ---
 
 ## 1. Prerequisites
@@ -41,6 +51,8 @@ The Settings panel opens automatically on first launch.
 3. Click **Test** (auto-saves on success)
 4. Go to **Council Config** → Select models for your council (saves automatically)
 
+> **Accessibility:** If the interface feels too small, open **Settings → General → Display Preferences** and choose **Large**. The preference applies immediately to existing and future chats and saves automatically.
+
 ### Option B: Use Ollama (Free & Local)
 1. Install [Ollama](https://ollama.com/)
 2. Pull a model: `ollama pull llama3.1`
@@ -53,8 +65,11 @@ The Settings panel opens automatically on first launch.
 ### Option C: Use Direct APIs
 1. Get API keys from your preferred providers (OpenAI, Anthropic, Google, OpenCode Zen/Go, etc.)
 2. Enter keys in **LLM API Keys** → **Direct LLM Connections**
-3. Click **Test** for each (auto-saves on success)
+3. Click **Test** / **Retest** for each (auto-saves on success; Retest uses the credential store — you do not need to re-paste)
 4. Go to **Council Config** → Enable "Direct Connections" → Select models (saves automatically)
+
+### Option C2: Import from relay-ai (desktop)
+If you already use [relay-ai](https://github.com/jacob-bd/relay-ai), open **Settings → General → Import from relay-ai**, Discover, select keys, Import. Keys are copied into Counsel’s credential store (not into `settings.json`). Details: [`CREDENTIALS.md`](CREDENTIALS.md).
 
 ### Option D: Use OpenCode Zen / Go
 - OpenCode ships both a free **Zen** tier (zero-cost `*-free` models — `minimax-m3-free`, `deepseek-v4-flash-free`, etc.) and a paid **Go** subscription tier (per-1M token pricing shown as an estimate; flagged with a subscription note in the cost report).
@@ -72,6 +87,8 @@ The Settings panel opens automatically on first launch.
 4. (Optional) Toggle **Web Search** for real-time grounding
 5. Press **Enter**
 
+The chat composer stays docked below the scrollable conversation, including on narrow screens.
+
 Watch as:
 - **Stage 1**: Each council member responds independently
 - **Stage 2**: Models anonymously rank each other's responses
@@ -84,7 +101,7 @@ Watch as:
 1. Click **+ New Advisors** in the sidebar
 2. Type a question or a decision to debate (e.g., "Should we rewrite our backend in Go?")
 3. Configure the debate options:
-   - Select 2 to 4 advisor personas (Skeptic, Strategist, Ethicist, etc.)
+   - Select 2 to 4 advisor personas (Skeptic, Strategist, Ethicist, etc.), or create your own with **+ Add Advisor**
    - Set the number of back-and-forth rounds (3 to 10)
    - Choose a default model or assign specific models to individual personas — models from all **enabled** providers appear here
    - *(Optional)* Save your lineup as a **preset** from Model Assignment (personas, models, rounds, web search — not the debate question)
@@ -116,7 +133,7 @@ Choose your deliberation type and depth:
 - **Use Groq** for ultra-fast council inference
 - **Use Ollama** for unlimited, free local queries (great for local Chairman synthesis using a model like `granite4:1b`)
 - **"I'm Feeling Lucky"** randomizes your council composition
-- **Customize Personas**: Go to **Settings** → **Advisors** to edit name, description, emoji, and prompt for any advisor persona
+- **Customize Personas**: Use **+ Add Advisor** to create a custom persona, or open any advisor card to edit its name, description, emoji, and prompt. Deleting a custom persona removes it from saved advisor presets automatically.
 - **Abort anytime** with the stop button in the sidebar
 
 ---

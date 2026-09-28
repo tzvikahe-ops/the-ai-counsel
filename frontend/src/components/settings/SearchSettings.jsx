@@ -59,7 +59,8 @@ export default function SearchSettings({
     searchResultCount,
     setSearchResultCount,
     searchHybridMode,
-    setSearchHybridMode
+    setSearchHybridMode,
+    onDisconnectSearchKey,
 }) {
     const { t } = useTranslation();
     return (
@@ -106,7 +107,16 @@ export default function SearchSettings({
                                     </button>
                                 </div>
                                 {settings?.serper_api_key_set && !serperApiKey && (
-                                    <div className="key-status set">{t('providers.apiKeyConfigured')}</div>
+                                    <div className="key-status set key-status-row">
+                                        <span>{t('providers.apiKeyConfigured')}</span>
+                                        <button
+                                            type="button"
+                                            className="test-button danger"
+                                            onClick={() => onDisconnectSearchKey?.('serper')}
+                                        >
+                                            {t('providers.disconnect')}
+                                        </button>
+                                    </div>
                                 )}
                                 {serperTestResult && (
                                     <div className={`test-result ${serperTestResult.success ? 'success' : 'error'}`}>
@@ -118,7 +128,7 @@ export default function SearchSettings({
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="api-key-link"
-                                    style={{ marginTop: '8px', display: 'inline-block', fontSize: '12px', color: '#60a5fa' }}
+                                    style={{ marginTop: '8px', display: 'inline-block', fontSize: 'calc(12px * var(--font-scale))', color: '#60a5fa' }}
                                 >
                                     Get API key at serper.dev →
                                 </a>
@@ -149,7 +159,16 @@ export default function SearchSettings({
                                     </button>
                                 </div>
                                 {settings?.tavily_api_key_set && !tavilyApiKey && (
-                                    <div className="key-status set">{t('providers.apiKeyConfigured')}</div>
+                                    <div className="key-status set key-status-row">
+                                        <span>{t('providers.apiKeyConfigured')}</span>
+                                        <button
+                                            type="button"
+                                            className="test-button danger"
+                                            onClick={() => onDisconnectSearchKey?.('tavily')}
+                                        >
+                                            {t('providers.disconnect')}
+                                        </button>
+                                    </div>
                                 )}
                                 {tavilyTestResult && (
                                     <div className={`test-result ${tavilyTestResult.success ? 'success' : 'error'}`}>
@@ -183,7 +202,16 @@ export default function SearchSettings({
                                     </button>
                                 </div>
                                 {settings?.brave_api_key_set && !braveApiKey && (
-                                    <div className="key-status set">{t('providers.apiKeyConfigured')}</div>
+                                    <div className="key-status set key-status-row">
+                                        <span>{t('providers.apiKeyConfigured')}</span>
+                                        <button
+                                            type="button"
+                                            className="test-button danger"
+                                            onClick={() => onDisconnectSearchKey?.('brave')}
+                                        >
+                                            {t('providers.disconnect')}
+                                        </button>
+                                    </div>
                                 )}
                                 {braveTestResult && (
                                     <div className={`test-result ${braveTestResult.success ? 'success' : 'error'}`}>
@@ -217,14 +245,23 @@ export default function SearchSettings({
                                     </button>
                                 </div>
                                 {settings?.tinyfish_api_key_set && !tinyfishApiKey && (
-                                    <div className="key-status set">{t('providers.apiKeyConfigured')}</div>
+                                    <div className="key-status set key-status-row">
+                                        <span>{t('providers.apiKeyConfigured')}</span>
+                                        <button
+                                            type="button"
+                                            className="test-button danger"
+                                            onClick={() => onDisconnectSearchKey?.('tinyfish')}
+                                        >
+                                            {t('providers.disconnect')}
+                                        </button>
+                                    </div>
                                 )}
                                 {tinyfishTestResult && (
                                     <div className={`test-result ${tinyfishTestResult.success ? 'success' : 'error'}`}>
                                         {tinyfishTestResult.success ? '✓' : '✗'} {getLocalTestMessage(tinyfishTestResult.message, t)}
                                     </div>
                                 )}
-                                <div className="rate-limit-notice" style={{ marginTop: '8px', fontSize: '12px', color: '#94a3b8' }}>
+                                <div className="rate-limit-notice" style={{ marginTop: '8px', fontSize: 'calc(12px * var(--font-scale))', color: '#94a3b8' }}>
                                     {t('search.tinyfishFreeNote')} <a href="https://agent.tinyfish.ai" target="_blank" rel="noopener noreferrer" className="ltr" style={{ color: '#60a5fa' }}>agent.tinyfish.ai</a> {t('search.tinyfishFreeNote2')}
                                 </div>
                                 <a
@@ -232,7 +269,7 @@ export default function SearchSettings({
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="api-key-link"
-                                    style={{ marginTop: '8px', display: 'inline-block', fontSize: '12px', color: '#60a5fa' }}
+                                    style={{ marginTop: '8px', display: 'inline-block', fontSize: 'calc(12px * var(--font-scale))', color: '#60a5fa' }}
                                 >
                                     {t('search.getFreeApiKeyAt')} <span className="ltr">agent.tinyfish.ai</span> →
                                 </a>
@@ -268,7 +305,7 @@ export default function SearchSettings({
                     <p className="setting-description">
                         {t('search.ddgDesc')}
                     </p>
-                    <ul className="feature-list" style={{ margin: '8px 0 12px 20px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                    <ul className="feature-list" style={{ margin: '8px 0 12px 20px', fontSize: 'calc(12px * var(--font-scale))', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
                         <li>{t('search.ddgFeature1')}</li>
                         <li>{t('search.ddgFeature2')}</li>
                         <li>{t('search.ddgFeature3')}</li>
@@ -315,7 +352,7 @@ export default function SearchSettings({
                 <p className="setting-description">
                     {t('search.queryProcessingDesc')}
                     {selectedSearchProvider === 'duckduckgo' && (
-                        <span style={{ display: 'block', marginTop: '4px', color: 'var(--text-tertiary)', fontSize: '12px' }}>
+                        <span style={{ display: 'block', marginTop: '4px', color: 'var(--text-tertiary)', fontSize: 'calc(12px * var(--font-scale))' }}>
                             {t('search.ddgInfoNote')}
                         </span>
                     )}

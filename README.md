@@ -56,6 +56,11 @@ npm install --prefix frontend
 
 ## 🇺🇸 English Documentation
 
+> ☕ **If you find The AI Counsel useful, consider [buying me a coffee](https://buymeacoffee.com/jacobbd).**
+> It's free and built in my spare time - but testing every provider runs up a real AI bill. A coffee helps me cover it and keep shipping. Thank you! 🙏
+>
+> <a href="https://buymeacoffee.com/jacobbd"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="42"></a>
+
 > **Collective AI Intelligence** - Convene a council of AI models that deliberate, peer-review, and synthesize the best answer - or assemble a panel of named advisor personas that debate your question and deliver a structured verdict.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -63,8 +68,23 @@ npm install --prefix frontend
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+
 <p align="center">
   <img src="assets/landing_page.png" alt="The AI Counsel Dual-Mode Entry Screen" width="75%">
+</p>
+
+---
+
+<p align="center">
+  <strong>📺 Video Overview & Demo</strong>
+  <br>
+  <em>Click below to watch the video demonstration of The AI Counsel:</em>
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/OQV92Y_4Wo4" target="_blank">
+    <img src="https://img.youtube.com/vi/OQV92Y_4Wo4/maxresdefault.jpg" alt="The AI Counsel Video Overview & Demo" width="75%">
+  </a>
 </p>
 
 ---
@@ -80,26 +100,25 @@ The AI Counsel is a **dual-mode multi-model AI deliberation system**. Instead of
 
 **Choosing the right mode:** use **Council** for direct answers, creative prompts, factual questions, and "give me the best response" synthesis. Use **Advisors** when the question has real tradeoffs, disagreement, risk, strategy, ethics, prioritization, or a decision to make. Simple prompts such as "give me one amazing animal fact" are usually Council prompts; advisor personas will naturally turn them into a debate over criteria.
 
-<!-- Demo videos coming soon -->
-
 ---
 
 ## Installation
 
-```bash
-# Clone and install (Hebrew edition)
-git clone https://github.com/tzvikahe-ops/the-ai-counsel.git
-cd the-ai-counsel
-uv sync                        # Backend dependencies
-npm install --prefix frontend  # Frontend dependencies
+You can clone, install dependencies, and start the application in one shot:
 
-# Run (from project root)
+```bash
+git clone https://github.com/tzvikahe-ops/the-ai-counsel.git && \
+cd the-ai-counsel && \
+uv sync && \
+npm install --prefix frontend && \
 ./start.sh
 ```
 
+*(Note: `uv sync` installs the backend dependencies, `npm install --prefix frontend` installs the frontend dependencies, and `./start.sh` spins up both servers together).*
+
 > Want the original English-only edition? Clone [jacob-bd/the-ai-counsel](https://github.com/jacob-bd/the-ai-counsel) instead.
 
-Then open **http://localhost:5173** and configure your API keys in Settings.
+Then open **http://localhost:5173** and configure your API keys (or subscription OAuth logins) in Settings.
 
 > **Prerequisites:** Python 3.10+, Node.js 18+, [uv](https://docs.astral.sh/uv/)
 
@@ -123,7 +142,7 @@ Then open **http://localhost:5173** and configure your API keys in Settings.
 The original three-stage pipeline where raw model diversity produces vetted answers:
 
 ```
-YOUR QUESTION (+ optional web search)
+YOUR QUESTION (+ optional web search / file uploads)
          │
          ▼
   ┌─────────────────────────────────┐
@@ -234,7 +253,7 @@ YOUR QUESTION (+ optional web search)
 | 🎤 **The Comedian** | Humorist Critic | Uses wit to expose absurdity and weak framing |
 | 📈 **The Economist** | Incentives Analyst | Analyzes incentives, scarcity, and unintended consequences |
 
-All personas are **fully customizable** - edit name, role, description, system prompt, and emoji. Changes persist across sessions with per-persona reset to defaults.
+All personas are **fully customizable** - edit name, role, description, system prompt, and emoji. Use **+ Add Advisor** in Advisor Setup to create additional custom personas. Changes persist across sessions; built-ins can be reset to defaults, while custom personas can be deleted. Deleting a custom persona also removes it from saved advisor presets.
 
 ---
 
@@ -287,18 +306,31 @@ Some provider/model combinations only accept their default temperature. The app 
 
 - **Live Progress Tracking** - See each model or advisor respond in real-time with streaming; reconnect to active runs via `GET /api/conversations/{id}/progress`
 - **Multi-turn Conversations** - Follow-up questions carry full context automatically
-- **Council Sizing** - Adjust council from 1 to 8 models; advisors from 2 to 4 personas (select from 12)
-- **Advisor Presets** - Save and load named advisor lineups (personas, model mode, optional rounds/web search) from Advisor Setup
+- **Docked Chat Composer** - The input stays below the scrollable conversation so responses remain readable while you type
+- **Text File Uploads** - Attach PDFs and text/code/config files in Council or Advisor mode; extracted text is sent as normalized prompt context across all providers while conversation history stores attachment metadata only
+- **Council Sizing** - Adjust council from 1 to 8 models; advisors from 2 to 4 personas (select from 12 built-ins or custom personas)
+- **Advisor Presets** - Save and load named advisor lineups (built-in/custom personas, model mode, optional rounds/web search) from Advisor Setup
 - **Abort Anytime** - Cancel in-progress requests
 - **Conversation History** - All conversations saved locally with search; sidebar cards show stacked date/time, compact run summaries (rounds, critique mode, personas, search), and cumulative cost per thread
+- **Accessible Typography** - Settings → General offers Default (110%) and Large (150%) text sizes across the UI, including existing chats
 - **Customizable System Prompts** - Edit Stage 1, 2, and 3 prompts for Council mode
 - **Run Cost Reporting** - See total cost, input/output token split, call count, pricing confidence, and per-model breakdowns for council and advisor runs
 - **Rate Limit Warnings** - Alerts when your config may hit API limits
 - **"I'm Feeling Lucky"** - Randomize your council composition
-- **Import & Export** - Backup and share your settings, API keys, and prompts
+- **Import & Export** - Backup and share your settings and prompts (admin export can include the credential store; see [`docs/CREDENTIALS.md`](docs/CREDENTIALS.md))
 - **Per-request Model Overrides** - Use different models for individual requests without changing global config
-- **One-shot API** - `POST /api/ask` for scripts and MCP agents (no conversation state)
-- **Docker Deployment** - Single-container production deployment via `docker compose`
+- **One-shot API** - `POST /api/ask` for scripts and MCP agents; each completed run is saved to the UI and returns a `conversation_id`
+- **Docker Deployment** - Single-container production deployment; pull the prebuilt image from GHCR or build from source with `docker compose`
+
+---
+
+### File Uploads
+
+Attach PDFs and text-like files from the Council input or Advisor setup. The backend extracts text once before model calls, so uploads work the same way across OpenRouter, Ollama, Groq, direct providers, custom endpoints, and MCP.
+
+Supported v1 formats include `.pdf`, `.txt`, `.md`, `.csv`, `.json`, `.yaml`, `.xml`, `.html`, logs, code files, and common config files. Conversation history stores file name/type/size metadata only; it does not store raw file bytes or extracted text.
+
+PDFs use embedded text extraction by default. OCR for scanned or image-only PDFs is optional: set `LLM_COUNCIL_OCR_ENABLED=1` and install OCRmyPDF, Tesseract, Ghostscript, and qpdf in the backend runtime. If OCR is unavailable, the run continues with extracted text and warnings.
 
 ---
 
@@ -335,14 +367,14 @@ Then open **http://localhost:5173** in your browser.
 ### Docker / VPS Deployment
 
 ```bash
-docker compose up -d --build
+docker run -d --restart unless-stopped -p 8001:8001 -v ./data:/app/data ghcr.io/tzvikahe-ops/the-ai-counsel:latest
 ```
 
 Then open **http://YOUR_SERVER_IP:8001**. Conversations and settings persist to `./data` automatically.
 
-For Ollama integration, reverse proxy setup, environment variables, and upgrade instructions, see **[docs/DOCKER.md](docs/DOCKER.md)**.
+Building from source (e.g. for local changes) is still supported via `docker compose up -d --build`. For Ollama integration, reverse proxy setup, environment variables, and upgrade instructions, see **[docs/DOCKER.md](docs/DOCKER.md)**.
 
-> **Coming from LLM Council Plus?** See the **[Migration Guide](docs/MIGRATION.md)** for step-by-step upgrade instructions. Your data and configs carry over without changes.
+> **Coming from LLM Council Plus?** See the **[Migration Guide](docs/MIGRATION.md)** for step-by-step upgrade instructions. Copy your `data/` directory; secrets migrate into `credentials.json` on first launch (see [`docs/CREDENTIALS.md`](docs/CREDENTIALS.md)).
 
 ### Network Access
 
@@ -370,16 +402,18 @@ Remote admin endpoints (`/api/settings/export`, `/api/settings/import`, `/api/se
 
 On first launch, configure at least one LLM provider in Settings:
 
-1. **LLM API Keys** - Enter API keys for your chosen providers (and Ollama URL / custom endpoint if used)
+1. **LLM API Keys** - Enter API keys, connect Ollama, or sign in with subscription OAuth; optionally import from [relay-ai](https://github.com/jacob-bd/relay-ai) under **Settings → General**
 2. **Council Config** (Settings) or **welcome-screen Council Setup** - add members and chairman; both edit the same saved lineup (auto-saves)
 
-Settings changes save automatically (~1 second after you stop editing). API keys **auto-save** when you click "Test" and the connection succeeds.
+Settings changes save automatically (~1 second after you stop editing). API keys **auto-save** when you click "Test" / "Connect" and the connection succeeds. See [`docs/CREDENTIALS.md`](docs/CREDENTIALS.md) for where secrets are stored, Disconnect, and relay-ai import.
 
 **Provider toggles are global:** Settings → Council Config **provider toggles** control which sources appear in **all** model pickers - Council Setup and Advisor Setup alike. A provider must be both configured (API key) and enabled (toggle on) to show its models.
 
-**Advisor presets:** In Advisor Setup, save named lineups (personas, models, optional rounds/web search) from the Model Assignment section. Presets persist in `settings.json` as `advisor_presets` (max 20; one default).
+**Advisor presets:** In Advisor Setup, save named lineups (built-in/custom personas, models, optional rounds/web search) from the Model Assignment section. Presets persist in `settings.json` as `advisor_presets` (max 20; one default). Deleting a custom persona removes it from every saved preset so stale persona IDs cannot break a future debate.
 
 ### LLM API Keys
+
+At the top of this section you can choose **where secrets are stored**: local file (`data/credentials.json`, plaintext with restricted permissions) or the OS keystore (desktop only; unavailable in Docker).
 
 | Provider | Get API Key |
 |----------|-------------|
@@ -423,6 +457,8 @@ The server exposes **10 action-based tools** grouped by domain:
 
 Legacy 25-tool names were removed in v0.5.2. `run_iterative_debate` was added in v0.7.0. See [docs/mcp/TOOLS.md](docs/mcp/TOOLS.md) for the action parameter on each tool.
 
+Deliberation tools also accept optional document inputs. Base64 files are extracted by the backend before model calls, so raw file bytes are not sent to providers.
+
 **Quick registration for Claude Code:**
 
 * **Option A: Local stdio (Standard for local development)**
@@ -433,7 +469,7 @@ Legacy 25-tool names were removed in v0.5.2. `run_iterative_debate` was added in
 
 * **Option B: Remote SSE (Zero-install for containers/servers)**
   ```bash
-  claude mcp add the-ai-counsel --url http://yourserver.com:8001/mcp/sse
+  claude mcp add --transport sse the-ai-counsel http://yourserver.com:8001/mcp/sse
   ```
 
 Then ask Claude: "check the council health" to verify the connection (`providers` → action `health`; expect 10 tools in `/api/health`).
@@ -476,8 +512,10 @@ All data is stored locally in the `data/` directory:
 
 ```
 data/
-├── settings.json              # Configuration (includes API keys)
+├── settings.json              # Non-secret configuration (council, prompts, toggles)
+├── credentials.json           # API keys & OAuth tokens (file storage mode; mode 0600)
 ├── persona_overrides.json     # Advisor persona customizations
+├── custom_personas.json       # User-created advisor personas
 └── conversations/             # Conversation history
     ├── {uuid}.json
     └── ...
@@ -485,12 +523,14 @@ data/
 
 **Privacy**: Prompts and responses are sent only to your configured LLM/search providers. Cost reporting also fetches public model-pricing catalogs; it does not send prompt text, responses, or API keys.
 
-> **⚠️ Security Warning: API Keys Stored in Plain Text**
+Full details: [`docs/CREDENTIALS.md`](docs/CREDENTIALS.md).
+
+> **⚠️ Security Warning: Secrets on Disk**
 >
-> API keys are stored in clear text in `data/settings.json`. The `data/` folder is included in `.gitignore` by default.
+> In file storage mode, API keys and OAuth tokens live in clear text in `data/credentials.json` (not `settings.json`). The `data/` folder is in `.gitignore` by default.
 >
 > - **Do NOT remove `data/` from `.gitignore`**
-> - Never commit `data/settings.json` to version control
+> - Never commit `data/credentials.json` or `data/settings.json`
 > - If you accidentally expose your keys, rotate them immediately
 
 ---

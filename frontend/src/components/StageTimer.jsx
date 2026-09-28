@@ -31,7 +31,7 @@ export default function StageTimer({ startTime, endTime, label }) {
     return (
         <span className="stage-timer" style={{
             marginInlineStart: '10px',
-            fontSize: '12px',
+            fontSize: 'calc(12px * var(--font-scale))',
             color: '#666',
             fontFamily: 'monospace'
         }}>

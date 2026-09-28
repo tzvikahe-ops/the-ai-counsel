@@ -255,6 +255,7 @@ async def _query_advisor(
     model_assignments: Optional[Dict[str, str]],
     default_model: str,
     temperature: float,
+    conversation_id: Optional[str] = None,
 ) -> tuple:
     persona = personas_map[pid]
     model = _resolve_model(pid, model_assignments, default_model)
@@ -263,7 +264,12 @@ async def _query_advisor(
         {"role": "user", "content": prompt},
     ]
     try:
-        result = await query_model(model, messages, temperature=temperature)
+        result = await query_model(
+            model,
+            messages,
+            temperature=temperature,
+            conversation_id=conversation_id,
+        )
         if result.get("error"):
             return pid, model, None, result.get("error_message", "Model error"), result.get("usage"), result.get("cost")
         return pid, model, result.get("content", ""), None, result.get("usage"), result.get("cost")
@@ -279,13 +285,19 @@ def _unpack_advisor_result(result: tuple) -> tuple:
     return result
 
 
-async def _query_neutral(model: str, prompt: str, temperature: float = 0.3) -> Dict[str, Any]:
+async def _query_neutral(
+    model: str,
+    prompt: str,
+    temperature: float = 0.3,
+    conversation_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """Call a neutral (non-persona) model and return a normalized result dict."""
     try:
         response = await query_model(
             model,
             [{"role": "user", "content": prompt}],
             temperature=temperature,
+            conversation_id=conversation_id,
         )
         if response.get("error"):
             return {
@@ -317,6 +329,7 @@ async def run_debate(
     search_context: str = "",
     request: Any = None,
     preflight: bool = False,
+    conversation_id: Optional[str] = None,
 ):
     """
     Run a multi-round advisor debate.
@@ -361,7 +374,10 @@ async def run_debate(
     if preflight:
         models_to_check = [p["model"] for p in personas_serialized]
         models_to_check.append(verdict_model)
-        preflight_result = await preflight_models(models_to_check)
+        preflight_result = await preflight_models(
+            models_to_check,
+            conversation_id=conversation_id,
+        )
         if not preflight_result.ok:
             yield {
                 "type": "advisor_error",
@@ -451,8 +467,17 @@ async def run_debate(
 
         localized_prompt = apply_response_language(prompt_template, settings.response_language)
 
+        advisor_kwargs = {}
+        if conversation_id is not None:
+            advisor_kwargs["conversation_id"] = conversation_id
         tasks = [asyncio.create_task(_query_advisor(
-            pid, localized_prompt, personas_map, model_assignments, default_model, temperature
+            pid,
+            localized_prompt,
+            personas_map,
+            model_assignments,
+            default_model,
+            temperature,
+            **advisor_kwargs,
         )) for pid in order]
 
         pending = set(tasks)
@@ -598,6 +623,7 @@ async def run_debate(
                 extract_model,
                 apply_response_language(extract_prompt, settings.response_language),
                 temperature=0.2,
+                conversation_id=conversation_id,
             )
             if extract_result.get("error") or not extract_result.get("content"):
                 yield {
@@ -637,6 +663,7 @@ async def run_debate(
         tiebreaker_result = await _query_neutral(
             verdict_model,
             apply_response_language(tiebreaker_prompt, settings.response_language),
+            conversation_id=conversation_id,
         )
 
         yield {"type": "advisor_tiebreaker", "data": tiebreaker_result}
@@ -674,6 +701,7 @@ async def run_debate(
     verdict_data = await _query_neutral(
         verdict_model,
         apply_response_language(verdict_prompt, settings.response_language),
+        conversation_id=conversation_id,
     )
 
     yield {"type": "advisor_verdict", "data": verdict_data}

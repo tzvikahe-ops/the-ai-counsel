@@ -141,6 +141,18 @@ Response:
 
 Note: The AI picks the closest available model IDs. If a model you named is not configured (e.g., you have no Google API key), the AI will flag this and suggest alternatives from what is available.
 
+Accessibility preferences are also global settings. For example, an MCP client can increase UI text without changing any conversation data:
+
+```json
+{
+  "tool": "council_settings",
+  "input": {
+    "action": "update",
+    "font_size": "large"
+  }
+}
+```
+
 ---
 
 ## Example 3: Quick check with a single model
@@ -165,11 +177,14 @@ The AI recognizes you want a direct single-model response, not a full deliberati
 }
 ```
 
-This uses the one-shot `/api/ask` endpoint internally — no conversation is created, no settings are mutated.
+This uses the one-shot `/api/ask` endpoint internally. The completed run is
+saved as a conversation visible in the UI, and the response includes its
+`conversation_id`. No settings are mutated.
 
 Response:
 ```json
 {
+  "conversation_id": "7c658b52-...",
   "model": "openai:gpt-4.1",
   "response": "REST and GraphQL are both approaches to building APIs, but they differ fundamentally in how clients request data.\n\n**REST** organizes endpoints around resources (e.g., `/users/123`, `/posts`). Each endpoint returns a fixed shape of data. If you need user data plus their posts, you typically make two requests.\n\n**GraphQL** provides a single endpoint where clients specify exactly what fields they need in a query. You can fetch a user and their posts in one request, getting precisely the fields you want — nothing more.\n\n**When to use REST:** Simpler CRUD APIs, public APIs where caching is important, teams unfamiliar with GraphQL.\n\n**When to use GraphQL:** Complex, nested data requirements; mobile clients sensitive to over-fetching; rapidly evolving frontends that need flexibility.",
   "error": null,
@@ -245,7 +260,39 @@ The model receives the full prior conversation as context and responds with a re
 
 ---
 
-## Example 5: Run an advisor debate
+## Example 5: Ask with an attached document
+
+**What you say to your AI:**
+
+> "Ask GPT to summarize these notes and list follow-up questions."
+
+**What happens behind the scenes:**
+
+If the document text is already available, the AI can pass it directly:
+
+```json
+{
+  "tool": "model_chat",
+  "input": {
+    "action": "quick",
+    "query": "Summarize the attachment and list follow-up questions.",
+    "model": "openai:gpt-4.1",
+    "documents": [
+      {
+        "name": "notes.txt",
+        "mime_type": "text/plain",
+        "text": "Meeting notes: Alpha approved the plan. Beta needs legal review."
+      }
+    ]
+  }
+}
+```
+
+If the source file is still binary, the AI can pass `data_base64` instead. The MCP client asks the backend to extract text first; raw base64 is not sent to model providers.
+
+---
+
+## Example 6: Run an advisor debate
 
 **What you say to your AI:**
 
@@ -306,7 +353,7 @@ The AI synthesizes a clear narrative of the debate, highlighting the opening sta
 
 ---
 
-## Example 6: Customize and reset a persona
+## Example 7: Customize and reset a persona
 
 **What you say to your AI:**
 
@@ -358,9 +405,11 @@ Behind the scenes:
 }
 ```
 
+Custom personas are created from the **+ Add Advisor** card in Advisor Setup. They can also be created or deleted by REST clients with `POST /api/personas` and `DELETE /api/personas/{id}`; the `personas` MCP tool currently manages existing personas. When a custom persona is deleted, its ID and per-persona model assignment are removed from every saved advisor preset.
+
 ---
 
-## Example 7: Configure advisors globally
+## Example 8: Configure advisors globally
 
 **What you say to your AI:**
 
@@ -395,7 +444,7 @@ Response:
 
 ---
 
-## Example 8: Save an advisor preset (MCP)
+## Example 9: Save an advisor preset (MCP)
 
 **What you say to your AI:**
 

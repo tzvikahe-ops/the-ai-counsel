@@ -1,8 +1,11 @@
 """Anthropic provider implementation."""
 
 import httpx
+
+from .errors import describe_exception
 from typing import List, Dict, Any
 from .base import LLMProvider
+from .max_tokens import anthropic_max_tokens
 from .temperature import add_temperature_if_supported
 from ..settings import get_settings
 
@@ -12,8 +15,9 @@ class AnthropicProvider(LLMProvider):
     BASE_URL = "https://api.anthropic.com/v1"
     
     def _get_api_key(self) -> str:
-        settings = get_settings()
-        return settings.anthropic_api_key or ""
+        from ..credentials import get_api_key
+        return get_api_key("anthropic")
+
 
     async def query(self, model_id: str, messages: List[Dict[str, str]], timeout: float = 120.0, temperature: float = 0.7) -> Dict[str, Any]:
         api_key = self._get_api_key()
@@ -36,7 +40,9 @@ class AnthropicProvider(LLMProvider):
                 payload = {
                     "model": model,
                     "messages": filtered_messages,
-                    "max_tokens": 4096,
+                    # Reasoning models spend this budget on thinking before any
+                    # visible text, so 4096 could be exhausted mid-thought.
+                    "max_tokens": anthropic_max_tokens(),
                 }
                 add_temperature_if_supported(payload, model, "anthropic", temperature)
                 if system_message:
@@ -59,11 +65,49 @@ class AnthropicProvider(LLMProvider):
                     }
                     
                 data = response.json()
-                content = data["content"][0]["text"]
+
+                # Anthropic returns a list of content blocks, and only some carry
+                # text. Reasoning-capable models emit "thinking" blocks first, so
+                # indexing [0]["text"] raises KeyError('text') on an otherwise
+                # successful response. Concatenate every text block instead.
+                blocks = data.get("content") or []
+                if not isinstance(blocks, list):
+                    return {
+                        "error": True,
+                        "error_message": "Unexpected response format from Anthropic API",
+                    }
+                text_parts = [
+                    block.get("text", "")
+                    for block in blocks
+                    if isinstance(block, dict) and block.get("type") == "text"
+                ]
+                content = "".join(text_parts)
+
+                # Key on the *absence of a text block*, not on falsy content: a
+                # model may legitimately return a text block containing "", and
+                # the previous implementation surfaced that as a successful empty
+                # response. Only a response carrying no text block at all is an
+                # error.
+                if not text_parts:
+                    # A response with no text block is a real condition worth
+                    # naming: hitting max_tokens mid-reasoning yields thinking
+                    # blocks only. Report why rather than a bare parse error.
+                    stop_reason = data.get("stop_reason")
+                    block_types = sorted(
+                        {b.get("type") for b in blocks if isinstance(b, dict) and b.get("type")}
+                    )
+                    detail = f"stop_reason={stop_reason or 'unknown'}"
+                    if block_types:
+                        detail += f", content block types: {', '.join(block_types)}"
+                    return {
+                        "error": True,
+                        "error_message": f"Anthropic API returned no text content ({detail})",
+                    }
+
                 return {"content": content, "usage": data.get("usage"), "error": False}
-                
+
         except Exception as e:
-            return {"error": True, "error_message": str(e)}
+            return {"error": True, "error_message": describe_exception(e, timeout)}
 
     async def get_models(self) -> List[Dict[str, Any]]:
         api_key = self._get_api_key()

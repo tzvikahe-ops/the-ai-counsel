@@ -1,7 +1,6 @@
 """Integration tests for iterative debate orchestration."""
-import asyncio
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from backend.debate import run_iterative_debate
 
 
@@ -201,3 +200,39 @@ async def test_final_round_uses_prompt_override(mock_settings):
         # The third call (Stage 4 corrected draft) should also have prompt_override
         stage4_call = mock_s3.call_args_list[2]
         assert stage4_call.kwargs.get("prompt_override") is not None
+
+
+@pytest.mark.asyncio
+async def test_iterative_debate_propagates_conversation_id(mock_settings):
+    stage1_calls = []
+    stage2_calls = []
+    stage3_calls = []
+
+    def fake_stage1(*args, **kwargs):
+        stage1_calls.append(kwargs)
+        return _fake_stage1(*args, **kwargs)
+
+    def fake_stage2(*args, **kwargs):
+        stage2_calls.append(kwargs)
+        return _fake_stage2(*args, **kwargs)
+
+    async def fake_stage3(*args, **kwargs):
+        stage3_calls.append(kwargs)
+        return {"model": "chair", "response": "Synthesis", "error": False}
+
+    with patch("backend.debate.get_settings", return_value=mock_settings), \
+         patch("backend.debate.stage1_collect_responses", side_effect=fake_stage1), \
+         patch("backend.debate.stage2_collect_rankings", side_effect=fake_stage2), \
+         patch("backend.debate.stage3_synthesize_final", side_effect=fake_stage3):
+        async for _ in run_iterative_debate(
+            "test?", "", None, "full", debate_rounds=2,
+            conversation_id="conversation-debate",
+        ):
+            pass
+
+    assert stage1_calls
+    assert stage2_calls
+    assert stage3_calls
+    assert all(call["conversation_id"] == "conversation-debate" for call in stage1_calls)
+    assert all(call["conversation_id"] == "conversation-debate" for call in stage2_calls)
+    assert all(call["conversation_id"] == "conversation-debate" for call in stage3_calls)

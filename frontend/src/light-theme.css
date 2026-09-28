@@ -172,6 +172,19 @@
   border-color: var(--accent-primary);
 }
 
+/* Subscription OAuth device-code flow */
+[data-theme="light"] .oauth-device-flow {
+  background: var(--surface-raised);
+  border-color: var(--border-color);
+}
+[data-theme="light"] .oauth-instructions,
+[data-theme="light"] .oauth-waiting {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .oauth-user-code {
+  color: #A16207;
+}
+
 /* Provider option cards */
 [data-theme="light"] .provider-option-container {
   background: var(--surface-panel);
@@ -577,6 +590,40 @@
 [data-theme="light"] .search-popover-option--selected {
   background: rgba(21, 128, 61, 0.10);
   color: #15803D;
+}
+
+/* Document upload (attach button + chips in Council/Advisor input) */
+[data-theme="light"] .document-upload__button {
+  background: rgba(21, 128, 61, 0.06);
+  border-color: rgba(21, 128, 61, 0.22);
+  color: #15803D;
+}
+[data-theme="light"] .document-upload__button:hover:not(:disabled),
+[data-theme="light"] .document-upload__button--active {
+  background: rgba(21, 128, 61, 0.12);
+  border-color: rgba(21, 128, 61, 0.35);
+  color: #15803D;
+}
+[data-theme="light"] .document-upload__chip {
+  background: rgba(21, 128, 61, 0.06);
+  border-color: rgba(21, 128, 61, 0.20);
+}
+[data-theme="light"] .document-upload__remove {
+  background: rgba(31, 42, 36, 0.06);
+  color: var(--text-muted);
+}
+[data-theme="light"] .document-upload__remove:hover:not(:disabled) {
+  background: rgba(185, 28, 28, 0.10);
+  color: #B91C1C;
+}
+[data-theme="light"] .document-upload__warning {
+  background: rgba(161, 98, 7, 0.08);
+  border-color: rgba(161, 98, 7, 0.28);
+  color: #A16207;
+}
+[data-theme="light"] .message-attachment-chip {
+  background: rgba(21, 128, 61, 0.06);
+  border-color: rgba(21, 128, 61, 0.20);
 }
 
 /* Debate config bar above the input */

@@ -557,6 +557,34 @@ async def test_run_debate_verdict_prompt_includes_debate_arc_and_final_consensus
 
 
 @pytest.mark.asyncio
+async def test_run_debate_propagates_conversation_id_to_advisors_and_neutral_calls():
+    async def advisor(pid, prompt, personas_map, model_assignments, default_model, temperature, conversation_id=None):
+        return pid, default_model, f"{pid} position.\nCONSENSUS_SCORE: 2", None
+
+    with patch("backend.advisors._query_advisor", side_effect=advisor) as mock_advisor:
+        with patch("backend.advisors._query_neutral", new_callable=AsyncMock) as mock_neutral:
+            mock_neutral.return_value = _neutral_response("Extract or verdict")
+            await _collect_events(run_debate(
+                question="What should we do?",
+                persona_ids=["skeptic", "pragmatist", "innovator"],
+                default_model=DEFAULT_MODEL,
+                max_rounds=3,
+                conversation_id="conversation-advisor",
+            ))
+
+    assert mock_advisor.await_args_list
+    assert all(
+        call.kwargs["conversation_id"] == "conversation-advisor"
+        for call in mock_advisor.await_args_list
+    )
+    assert mock_neutral.await_args_list
+    assert all(
+        call.kwargs["conversation_id"] == "conversation-advisor"
+        for call in mock_neutral.await_args_list
+    )
+
+
+@pytest.mark.asyncio
 async def test_run_debate_too_few_personas_yields_error():
     """Less than 2 personas → advisor_error event, no rounds."""
     events = await _collect_events(run_debate(

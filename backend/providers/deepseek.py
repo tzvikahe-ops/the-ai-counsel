@@ -1,6 +1,8 @@
 """DeepSeek provider implementation."""
 
 import httpx
+
+from .errors import describe_exception
 from typing import List, Dict, Any
 from .base import LLMProvider
 from ..settings import get_settings
@@ -11,8 +13,9 @@ class DeepSeekProvider(LLMProvider):
     BASE_URL = "https://api.deepseek.com"
     
     def _get_api_key(self) -> str:
-        settings = get_settings()
-        return settings.deepseek_api_key or ""
+        from ..credentials import get_api_key
+        return get_api_key("deepseek")
+
 
     async def query(self, model_id: str, messages: List[Dict[str, str]], timeout: float = 120.0, temperature: float = 0.7) -> Dict[str, Any]:
         api_key = self._get_api_key()
@@ -47,7 +50,7 @@ class DeepSeekProvider(LLMProvider):
                 return {"content": content, "usage": data.get("usage"), "error": False}
                 
         except Exception as e:
-            return {"error": True, "error_message": str(e)}
+            return {"error": True, "error_message": describe_exception(e, timeout)}
 
     async def get_models(self) -> List[Dict[str, Any]]:
         """Fetch available models from DeepSeek API with hardcoded fallback."""

@@ -42,9 +42,13 @@ LLM_COUNCIL_BIND_HOST=0.0.0.0 uv run python -m backend.main
 cd frontend && npm run dev -- --host
 ```
 
+**Port variables** (set in the root `.env`, see `.env.example`):
+- `PORT_BACKEND`: backend port, default `8001`. Read by the backend, Vite (local-dev API URL), `start.sh`, and Docker. Production/Docker uses the page origin when `BACKEND_HOST` is empty, so a runtime port change does not require rebuilding the frontend.
+- `PORT_FRONTEND`: Vite dev/preview server port, default `5173`.
+
 **Backend bind variables:**
 - `LLM_COUNCIL_BIND_HOST`: dev launcher bind host, default `127.0.0.1`. Use `0.0.0.0` only when you intentionally want LAN access.
-- `LLM_COUNCIL_BIND_PORT`: dev launcher bind port, default `8001`.
+- `LLM_COUNCIL_BIND_PORT`: legacy override for `PORT_BACKEND`; takes precedence when set.
 - `LLM_COUNCIL_ADMIN_TOKEN`: required for remote access to `/api/settings/export`, `/api/settings/import`, and `/api/settings/reset`. Without it, those admin endpoints only accept direct loopback clients and reject proxied external clients.
 
 **Installing Dependencies:**
@@ -81,7 +85,9 @@ Deleting the lockfile too is required - otherwise `npm install` rebuilds the sam
 | `settings.py` | Config management, persisted to `data/settings.json` |
 | `config.py` | OpenRouter endpoint URL, data dir constant, settings-aware getters (`get_openrouter_api_key`, `get_council_models`, `get_chairman_model`, ...) that bridge env vars and `settings.py` |
 | `costs.py` | Usage normalization, pricing lookup/cache, per-call cost attribution, and run-level cost reports |
+| `documents.py` | Document validation and text extraction for uploads (text-like files and PDFs; optional OCR fallback) |
 | `prompts.py` | Default system prompts for all stages (Stage 1/2/3, Title, Query) |
+| `personas.py` | Built-in advisor definitions, persisted overrides, and user-created custom personas |
 | `main.py` | FastAPI app with streaming SSE endpoints, live progress tracking (`_active_runs`), and MCP server mount |
 | `storage.py` | Conversation persistence in `data/conversations/{id}.json`; index entries include optional `run_summary`, `total_cost`, `cost_status`, `total_calls` via `derive_run_summary()` / `derive_conversation_cost()` |
 
@@ -90,7 +96,9 @@ Deleting the lockfile too is required - otherwise `npm install` rebuilds the sam
 | Component | Purpose |
 |-----------|---------|
 | `App.jsx` | Main orchestration, SSE streaming, conversation state |
-| `ChatInterface.jsx` | User input, web search toggle, execution mode |
+| `ChatInterface.jsx` | User input, docked chat composer, web search toggle, execution mode |
+| `DocumentUpload.jsx` | File picker/extraction UI for Council and Advisor document context |
+| `AdvisorSetup.jsx` | Advisor selection, custom persona creation/editing/deletion, model assignments, and advisor presets |
 | `Stage1.jsx` | Tab view of individual model responses |
 | `Stage2.jsx` | Peer rankings with de-anonymization, aggregate scores |
 | `Stage3.jsx` | Chairman synthesis (final answer) |
@@ -98,7 +106,7 @@ Deleting the lockfile too is required - otherwise `npm install` rebuilds the sam
 | `CouncilGrid.jsx` | Visual grid of council members with provider icons |
 | `CouncilSetup.jsx` | Inline council editor on welcome screen (members, chairman, presets; auto-save) |
 | `Settings.jsx` | 8-section settings: General, LLM API Keys, Council Config, Council Debate Config, Council System Prompts, Advisor System Prompts, Search Providers, Backup & Reset |
-| `GeneralSettings.jsx` | Date format and response language (General section) |
+| `GeneralSettings.jsx` | Date format, accessible font size, response language, and relay-ai credential import (General section) |
 | `Sidebar.jsx` | Conversation list with stacked date/time, run summaries, cumulative cost pill, sidebar search on summary text, inline delete confirmation |
 | `SearchableModelSelect.jsx` | Searchable dropdown for model selection |
 
@@ -184,7 +192,7 @@ useEffect(() => {
 
 ## Common Gotchas
 
-1. **Port Conflicts**: Backend uses 8001 (not 8000). Update `backend/main.py` and `frontend/src/api.js` together.
+1. **Port Conflicts**: Backend uses 8001, frontend 5173. Both come from `PORT_BACKEND` / `PORT_FRONTEND` in the root `.env` — change them there, not in source.
 
 2. **CORS Errors**: Frontend origins must match `main.py` CORS middleware (localhost:5173 and :3000).
 
@@ -205,7 +213,9 @@ useEffect(() => {
 ## Data Flow
 
 ```
-User Query (+ optional web search)
+User Query (+ optional web search / file uploads)
+ ↓
+[Document Extraction: text files + PDFs via pdfplumber, optional OCR]
  ↓
 [Web Search: DuckDuckGo/Tavily/Brave + Jina Reader]
  ↓
@@ -222,12 +232,27 @@ Save conversation (stage1, stage2, stage3 only)
 
 ## API Endpoints
 
-### One-Shot Query (No State)
+### One-Shot Query (Persisted)
 ```
 POST /api/ask
-Body: {content, models?, web_search?, execution_mode?}
-→ JSON response (no conversation created)
+Body: {content, models?, web_search?, execution_mode?, documents?}
+→ JSON response with conversation_id; completed run appears in the UI
 ```
+Each call creates a new conversation for auditability. The endpoint remains
+one-shot: it does not load prior conversation history.
+
+### Document Extraction / Uploads
+```
+POST /api/documents/extract
+→ multipart upload endpoint used by the UI
+
+POST /api/documents/extract-json
+Body: {documents: [{name, mime_type?, data_base64}]}
+→ JSON/base64 extraction endpoint used by MCP clients
+```
+Document-bearing requests accept extracted payloads as `documents: [{name, mime_type, text, metadata?}]` on `/api/ask`, conversation message endpoints, council debate, and advisor debate. Providers receive normalized text context; conversation storage keeps attachment metadata only.
+
+PDFs use `pdfplumber` for embedded text. OCR is optional and requires `LLM_COUNCIL_OCR_ENABLED=1` plus OCRmyPDF, Tesseract, Ghostscript, and qpdf in the backend runtime. If OCR is unavailable, extraction continues with warnings instead of blocking normal text extraction.
 
 ### Per-Request Model Overrides
 Both `/api/conversations/{id}/message` (sync) and `/api/conversations/{id}/message/stream` (SSE) accept optional `council_models` and `chairman_model` fields that override global config for that request only. Never mutate settings for ad-hoc queries.
@@ -312,18 +337,18 @@ curl https://your-endpoint.com/v1/models -H "Authorization: Bearer $API_KEY"
 ## Settings
 
 **UI Sections** (sidebar navigation):
-1. **General**: Display preferences (date format) and response language for council/advisor model outputs. Language is injected at runtime via `apply_response_language()` in `prompts.py` (not editable in system prompt tabs); title and search-query generation stay English.
-2. **LLM API Keys**: OpenRouter, Groq, Ollama, Direct providers, Custom endpoint
+1. **General**: Display preferences (date format and accessible font size), response language for council/advisor model outputs, and optional relay-ai credential import. Font size options are Default (110% of the current baseline) and Large (150%) and apply to all UI text, including existing chats. Language is injected at runtime via `apply_response_language()` in `prompts.py` (not editable in system prompt tabs); title and search-query generation stay English.
+2. **LLM API Keys**: Where secrets are stored (file vs OS keystore), OpenRouter, Groq, Ollama, Subscription OAuth, Direct providers, Custom endpoint. Configured providers show Disconnect (clears stored key / OAuth, ignores env overrides for that secret until a new key is saved, and disables that source). Ollama Connect enables the provider; Disconnect disables it (daemon may still be running). API keys are never persisted in `settings.json` (always redacted on save); Retest and relay-ai import read/write the credential store. User guide: [`docs/CREDENTIALS.md`](docs/CREDENTIALS.md).
 3. **Council Config**: **Global** provider toggles — Local (Ollama) standalone, Remote APIs master toggle with OpenRouter, Groq, Custom, and Direct Connections underneath. Temperature controls for all three stages (Council Heat, Peer Ranking Heat, Chairman Heat). Model selection (members/chairman) is handled exclusively on the welcome screen via Council Setup.
 4. **Council Debate Config**: Critique mode, debate rounds, auto-converge, convergence threshold
 5. **Council System Prompts**: Stage 1 / Stage 2 / Stage 3 / Title / Search Query are user-editable and persisted in `settings.json` (fields `stage1_prompt` / `stage2_prompt` / `stage3_prompt` / `title_prompt` / `query_prompt`, all five updated via `PUT /api/settings`), each with reset-to-default. The Title and Query prompts (`TITLE_PROMPT_DEFAULT` / query-generation prompt in `backend/prompts.py`) are used internally by `generate_conversation_title` and `generate_search_query`.
 6. **Advisor System Prompts**: Round 1, follow-up, cross-pollination, verdict, tiebreaker prompts
 7. **Search Providers**: DuckDuckGo, Tavily, Brave, Serper, TinyFish + Jina full content settings
-8. **Backup & Reset**: Import/Export config, reset to defaults
+8. **Backup & Reset**: Import/Export config, Disconnect All Providers (clears credential store + OAuth; keeps council/prompts), reset to defaults
 
 **Council presets** (`council_presets` in `settings.json`): Saved from welcome-screen Council Setup — members + chairman only. Max 20; one default auto-loads. Main screen and Settings edit the same `council_models` / `chairman_model` fields. Lineup locked in a conversation after the first message.
 
-**Advisor presets** (`advisor_presets` in `settings.json`): Saved from Advisor Setup — personas, simple/advanced mode, model assignments, optional rounds/web search. Max 20; one default. See `skills/the-ai-counsel-api/SKILL.md`.
+**Advisor presets** (`advisor_presets` in `settings.json`): Saved from Advisor Setup — built-in or custom personas, simple/advanced mode, model assignments, optional rounds/web search. Max 20; one default. Deleting a custom persona removes its ID and model assignment from every saved preset while retaining the preset for repair. See `skills/the-ai-counsel-api/SKILL.md`.
 
 **Provider availability (important)**:
 - `enabled_providers` and `direct_provider_toggles` are **global** — they control which providers appear in all model pickers: Council Setup (welcome screen), Advisor Setup, and Settings temperature controls.
@@ -334,7 +359,7 @@ curl https://your-endpoint.com/v1/models -H "Authorization: Bearer $API_KEY"
 
 **Auto-Save Behavior**:
 - **Credentials auto-save**: API keys and URLs save immediately on successful test
-- **All other settings auto-save**: Debounced (~1s) on change — council config, temperatures, prompts, search, debate, General (date format + response language). No Save button in Settings.
+- **All other settings auto-save**: Debounced (~1s) on change — council config, temperatures, prompts, search, debate, General (date format + font size + response language). No Save button in Settings.
 - UX flow: Test → Success → Auto-save → Clear input → "Settings saved!"
 
 **Temperature Controls** (all in Settings → Council Config):
@@ -347,7 +372,7 @@ curl https://your-endpoint.com/v1/models -H "Authorization: Bearer $API_KEY"
 - OpenRouter free tier: 20 RPM, 50 requests/day
 - Groq: 30 RPM, 14,400 requests/day
 
-**Storage**: `data/settings.json`
+**Storage**: `data/settings.json` (non-secret config, including advisor presets), `data/persona_overrides.json` (built-in persona edits), and `data/custom_personas.json` (user-created personas); secrets in `data/credentials.json` or OS keystore (Settings → LLM API Keys → Where secrets are stored). Subscription OAuth: `xai-oauth`, `openai-oauth`, `github-copilot`.
 
 ## Design Principles
 
@@ -378,12 +403,16 @@ When bumping the version, **all** of the following files must be updated togethe
 |------|-------------------|
 | `CHANGELOG.md` | `## [x.y.z]` header at top |
 | `pyproject.toml` | `[project] version = "x.y.z"` |
+| `uv.lock` | `the-ai-counsel` package entry `version = "x.y.z"` |
+| `the_ai_counsel_mcp/__init__.py` | `__version__` must resolve from `pyproject.toml`; do not hardcode a second version |
 | `frontend/package.json` | top-level `"version": "x.y.z"` |
 | `frontend/package-lock.json` | root `"version"` and `packages[""].version` |
 | `frontend/src/components/Sidebar.jsx` | `<div className="sidebar-version">vX.Y.Z</div>` |
 | `skills/the-ai-counsel-api/SKILL.md` | YAML frontmatter `version: x.y.z` |
 
-Always update all version surfaces in the same commit. The CHANGELOG drives the canonical version; backend metadata, frontend metadata, UI, and skill must match.
+Always update all version surfaces in the same commit. `pyproject.toml` is the canonical version source; the MCP package reads it (or installed package metadata), while the changelog, frontend metadata, UI, and skill must match.
+
+Before committing a version bump, run `uv run python scripts/check_version_consistency.py`. The same consistency check is covered by `backend/tests/test_version_consistency.py` and must pass with the full test suite.
 
 **Full documentation sync** (settings fields, MCP tools, advisor/council flows): follow [`docs/DOC-SYNC.md`](docs/DOC-SYNC.md).
 

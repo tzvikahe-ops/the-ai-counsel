@@ -20,17 +20,21 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 import httpx
+from the_ai_counsel_mcp import __version__
 
 from ..settings import get_settings
+from .max_tokens import opencode_max_tokens
 from .base import LLMProvider
 
 logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 2
 INITIAL_RETRY_DELAY = 1.0
+USER_AGENT = f"the-ai-counsel/{__version__}"
 
 
 class OpenCodeProvider(LLMProvider):
@@ -86,7 +90,8 @@ class OpenCodeProvider(LLMProvider):
         return self.config["name"]
 
     def _get_api_key(self) -> str:
-        return get_settings().opencode_api_key or ""
+        from ..credentials import get_api_key
+        return get_api_key("opencode")
 
     def _strip_prefix(self, model_id: str) -> str:
         prefix = f"{self.config['prefix']}:"
@@ -114,6 +119,8 @@ class OpenCodeProvider(LLMProvider):
         messages: List[Dict[str, str]],
         timeout: float = 120.0,
         temperature: float = 0.7,
+        *,
+        session_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         api_key = self._get_api_key()
         if not api_key:
@@ -126,10 +133,18 @@ class OpenCodeProvider(LLMProvider):
         if not model:
             return {"error": True, "error_message": f"Missing model id after {self.config['prefix']}: prefix"}
 
+        effective_session_id = None
+        if self.product == "go":
+            effective_session_id = session_id or str(uuid4())
+
         if self._supports_chat_completions(model):
-            return await self._query_chat_completions(api_key, model, messages, timeout, temperature)
+            return await self._query_chat_completions(
+                api_key, model, messages, timeout, temperature, effective_session_id
+            )
         if self._supports_messages(model):
-            return await self._query_messages(api_key, model, messages, timeout, temperature)
+            return await self._query_messages(
+                api_key, model, messages, timeout, temperature, effective_session_id
+            )
 
         return {
             "error": True,
@@ -141,7 +156,7 @@ class OpenCodeProvider(LLMProvider):
 
     async def _query_chat_completions(
         self, api_key: str, model: str, messages: List[Dict[str, str]],
-        timeout: float, temperature: float,
+        timeout: float, temperature: float, session_id: Optional[str],
     ) -> Dict[str, Any]:
         return await self._request_with_retries(
             api_key=api_key,
@@ -155,11 +170,12 @@ class OpenCodeProvider(LLMProvider):
             },
             parse_response=self._parse_chat_completions,
             timeout=timeout,
+            session_id=session_id,
         )
 
     async def _query_messages(
         self, api_key: str, model: str, messages: List[Dict[str, str]],
-        timeout: float, temperature: float,
+        timeout: float, temperature: float, session_id: Optional[str],
     ) -> Dict[str, Any]:
         system_message = ""
         filtered_messages = []
@@ -172,7 +188,7 @@ class OpenCodeProvider(LLMProvider):
         payload: Dict[str, Any] = {
             "model": model,
             "messages": filtered_messages,
-            "max_tokens": 4096,
+            "max_tokens": opencode_max_tokens(),
             "temperature": temperature,
         }
         if system_message:
@@ -186,6 +202,7 @@ class OpenCodeProvider(LLMProvider):
             parse_response=self._parse_messages,
             timeout=timeout,
             use_anthropic_headers=True,
+            session_id=session_id,
         )
 
     @staticmethod
@@ -231,6 +248,7 @@ class OpenCodeProvider(LLMProvider):
         parse_response,
         timeout: float,
         use_anthropic_headers: bool = False,
+        session_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         last_error: Dict[str, str] = {}
         for attempt in range(MAX_RETRIES):
@@ -240,12 +258,16 @@ class OpenCodeProvider(LLMProvider):
                         "Content-Type": "application/json",
                         "x-api-key": api_key,
                         "anthropic-version": "2023-06-01",
+                        "User-Agent": USER_AGENT,
                     }
                 else:
                     headers = {
                         "Content-Type": "application/json",
                         "Authorization": f"Bearer {api_key}",
+                        "User-Agent": USER_AGENT,
                     }
+                if session_id:
+                    headers["x-opencode-session"] = session_id
                 async with httpx.AsyncClient(timeout=timeout) as client:
                     response = await client.post(url, headers=headers, json=payload)
 
@@ -307,7 +329,7 @@ class OpenCodeProvider(LLMProvider):
             return []
 
         try:
-            headers = {"Authorization": f"Bearer {api_key}"}
+            headers = {"Authorization": f"Bearer {api_key}", "User-Agent": USER_AGENT}
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
                     f"{self.config['base_url']}/models",
@@ -345,7 +367,7 @@ class OpenCodeProvider(LLMProvider):
         if not api_key:
             return {"success": False, "message": f"{self.name} API key not configured"}
         try:
-            headers = {"Authorization": f"Bearer {api_key}"}
+            headers = {"Authorization": f"Bearer {api_key}", "User-Agent": USER_AGENT}
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
                     f"{self.config['base_url']}/models",

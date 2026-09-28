@@ -2,6 +2,8 @@ import { Suspense, lazy, useState, useEffect, useRef, useCallback, Component } f
 import i18n from './i18n';
 import Sidebar from './components/Sidebar';
 import { api, DEFAULT_EXECUTION_MODE, buildAvailableSearchProviders } from './api';
+import { hasConfiguredProviders } from './constants/oauthProviders';
+import { applyFontSize, normalizeFontSize } from './utils/fontSize';
 import './App.css';
 import './components/StageCopyButtons.css';
 import './ModeToggle.css';
@@ -20,6 +22,23 @@ function finalizeTimers(timers = {}) {
   if (next.stage4Start && !next.stage4End) next.stage4End = now;
   return next;
 }
+
+const isDefaultConversationTitle = (title) =>
+  !title || title === 'New Conversation' || title === 'Untitled Conversation';
+
+const deriveConversationTitle = (content) => {
+  if (!content || typeof content !== 'string') return 'Untitled Conversation';
+
+  let title = content.trim().replace(/\s+/g, ' ');
+  if (!title) return 'Untitled Conversation';
+
+  title = title.replace(/^["']+|["']+$/g, '');
+
+  if (title.length > 50) {
+    title = `${title.substring(0, 47)}...`;
+  }
+  return title;
+};
 
 const IDLE_LOADING = {
   search: false,
@@ -88,7 +107,7 @@ const buildAdvisorProgressMessage = (progress, existing = {}) => {
     role: 'assistant',
     type: 'advisor_debate',
     mode: 'advisors',
-    isRunning: true,
+    isRunning: progress.stage !== 'complete' && progress.stage !== 'error',
     phase: progress.stage || existing.phase || 'initializing',
     currentRound: progress.current_round || existing.currentRound || 0,
     maxRounds: progress.max_rounds || existing.maxRounds || metadata.max_rounds || 3,
@@ -118,6 +137,7 @@ function App() {
     testing: false
   });
   const [councilConfigured, setCouncilConfigured] = useState(true); // Assume configured until checked
+  const [providersConfigured, setProvidersConfigured] = useState(true); // Assume until checked
   const [councilModels, setCouncilModels] = useState([]);
   const [chairmanModel, setChairmanModel] = useState(null);
   const [searchProvider, setSearchProvider] = useState('duckduckgo');
@@ -128,6 +148,7 @@ function App() {
   const [autoConverge, setAutoConverge] = useState(true);
   const [convergenceThreshold, setConvergenceThreshold] = useState(2);
   const [dateFormat, setDateFormat] = useState('auto');
+  const [fontSize, setFontSize] = useState('default');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appMode, setAppMode] = useState(null); // null shows landing page
   const [theme, setTheme] = useState(() => {
@@ -212,16 +233,9 @@ function App() {
       setAutoConverge(settings.auto_converge !== undefined ? settings.auto_converge : true);
       setConvergenceThreshold(settings.convergence_threshold || 2);
       setDateFormat(settings.date_format || 'auto');
+      setFontSize(normalizeFontSize(settings.font_size));
 
       setAvailableSearchProviders(buildAvailableSearchProviders(settings));
-
-      const hasApiKey = settings.openrouter_api_key_set ||
-        settings.groq_api_key_set ||
-        settings.openai_api_key_set ||
-        settings.anthropic_api_key_set ||
-        settings.google_api_key_set ||
-        settings.mistral_api_key_set ||
-        settings.deepseek_api_key_set;
 
       // 2. Test Ollama Connection
       // We do this regardless to update the status indicator
@@ -256,8 +270,11 @@ function App() {
 
       setCouncilConfigured(computeCouncilConfigured(models));
 
+      const providersOk = hasConfiguredProviders(settings, { ollamaConnected: isOllamaConnected });
+      setProvidersConfigured(providersOk);
+
       // 4. If no providers are configured, open settings
-      if (!hasApiKey && !isOllamaConnected) {
+      if (!providersOk) {
         setShowSettings(true);
       }
 
@@ -285,12 +302,20 @@ function App() {
       setAutoConverge(settings.auto_converge !== undefined ? settings.auto_converge : true);
       setConvergenceThreshold(settings.convergence_threshold || 2);
       setDateFormat(settings.date_format || 'auto');
+      setFontSize(normalizeFontSize(settings.font_size));
 
       setCouncilConfigured(computeCouncilConfigured(models));
+      setProvidersConfigured(hasConfiguredProviders(settings, {
+        ollamaConnected: !!ollamaStatus?.connected,
+      }));
     } catch (error) {
       console.error('Error after closing settings:', error);
     }
   };
+
+  useEffect(() => {
+    applyFontSize(fontSize);
+  }, [fontSize]);
 
   const handleOpenSettings = (section = 'council') => {
     setSettingsInitialSection(section || 'council');
@@ -388,10 +413,26 @@ function App() {
   const loadConversations = async (retryCount = 0) => {
     try {
       const convs = await api.listConversations();
-      setConversations(convs.map((conv) => ({
-        ...conv,
-        mode: getConversationMode(conv),
-      })));
+      setConversations((prev) =>
+        convs.map((conv) => {
+          const local = prev.find((item) => item.id === conv.id);
+
+          const updated = {
+            ...conv,
+            mode: getConversationMode(conv),
+          };
+
+          if (
+            local &&
+            isDefaultConversationTitle(conv.title) &&
+            !isDefaultConversationTitle(local.title)
+          ) {
+            updated.title = local.title;
+          }
+
+          return updated;
+        })
+      );
     } catch (error) {
       console.error('Failed to load conversations:', error);
       // Retry up to 3 times with increasing delays (1s, 2s, 3s)
@@ -643,7 +684,11 @@ function App() {
 
       setAppMode('advisors');
 
-      const userMessage = { role: 'user', content: options.question };
+      const userMessage = {
+        role: 'user',
+        content: options.question,
+        ...(options.attachments?.length ? { attachments: options.attachments } : {}),
+      };
       const debateMessage = {
         role: 'assistant',
         type: 'advisor_debate',
@@ -863,7 +908,7 @@ function App() {
     }
   };
 
-  const handleSendMessage = async (content, searchProvider) => {
+  const handleSendMessage = async (content, searchProvider, documentPayload = {}) => {
     if (!currentConversationId) return;
 
     let effectiveMode = executionMode;
@@ -905,8 +950,27 @@ function App() {
         }
       }
 
+      // Optimistically update conversation title in list and current state if it is a new/untitled conversation
+      const currentConvInList = conversations.find(c => c.id === activeConversationId);
+      const currentTitle = currentConvInList?.title || currentConversation?.title;
+      const hasNoTitle = isDefaultConversationTitle(currentTitle);
+
+      if (hasNoTitle) {
+        const optimisticTitle = deriveConversationTitle(content);
+        setConversations(prev => prev.map(c =>
+          c.id === activeConversationId ? { ...c, title: optimisticTitle } : c
+        ));
+        setCurrentConversation(prev =>
+          prev && prev.id === activeConversationId ? { ...prev, title: optimisticTitle } : prev
+        );
+      }
+
       // Optimistically add user message to UI
-      const userMessage = { role: 'user', content };
+      const userMessage = {
+        role: 'user',
+        content,
+        ...(documentPayload.attachments?.length ? { attachments: documentPayload.attachments } : {}),
+      };
       setCurrentConversation((prev) => ({
         ...prev,
         id: activeConversationId, // transition draft ID to actual database UUID
@@ -958,6 +1022,7 @@ function App() {
         executionMode: effectiveMode,
         councilModels,
         chairmanModel: effectiveMode === 'full' ? chairmanModel : undefined,
+        documents: documentPayload.documents || [],
       };
       if (isDebate) {
         streamOptions.debateRounds = debateRounds;
@@ -1442,6 +1507,14 @@ function App() {
               break;
 
             case 'title_complete':
+              // Update with final generated title optimistically
+              if (event.data && event.data.title) {
+                const finalTitle = event.data.title;
+                setConversations(prev => prev.map(c =>
+                  c.id === activeConversationId ? { ...c, title: finalTitle } : c
+                ));
+                setCurrentConversation(prev => prev && prev.id === activeConversationId ? { ...prev, title: finalTitle } : prev);
+              }
               // Reload conversations to get updated title
               loadConversations();
               break;
@@ -1604,7 +1677,13 @@ function App() {
         <AppErrorBoundary>
           <Suspense fallback={<AppLoadingFallback />}>
             {appMode === null && !currentConversationId ? (
-              <LandingPage onSelectMode={(m) => setAppMode(m)} />
+              <LandingPage onSelectMode={(m) => {
+                setAppMode(m);
+                if (m === 'council') {
+                  setCurrentConversationId('draft');
+                  setCurrentConversation({ id: 'draft', mode: 'council', title: 'New Conversation', messages: [] });
+                }
+              }} />
             ) : (
               <ChatInterface
                 conversation={currentConversation}
@@ -1612,6 +1691,7 @@ function App() {
                 onAbort={handleAbort}
                 isLoading={isLoading}
                 councilConfigured={councilConfigured}
+                providersConfigured={providersConfigured}
                 councilModels={councilModels}
                 chairmanModel={chairmanModel}
                 searchProvider={searchProvider}
@@ -1641,6 +1721,7 @@ function App() {
               ollamaStatus={ollamaStatus}
               onRefreshOllama={testOllamaConnection}
               initialSection={settingsInitialSection}
+              onFontSizeChange={setFontSize}
             />
           </Suspense>
         </AppErrorBoundary>

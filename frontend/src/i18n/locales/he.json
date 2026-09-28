@@ -295,7 +295,23 @@
       "confirmItem8": "כתובת Ollama → localhost:11434",
       "confirmSafe": "✓ מפתחות API יישמרו",
       "confirmCancel": "ביטול",
-      "confirmReset": "אשר איפוס"
+      "confirmReset": "אשר איפוס",
+      "disconnectAllDesc": "נתק את כל מפתחות ה-API של LLM, מפתחות החיפוש, וכניסות ה-OAuth של המנויים. מודלי המועצה, ההנחיות, והגדרות אחרות לא ייפגעו. מפתחות שמוגדרים דרך משתני סביבה יתעלמו עד שתשמור מפתח חדש.",
+      "disconnectAllBtn": "נתק את כל הספקים",
+      "disconnectingAll": "מנתק…",
+      "disconnectAllConfirmTitle": "לנתק את כל הספקים?",
+      "disconnectAllConfirmPrompt": "פעולה זו מסירה כל מפתח API וכניסת OAuth שמורים מחנות האישורים.",
+      "disconnectAllConfirmListIntro": "פעולה זו תנקה:",
+      "disconnectAllConfirmItem1": "מפתחות OpenRouter, Groq, OpenCode, וספקים ישירים",
+      "disconnectAllConfirmItem2": "מפתחות ספקי חיפוש (Tavily, Brave, Serper, TinyFish)",
+      "disconnectAllConfirmItem3": "כניסות OAuth של מנויים (xAI, ChatGPT, Copilot)",
+      "disconnectAllConfirmItem4": "כתובת URL / שם endpoint מותאם אישית",
+      "disconnectAllConfirmItem5": "מתגי ספקים ← כולם יושבתו",
+      "disconnectAllConfirmSafe": "✓ מודלי המועצה, ההנחיות, והגדרות אחרות יישמרו",
+      "disconnectAllConfirmButton": "נתק את כולם",
+      "defaultsLoadedRelayImport": "אישורי relay-ai יובאו בהצלחה!",
+      "disconnectAllSuccess": "כל הספקים נותקו ({{count}} אישורים נוקו).",
+      "failedToDisconnectAll": "ניתוק כל הספקים נכשל"
     },
     "errors": {
       "failedToSave": "שמירת ההגדרות נכשלה",
@@ -329,7 +345,31 @@
     "sidebarPreview": "תצוגה בסיידבר:",
     "responseLanguage": "שפת תגובות מודלים",
     "responseLanguageDescription": "מודלי המועצה והיועצים יקבלו הוראה לענות בשפה זו. כותרות שיחות ושאילתות חיפוש פנימיות נשארות באנגלית.",
-    "modelResponses": "תגובות מודלים"
+    "modelResponses": "תגובות מודלים",
+    "relayImport": {
+      "heading": "ייבוא מ-relay-ai",
+      "description": "העתק אישורים מהתקנה מקומית של relay-ai (מחסן מפתחות מערכת ההפעלה). מפתחות שיובאו יישמרו בחנות האישורים שבחרת (קובץ מקומי או מחסן מפתחות מערכת ההפעלה) - לא לתוך settings.json - כך שבדיקה חוזרת תעבוד בלי להדביק מחדש. לחץ על גילוי רק כשברצונך לסרוק; macOS Keychain עשוי לשאול פעם אחת לכל אישור (השתמש ב'אפשר תמיד'). ייבוא עשוי לשאול שוב עבור סודות גדולים/מפוצלים.",
+      "bannerFound_one": "נמצא אישור אחד ב-relay-ai שניתן לייבא.",
+      "bannerFound_other": "נמצאו {{count}} אישורים ב-relay-ai שניתן לייבא.",
+      "dismiss": "התעלם",
+      "discovering": "מגלה…",
+      "discoverCredentials": "גלה אישורים",
+      "importing": "מייבא…",
+      "importSelected": "ייבא נבחרים ({{count}})",
+      "dismissNotice": "התעלם מההודעה",
+      "alreadyInCounsel": "· כבר קיים ב-Counsel",
+      "importSuccess_one": "✓ יובא בהצלחה - אישור אחד נוסף.",
+      "importSuccess_other": "✓ יובא בהצלחה - {{count}} אישורים נוספו.",
+      "importSkipped": " {{count}} דולגו.",
+      "importFailed": " {{count}} נכשלו.",
+      "importFailedGeneric": "ייבוא האישורים נכשל"
+    },
+    "fontSize": {
+      "label": "גודל גופן",
+      "hint": "מגדיל את כל הטקסט באפליקציה. נשמר אוטומטית.",
+      "default": "רגיל",
+      "large": "גדול"
+    }
   },
   "providers": {
     "heading": "מפתחות API של LLM",
@@ -355,7 +395,7 @@
     "apiKeyConfigured": "✓ מפתח API מוגדר",
     "modelsAvailableSuffix": "מודלים זמינים",
     "opencodeHeading": "OpenCode (Zen + Go)",
-    "opencodeDescription": "מפתח OpenCode אחד פותח את Zen (curated, per-token) ואת Go (subscription). v1 תומך רק במודלים תואמי OpenAI לצ'אט/השלמות.",
+    "opencodeDescription": "מפתח API אחד של OpenCode פותח את Zen (אוצר, לפי טוקן) ואת Go (מנוי). גרסה v1 תומכת רק במודלי chat/completions תואמי OpenAI - GPT Responses, Claude Messages, ו-Gemini לפי מודל טרם חוברו.",
     "opencodeApiKey": "מפתח API של OpenCode",
     "opencodeHint": "השג מפתח ב",
     "customHeading": "Endpoint מותאם אישית תואם OpenAI",
@@ -365,7 +405,54 @@
     "baseUrl": "כתובת בסיס",
     "apiKeyLabel": "מפתח API",
     "optionalLocal": "(אופציונלי לשרתים מקומיים)",
-    "endpointConfigured": "✓ Endpoint מוגדר"
+    "endpointConfigured": "✓ Endpoint מוגדר",
+    "oauth": {
+      "heading": "כניסות מנוי",
+      "description": "חבר מנויים בתשלום באמצעות כניסת OAuth למכשיר. אלו משתמשים במנוי האישי שלך דרך כלים של צד שלישי - לא בחיוב API רשמי. השתמש על אחריותך בלבד.",
+      "connected": "✓ מחובר",
+      "freePlan": "· תוכנית חינמית",
+      "paidPlan": "· בתשלום",
+      "paidPlanNamed": "· בתשלום ({{plan}})",
+      "modelsAvailable": "· {{count}} מודלים זמינים",
+      "disconnecting": "מתנתק…",
+      "starting": "מתחיל…",
+      "verificationInstructions": "פתח את דף האימות והזן את הקוד הזה:",
+      "openVerificationPage": "פתח דף אימות",
+      "waitingForAuth": "ממתין לאישור…",
+      "authFailedOrExpired": "האימות נכשל או פג תוקף",
+      "notConnectedTooltip": "לא מחובר - התחבר תחת מפתחות API של LLM ← כניסות מנוי",
+      "notConnected": "· לא מחובר",
+      "providerDescriptions": {
+        "xai-oauth": "השתמש במנוי SuperGrok שלך באמצעות כניסת OAuth למכשיר.",
+        "openai-oauth": "השתמש במודלים של ChatGPT Plus או Pro באמצעות כניסת OAuth למכשיר.",
+        "github-copilot": "השתמש במודלים של GitHub Copilot באמצעות כניסת OAuth למכשיר."
+      }
+    },
+    "ollamaRunningNotEnabled": "Ollama פועל - לחץ על התחבר כדי להפעיל אותו כספק",
+    "credentialStorage": {
+      "heading": "היכן נשמרים הסודות",
+      "description": "בחר היכן יישמרו מפתחות API ואסימוני OAuth במחשב זה.",
+      "currentlyUsing": "כרגע בשימוש {{mode}} (בפועל).",
+      "encryptedFile": "קובץ מקומי (נפח נתונים)",
+      "osKeystore": "מחסן מפתחות מערכת ההפעלה (Keychain / Credential Manager)",
+      "relayLinkText": "relay-ai",
+      "settingsGeneralLink": "הגדרות ← כללי",
+      "relayHintPrefix": "משתמש ב-",
+      "relayHintMiddle": "? ייבא את האישורים שלו מתוך",
+      "relayHintSuffix": ". הייבוא נכנס לחנות האישורים הזו (לא ל-settings.json).",
+      "moveTitle": "להעביר את האישורים?",
+      "movePrompt_one": "להעביר אישור שמור אחד מ-{{from}} אל {{to}}?",
+      "movePrompt_other": "להעביר {{count}} אישורים שמורים מ-{{from}} אל {{to}}?",
+      "moveHint": "אישורים קיימים יוסרו מהמיקום הישן לאחר העתקה מוצלחת.",
+      "moving": "מעביר…",
+      "moveButton": "העבר אישורים",
+      "encryptedFileShort": "קובץ מקומי",
+      "osKeystoreShort": "מחסן מפתחות מערכת ההפעלה"
+    },
+    "failedToDisconnect": "ניתוק {{label}} נכשל",
+    "failedToDisconnectOllama": "ניתוק Ollama נכשל",
+    "failedToMigrateCredentials": "העברת האישורים נכשלה",
+    "failedToDismissBanner": "סגירת ההודעה נכשלה"
   },
   "councilConfig": {
     "sourcesHeading": "מקורות מודלים זמינים",
@@ -387,7 +474,8 @@
     "fixedTempWarningChairman": "מודל זה אוכף טמפרטורה קבועה ויתעלם מהגדרה זו.",
     "tooltipOllama": "לא מוגדר - חבר את Ollama במפתחות API של LLM",
     "tooltipApiKey": "לא מוגדר - הוסף מפתח API במפתחות API של LLM",
-    "tooltipSourceMissing": "מקור לא מוגדר - הוסף מפתח API במפתחות API של LLM"
+    "tooltipSourceMissing": "מקור לא מוגדר - הוסף מפתח API במפתחות API של LLM",
+    "directConnections": "חיבורים ישירים"
   },
   "debate": {
     "heading": "הגדרת דיון מועצה",
@@ -671,7 +759,23 @@
     "useRecommended": "השתמש במומלצים",
     "verdictModel": "מודל הפסיקה",
     "saveCurrentAs": "שמור נוכחי כ…",
-    "customLineup": "הרכב מותאם אישית"
+    "customLineup": "הרכב מותאם אישית",
+    "newAdvisorTitle": "יועץ חדש",
+    "createAdvisor": "צור יועץ",
+    "namePlaceholder": "לדוגמה: החזאי העתידני",
+    "rolePlaceholder": "לדוגמה: חוזה מגמות",
+    "descriptionPlaceholder": "מוצג בכרטיס היועץ בגלריה",
+    "addAdvisor": "הוסף יועץ",
+    "addAdvisorDesc": "צור פרסונה מותאמת אישית עם ה-system prompt שלך",
+    "deleteConfirm": "למחוק את {{name}}? הגדרות שמורות יסירו יועץ זה.",
+    "thisAdvisor": "יועץ זה",
+    "errors": {
+      "nameRoleSystemPromptRequired": "שם, תפקיד, ו-system prompt הם שדות חובה.",
+      "createFailed": "יצירת היועץ נכשלה:",
+      "saveFailed": "שמירת הפרסונה נכשלה:",
+      "resetFailed": "איפוס הפרסונה נכשל:",
+      "deleteFailed": "מחיקת היועץ נכשלה:"
+    }
   },
   "search": {
     "providerHeading": "ספק חיפוש ברשת",
@@ -713,5 +817,31 @@
     "filtered": "(מסונן)",
     "noModelsFound": "לא נמצאו מודלים",
     "loadingModels": "טוען מודלים..."
+  },
+  "documentUpload": {
+    "attachTitle": "צרף מסמכים",
+    "attach": "צרף",
+    "extracting": "מחלץ...",
+    "removeTitle": "הסר את {{name}}",
+    "charsUnit": "{{count}} תווים",
+    "trimmed": "קוצר",
+    "errors": {
+      "invalidFilename": "שם קובץ לא תקין.",
+      "tooManyDocuments": "יותר מדי מסמכים. המקסימום הוא {{max}}.",
+      "invalidDocumentObject": "כל מסמך חייב להיות אובייקט.",
+      "tooLarge": "{{name}} גדול מדי.",
+      "invalidBase64": "{{name}} אינו base64 תקין.",
+      "exceedsTextLimit": "{{name}} חורג ממגבלת הטקסט למסמך.",
+      "invalidPdf": "{{name}} אינו PDF תקין.",
+      "unsupportedType": "{{name}} הוא סוג קובץ לא נתמך.",
+      "ocrTimedOut": "זמן ה-OCR פג.",
+      "ocrFailed": "ה-OCR נכשל: {{message}}",
+      "tooManyPages": "ל-{{name}} יותר מדי עמודים. המקסימום הוא {{max}}.",
+      "encrypted": "{{name}} מוצפן ולא ניתן לפתוח אותו.",
+      "extractionFailed": "חילוץ הטקסט מהמסמך נכשל.",
+      "textTruncated": "טקסט המסמך קוצר.",
+      "ocrSkipped": "ה-OCR דולג כי {{count}} עמודים דורשים OCR והמגבלה היא {{max}}.",
+      "ocrUnavailable": "OCR אינו זמין או מושבת; חלק מהעמודים הסרוקים/מבוססי-תמונה עשויים לחסר טקסט."
+    }
   }
 }
