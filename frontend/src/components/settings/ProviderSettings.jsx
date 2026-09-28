@@ -188,22 +188,6 @@ export default function ProviderSettings({
                         value={openrouterApiKey}
                         onChange={(e) => {
                             setOpenrouterApiKey(e.target.value);
-                            // Reset test result on change is handled by parent usually, but here we might need a callback or just let parent handle it via the setter wrapper if needed.
-                            // In Settings.jsx: setOpenrouterTestResult(null) was called.
-                            // We should probably pass a wrapper or just accept that the parent setter doesn't clear the error.
-                            // Actually, looking at Settings.jsx, the onChange did: setOpenrouterApiKey(...); setOpenrouterTestResult(null);
-                            // So we need to replicate that logic or pass a specific handler.
-                            // For simplicity, let's assume the parent passes a setter that *just* sets the key, and we might need a separate prop for clearing error?
-                            // No, simpler: The parent passed `setOpenrouterApiKey`. If we want to clear error, we need to do it here?
-                            // Wait, the prop `setOpenrouterApiKey` is likely just the state setter.
-                            // I should probably accept `onOpenrouterKeyChange` instead of raw setter if I want to bundle logic.
-                            // BUT, to keep it "dumb", I'll just use the props as is, but I can't clear the error if I don't have the error setter.
-                            // Let's check the props again. I didn't pass `setOpenrouterTestResult`.
-                            // I should probably pass `onOpenrouterChange` which does both.
-                            // OR, I can just pass `setOpenrouterTestResult` as a prop too.
-                            // Let's pass `setOpenrouterTestResult` etc. to be safe, or better, make the props `onChange...`.
-                            // I'll stick to the raw setters for now but I'll add `setOpenrouterTestResult` to the props list to be safe, OR just ignore clearing it (minor UX regression).
-                            // BETTER: I'll define `handleOpenrouterChange` locally if I have the setters.
                         }}
                         className={`ltr ${settings?.openrouter_api_key_set && !openrouterApiKey ? 'key-configured' : ''}`}
                     />
